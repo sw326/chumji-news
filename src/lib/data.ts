@@ -10,7 +10,7 @@ export async function getAllPosts(): Promise<NewsPost[]> {
       .order("date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (!error && data) return data as NewsPost[];
+    if (!error && data && data.length > 0) return data as NewsPost[];
   }
 
   return mockPosts;
@@ -27,7 +27,7 @@ export async function getPostsByCategory(
       .order("date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (!error && data) return data as NewsPost[];
+    if (!error && data && data.length > 0) return data as NewsPost[];
   }
 
   return mockPosts.filter((p) => p.category === category);
