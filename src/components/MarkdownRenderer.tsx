@@ -1,54 +1,55 @@
-/** Simple markdown-to-HTML renderer (no external dependency) */
+"use client";
+
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
+
+const components: Components = {
+  h1: ({ children }) => (
+    <h1 className="text-2xl font-bold mb-4 leading-tight">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="text-xl font-semibold mt-6 mb-3">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="text-muted text-sm">{children}</em>
+  ),
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors"
+    >
+      {children}
+    </a>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>
+  ),
+  li: ({ children }) => (
+    <li className="leading-relaxed">{children}</li>
+  ),
+  p: ({ children }) => (
+    <p className="mb-3 leading-7">{children}</p>
+  ),
+  hr: () => (
+    <hr className="my-6 border-card-border" />
+  ),
+};
+
 export default function MarkdownRenderer({ content }: { content: string }) {
-  const html = markdownToHtml(content);
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-function markdownToHtml(md: string): string {
-  return md
-    .split("\n\n")
-    .map((block) => {
-      block = block.trim();
-      if (!block) return "";
-
-      // Headings
-      if (block.startsWith("### "))
-        return `<h3>${inline(block.slice(4))}</h3>`;
-      if (block.startsWith("## ")) return `<h2>${inline(block.slice(3))}</h2>`;
-      if (block.startsWith("# ")) return `<h1>${inline(block.slice(2))}</h1>`;
-
-      // HR
-      if (/^-{3,}$/.test(block)) return "<hr />";
-
-      // Unordered list
-      if (block.match(/^[-*] /m)) {
-        const items = block
-          .split("\n")
-          .filter((l) => l.match(/^[-*] /))
-          .map((l) => `<li>${inline(l.replace(/^[-*] /, ""))}</li>`)
-          .join("");
-        return `<ul>${items}</ul>`;
-      }
-
-      // Ordered list
-      if (block.match(/^\d+\. /m)) {
-        const items = block
-          .split("\n")
-          .filter((l) => l.match(/^\d+\. /))
-          .map((l) => `<li>${inline(l.replace(/^\d+\. /, ""))}</li>`)
-          .join("");
-        return `<ol>${items}</ol>`;
-      }
-
-      // Paragraph
-      return `<p>${inline(block.replace(/\n/g, "<br />"))}</p>`;
-    })
-    .join("\n");
-}
-
-function inline(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
+  return (
+    <div className="prose overflow-x-hidden break-words">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }

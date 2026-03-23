@@ -1,4 +1,4 @@
-export type Category = "news" | "it" | "trend" | "realestate";
+export type Category = "news" | "it" | "trend" | "realestate" | "moltbook" | "opendata" | "system";
 
 export interface NewsPost {
   id: string;
@@ -13,6 +13,9 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   it: "💻 IT",
   trend: "🔥 트렌드",
   realestate: "🏠 강남3구",
+  moltbook: "🦞 몰트북",
+  opendata: "📊 공공데이터",
+  system: "⚙️ 시스템",
 };
 
-export const CATEGORIES: Category[] = ["news", "it", "trend", "realestate"];
+export const CATEGORIES: Category[] = ["news", "it", "trend", "realestate", "moltbook", "opendata", "system"];

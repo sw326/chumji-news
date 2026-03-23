@@ -26,6 +26,10 @@ export default function NewsCard({ post }: NewsCardProps) {
 }
 
 function extractTitle(content: string): string {
-  const match = content.match(/^#\s+(.+)$/m);
-  return match ? match[1] : content.slice(0, 60);
+  // Try first **bold text** pattern
+  const boldMatch = content.match(/\*\*(.+?)\*\*/);
+  if (boldMatch) return boldMatch[1];
+  // Fallback to # heading
+  const headingMatch = content.match(/^#\s+(.+)$/m);
+  return headingMatch ? headingMatch[1] : content.slice(0, 60);
 }
