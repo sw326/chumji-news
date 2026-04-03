@@ -3,15 +3,18 @@
  * issue-digest.js
  * GitHub 이슈 목록을 카테고리별로 정리해서 chumji-news DB에 저장
  * AI-free: gh CLI + Supabase REST API 만 사용
- * 
- * 환경변수:
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (또는 .env.local 파일)
+ *
+ * 캐싱 전략:
+ *   - ~/.issue-cache.json 에 전날 이슈 스냅샷 저장
+ *   - 변경사항 없으면 Supabase 저장 스킵
+ *   - 텔레그램 전송용 전체 목록은 항상 출력
  */
 
 const { execSync } = require('child_process');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // .env.local 로드
 const envPath = path.join(__dirname, '..', '.env.local');
@@ -25,6 +28,7 @@ if (fs.existsSync(envPath)) {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REPO = 'sw326/openclaw-workspace';
+const CACHE_PATH = path.join(os.homedir(), '.issue-cache.json');
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error('❌ SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 없음');
@@ -112,17 +116,53 @@ async function saveToSupabase(today, content) {
   });
 }
 
+function loadCache() {
+  try {
+    if (fs.existsSync(CACHE_PATH)) {
+      return JSON.parse(fs.readFileSync(CACHE_PATH, 'utf8'));
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveCache(date, issues) {
+  const snapshot = issues.map(i => ({ number: i.number, title: i.title }));
+  fs.writeFileSync(CACHE_PATH, JSON.stringify({ date, issues: snapshot }, null, 2), 'utf8');
+}
+
+function hasChanged(prevIssues, currIssues) {
+  if (prevIssues.length !== currIssues.length) return true;
+  const prevMap = new Map(prevIssues.map(i => [i.number, i.title]));
+  for (const i of currIssues) {
+    if (!prevMap.has(i.number) || prevMap.get(i.number) !== i.title) return true;
+  }
+  return false;
+}
+
 (async () => {
   const now = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-  const dateStr = now; // YYYY-MM-DD
+  const dateStr = now;
 
   console.log('이슈 목록 가져오는 중...');
   const issues = await fetchIssues();
   console.log(`총 ${issues.length}개 이슈 로드됨`);
-  const content = buildContent(issues, dateStr);
 
-  console.log('DB 저장 중...');
-  await saveToSupabase(dateStr, content);
-  console.log(`저장 완료: /news/${dateStr}/issues`);
-  console.log(`URL: https://chumji-news.vercel.app/news/${dateStr}/issues`);
+  // 캐시 비교 → 날짜가 다르거나 이슈가 변경됐을 때 Supabase 저장
+  const cache = loadCache();
+  const dateChanged = !cache || cache.date !== dateStr;
+  const changed = dateChanged || hasChanged(cache.issues, issues);
+
+  if (changed) {
+    const content = buildContent(issues, dateStr);
+    console.log('변경사항 감지 → DB 저장 중...');
+    await saveToSupabase(dateStr, content);
+    console.log(`저장 완료: /news/${dateStr}/issues`);
+    saveCache(dateStr, issues);
+    console.log('캐시 업데이트 완료');
+  } else {
+    console.log('변경사항 없음 → DB 저장 스킵');
+  }
+
+  const url = `https://chumji-news.vercel.app/news/${dateStr}/issues`;
+  console.log(`URL: ${url}`);
 })();
