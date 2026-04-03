@@ -147,21 +147,16 @@ function hasChanged(prevIssues, currIssues) {
   const issues = await fetchIssues();
   console.log(`총 ${issues.length}개 이슈 로드됨`);
 
-  // 캐시 비교 → 날짜가 다르거나 이슈가 변경됐을 때 Supabase 저장
+  // 캐시 비교 → 변경 여부 로깅용. 항상 오늘 날짜로 저장 (URL 보장)
   const cache = loadCache();
-  const dateChanged = !cache || cache.date !== dateStr;
-  const changed = dateChanged || hasChanged(cache.issues, issues);
+  const changed = !cache || hasChanged(cache.issues, issues);
+  console.log(changed ? '변경사항 감지 → 새 데이터 저장' : '변경사항 없음 → 이전 데이터로 오늘 날짜 저장');
 
-  if (changed) {
-    const content = buildContent(issues, dateStr);
-    console.log('변경사항 감지 → DB 저장 중...');
-    await saveToSupabase(dateStr, content);
-    console.log(`저장 완료: /news/${dateStr}/issues`);
-    saveCache(dateStr, issues);
-    console.log('캐시 업데이트 완료');
-  } else {
-    console.log('변경사항 없음 → DB 저장 스킵');
-  }
+  const content = buildContent(issues, dateStr);
+  await saveToSupabase(dateStr, content);
+  console.log(`저장 완료: /news/${dateStr}/issues`);
+  saveCache(dateStr, issues);
+  console.log('캐시 업데이트 완료');
 
   const url = `https://chumji-news.vercel.app/news/${dateStr}/issues`;
   console.log(`URL: ${url}`);
