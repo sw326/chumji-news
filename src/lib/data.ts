@@ -1,6 +1,8 @@
 import { supabase } from "./supabase";
 import { NewsPost, Category } from "./types";
 
+export const PAGE_SIZE = 20;
+
 export async function getAllPosts(): Promise<NewsPost[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -44,6 +46,36 @@ export async function getPost(
 
   if (error || !data) return null;
   return data as NewsPost;
+}
+
+/** 페이지네이션 조회 (0-based page) */
+export async function fetchPostsPage(
+  page: number,
+  category?: Category | "all"
+): Promise<{ posts: NewsPost[]; hasMore: boolean }> {
+  if (!supabase) return { posts: [], hasMore: false };
+
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = supabase
+    .from("news_posts")
+    .select("*")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (category && category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return { posts: [], hasMore: false };
+
+  return {
+    posts: data as NewsPost[],
+    hasMore: data.length === PAGE_SIZE,
+  };
 }
 
 /** Group posts by date, sorted descending */
