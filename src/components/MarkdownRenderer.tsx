@@ -26,14 +26,19 @@ interface ParsedHr {
   type: "hr";
 }
 
-type ParsedBlock = ParsedArticle | ParsedParagraph | ParsedHr;
-type ParsedNode = ParsedSection | ParsedArticle | ParsedParagraph | ParsedHr;
+interface ParsedList {
+  type: "list";
+  items: string[];
+}
 
-// Parse inline markdown to React nodes
+type ParsedBlock = ParsedArticle | ParsedParagraph | ParsedHr | ParsedList;
+type ParsedNode = ParsedSection | ParsedArticle | ParsedParagraph | ParsedHr | ParsedList;
+
+// Parse inline markdown — links, bold, #issue 링크
 function parseInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   // Pattern: links [text](url) and **bold**
-  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<![\w/])#(\d+)(?!\w)/g;
   let last = 0;
   let match;
   let key = 0;
@@ -55,9 +60,23 @@ function parseInline(text: string): React.ReactNode {
           {match[1]}
         </a>
       );
-    } else {
+    } else if (match[3] !== undefined) {
       // Bold
       parts.push(<strong key={key++} className="font-semibold">{match[3]}</strong>);
+    } else if (match[4] !== undefined) {
+      // #123 → GitHub issue link
+      const issueNum = match[4];
+      parts.push(
+        <a
+          key={key++}
+          href={`https://github.com/sw326/openclaw-workspace/issues/${issueNum}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent font-medium hover:underline"
+        >
+          #{issueNum}
+        </a>
+      );
     }
     last = match.index + match[0].length;
   }
@@ -109,7 +128,19 @@ function parseContent(content: string): ParsedNode[] {
   const lines = content.split("\n");
   const nodes: ParsedNode[] = [];
   let currentSection: ParsedSection | null = null;
+  let currentList: ParsedList | null = null;
   let blockLines: string[] = [];
+
+  function pushNode(node: ParsedNode) {
+    if (currentSection) currentSection.items.push(node as ParsedBlock);
+    else nodes.push(node);
+  }
+
+  function flushList() {
+    if (!currentList) return;
+    pushNode(currentList);
+    currentList = null;
+  }
 
   function flushBlock() {
     if (blockLines.length === 0) return;
@@ -119,18 +150,14 @@ function parseContent(content: string): ParsedNode[] {
       return;
     }
     const block = parseBlock(blockLines);
-    if (currentSection) {
-      currentSection.items.push(block);
-    } else {
-      nodes.push(block);
-    }
+    pushNode(block);
     blockLines = [];
   }
 
   for (const line of lines) {
     // H1
     if (/^#\s/.test(line)) {
-      flushBlock();
+      flushBlock(); flushList();
       const text = line.replace(/^#+\s*/, "");
       if (currentSection) {
         nodes.push(currentSection);
@@ -141,21 +168,32 @@ function parseContent(content: string): ParsedNode[] {
     }
     // H2 — section header
     if (/^##\s/.test(line)) {
-      flushBlock();
+      flushBlock(); flushList();
       if (currentSection) nodes.push(currentSection);
       currentSection = { type: "section", heading: line.replace(/^#+\s*/, ""), items: [] };
       continue;
     }
     // H3
     if (/^###\s/.test(line)) {
-      flushBlock();
+      flushBlock(); flushList();
       const text = line.replace(/^#+\s*/, "");
-      if (currentSection) {
-        currentSection.items.push({ type: "paragraph", text: `__H3__${text}` });
+      pushNode({ type: "paragraph", text: `__H3__${text}` });
+      continue;
+    }
+    // List item (− or *)
+    if (/^[-*]\s/.test(line)) {
+      flushBlock();
+      const item = line.replace(/^[-*]\s/, "");
+      if (currentList) {
+        currentList.items.push(item);
       } else {
-        nodes.push({ type: "paragraph", text: `__H3__${text}` });
+        currentList = { type: "list", items: [item] };
       }
       continue;
+    }
+    // Non-list line — flush list if active
+    if (currentList && line.trim()) {
+      flushList();
     }
     // HR separator → flush block
     if (/^---+$/.test(line.trim())) {
@@ -174,6 +212,7 @@ function parseContent(content: string): ParsedNode[] {
   }
 
   flushBlock();
+  flushList();
   if (currentSection) nodes.push(currentSection);
 
   return nodes;
@@ -221,6 +260,18 @@ function ArticleCard({ article }: { article: ParsedArticle }) {
 }
 
 function renderBlock(block: ParsedBlock, index: number): React.ReactNode {
+  if (block.type === "list") {
+    return (
+      <ul key={index} className="space-y-1 my-1">
+        {block.items.map((item, j) => (
+          <li key={j} className="flex gap-2 text-sm text-foreground leading-relaxed">
+            <span className="text-muted mt-0.5 shrink-0">–</span>
+            <span className="break-words min-w-0">{parseInline(item)}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
   if (block.type === "hr") {
     return <hr key={index} className="my-4 border-card-border" />;
   }
