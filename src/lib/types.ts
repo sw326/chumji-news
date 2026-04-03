@@ -9,14 +9,14 @@ export interface NewsPost {
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  news: "📰 뉴스",
-  it: "💻 IT",
-  trend: "🔥 트렌드",
-  realestate: "🏠 강남3구",
-  moltbook: "🦞 몰트북",
-  opendata: "📊 공공데이터",
-  system: "⚙️ 시스템",
-  issues: "📋 이슈",
+  news: "뉴스",
+  it: "IT",
+  trend: "트렌드",
+  realestate: "강남3구",
+  moltbook: "몰트북",
+  opendata: "공공데이터",
+  system: "시스템",
+  issues: "이슈",
 };
 
 export const CATEGORIES: Category[] = ["news", "it", "trend", "realestate", "moltbook", "opendata", "system", "issues"];

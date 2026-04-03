@@ -43,20 +43,22 @@ export default function NewsBoardClient({ posts }: NewsBoardClientProps) {
       <header className="sticky top-0 z-40 border-b border-card-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-xl font-bold">🐟 참치뉴스</h1>
+            <h1 className="text-xl font-bold tracking-tight">뉴스 브리핑</h1>
           </div>
           <CategoryTabs selected={filter} onChange={setFilter} />
         </div>
       </header>
 
       {/* Card list */}
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 space-y-6">
+      <main className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
         {Array.from(grouped.entries()).map(([date, datePosts]) => (
           <section key={date}>
-            <h2 className="text-sm font-semibold text-muted mb-3">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-card-border" />
               {formatDateLabel(date)}
+              <span className="h-px flex-1 bg-card-border" />
             </h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {datePosts.map((post) => (
                 <NewsCard key={post.id} post={post} />
               ))}

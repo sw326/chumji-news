@@ -12,7 +12,7 @@ export default function CategoryTabs({
   onChange,
 }: CategoryTabsProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
       <TabButton
         label="전체"
         active={selected === "all"}
@@ -42,10 +42,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+      className={`whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-medium transition-colors ${
         active
           ? "bg-accent text-white"
-          : "bg-card text-muted border border-card-border hover:bg-accent-light hover:text-accent"
+          : "bg-card text-muted border border-card-border hover:border-accent/40 hover:text-accent"
       }`}
     >
       {label}

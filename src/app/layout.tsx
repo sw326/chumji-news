@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "참치뉴스",
+  title: "뉴스 브리핑",
   description: "매일 AI가 전하는 뉴스 브리핑",
 };
 
