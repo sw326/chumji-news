@@ -94,11 +94,23 @@ function parseBlock(lines: string[]): ParsedBlock {
   // Line 2: description text
   // Line 3+: [Source](url) or *source*
   const firstLine = lines[0]?.trim() ?? "";
-  const titleMatch = firstLine.match(/^([\p{Emoji}\u{1F1E0}-\u{1F1FF}🇺-🇿]*\s*)\*\*([^*]+)\*\*/u);
 
-  if (titleMatch) {
-    const emoji = titleMatch[1].trim();
-    const title = titleMatch[2].trim();
+  // Bold title: 🚀 **Title** (기존 방식)
+  const boldMatch = firstLine.match(/^([\p{Emoji}\u{1F1E0}-\u{1F1FF}🇺-🇿]*\s*)\*\*([^*]+)\*\*/u);
+  // Emoji-only title: 🚀 Title without bold (Haiku가 볼드 생략 시)
+  const emojiOnlyMatch = firstLine.match(/^([\p{Emoji}]\s+)(.+)/u);
+  // Block 내 링크 존재 여부 (article 식별 보조 신호)
+  const hasLink = lines.some((l) => /^\[([^\]]+)\]\(([^)]+)\)/.test(l.trim()));
+
+  const isArticle = boldMatch || (hasLink && emojiOnlyMatch);
+
+  if (isArticle) {
+    const emoji = boldMatch
+      ? boldMatch[1].trim()
+      : emojiOnlyMatch![1].trim();
+    const title = boldMatch
+      ? boldMatch[2].trim()
+      : emojiOnlyMatch![2].replace(/\*\*/g, "").trim();
     const remaining = lines.slice(1);
 
     let description = "";
@@ -106,15 +118,15 @@ function parseBlock(lines: string[]): ParsedBlock {
     let sourceUrl = "";
 
     for (const line of remaining) {
-      const linkMatch = line.match(/^\[([^\]]+)\]\(([^)]+)\)/);
-      const italicSourceMatch = line.match(/^\*([^*]+)\*/);
+      const linkMatch = line.trim().match(/^\[([^\]]+)\]\(([^)]+)\)/);
+      const italicSourceMatch = line.trim().match(/^\*([^*]+)\*/);
       if (linkMatch) {
         sourceText = linkMatch[1];
         sourceUrl = linkMatch[2];
       } else if (italicSourceMatch) {
         sourceText = italicSourceMatch[1];
       } else if (line.trim() && !line.startsWith("---")) {
-        description += (description ? " " : "") + line.trim();
+        description += (description ? " " : "") + line.trim().replace(/\*\*/g, "");
       }
     }
 
