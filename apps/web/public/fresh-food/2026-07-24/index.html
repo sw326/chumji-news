@@ -1,0 +1,1961 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fresh Food Price Alert View</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d7dde5;
+      --accent: #1570ef;
+      --garak: #d92d20;
+      --kamis: #1570ef;
+      --warn: #d92d20;
+      --steady: #0f766e;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      font: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    button[aria-pressed="true"] {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      min-height: 82px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .metric .down {
+      color: var(--steady);
+    }
+
+    .metric .up {
+      color: var(--warn);
+    }
+
+    .chart-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+    }
+
+    .legend .garak-line {
+      background: var(--garak);
+    }
+
+    .legend .kamis-line {
+      background: var(--kamis);
+    }
+
+    .chart-frame {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      min-height: 420px;
+    }
+
+    canvas,
+    .static-chart {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .static-chart {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    body.js-ready .static-chart {
+      display: none;
+    }
+
+    .below {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .table-frame {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    th {
+      background: #eef2f6;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .note {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      color: var(--muted);
+    }
+
+    .note b {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 780px) {
+      .shell {
+        padding: 16px;
+      }
+
+      header,
+      .below {
+        display: block;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chart-panel {
+        padding: 12px;
+      }
+
+      .chart-frame {
+        height: 300px;
+        min-height: 300px;
+      }
+
+      .note {
+        margin-top: 12px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .shell {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .summary {
+        gap: 8px;
+      }
+
+      .metric {
+        padding: 10px;
+        min-height: 76px;
+      }
+
+      .metric strong {
+        font-size: 18px;
+      }
+
+      button {
+        flex: 1 1 calc(50% - 4px);
+        padding: 0 8px;
+      }
+
+      .chart-frame {
+        height: 280px;
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>신선식품 가격 점검</h1>
+        <div class="meta" id="generated">생성 시각 2026-07-24 09:20:00 KST</div>
+      </div>
+      <div class="toolbar" id="itemButtons"><button type="button" aria-pressed="true">배추 봄 상품</button>
+<button type="button" aria-pressed="false">파 대파 상품</button>
+<button type="button" aria-pressed="false">양파 양파 상품</button>
+<button type="button" aria-pressed="false">무 봄 상품</button></div>
+    </header>
+
+    <section class="summary" aria-label="핵심 지표">
+      <div class="metric">
+        <span>품목</span>
+        <strong id="metricLabel">배추 봄 상품 / 소매</strong>
+      </div>
+      <div class="metric">
+        <span>가락 현재가</span>
+        <strong id="metricCurrent">10,219 (10키로망대)</strong>
+      </div>
+      <div class="metric">
+        <span>가락 전일 대비</span>
+        <strong id="metricWeek">+3.6%</strong>
+      </div>
+      <div class="metric">
+        <span>KAMIS 소매 1개월 대비</span>
+        <strong id="metricMonth">+3.9%</strong>
+      </div>
+    </section>
+
+    <section class="chart-panel" aria-label="일별 가격 그래프">
+      <div class="legend" aria-label="그래프 범례">
+        <span><i class="garak-line"></i>가락시장 최신 도매</span>
+        <span><i class="kamis-line"></i>KAMIS 소매 조사</span>
+      </div>
+      <div class="chart-frame">
+        <svg class="static-chart" viewBox="0 0 760 420" preserveAspectRatio="none" role="img" aria-label="배추 봄 상품 / 소매"><rect width="760" height="420" fill="#ffffff" /><line x1="72" y1="376.0" x2="732" y2="376.0" stroke="#d7dde5" /><text x="64" y="380.0" text-anchor="end" font-size="12" fill="#667085">3,413</text><line x1="72" y1="288.5" x2="732" y2="288.5" stroke="#d7dde5" /><text x="64" y="292.5" text-anchor="end" font-size="12" fill="#667085">5,660</text><line x1="72" y1="201.0" x2="732" y2="201.0" stroke="#d7dde5" /><text x="64" y="205.0" text-anchor="end" font-size="12" fill="#667085">7,907</text><line x1="72" y1="113.5" x2="732" y2="113.5" stroke="#d7dde5" /><text x="64" y="117.5" text-anchor="end" font-size="12" fill="#667085">10,154</text><line x1="72" y1="26.0" x2="732" y2="26.0" stroke="#d7dde5" /><text x="64" y="30.0" text-anchor="end" font-size="12" fill="#667085">12,401</text><polyline points="72.0,91.3 96.4,89.5 120.9,81.3 145.3,79.0 194.2,79.0 218.7,72.6 243.1,69.1 267.6,101.2 292.0,101.2 340.9,101.2 365.3,101.2 389.8,101.2 414.2,101.2 438.7,101.2 487.6,101.2 512.0,101.2 536.4,101.2 560.9,101.2 634.2,101.2 658.7,101.2 683.1,101.2 707.6,90.7" fill="none" stroke="#1570ef" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><circle cx="72.0" cy="91.3" r="3.2" fill="#1570ef" /><circle cx="218.7" cy="72.6" r="3.2" fill="#1570ef" /><circle cx="365.3" cy="101.2" r="3.2" fill="#1570ef" /><circle cx="512.0" cy="101.2" r="3.2" fill="#1570ef" /><circle cx="658.7" cy="101.2" r="3.2" fill="#1570ef" /><polyline points="96.4,283.9 120.9,281.3 145.3,238.5 169.8,225.2 194.2,269.6 218.7,236.8 243.1,262.1 267.6,243.6 292.0,327.6 316.4,296.7 340.9,270.7 365.3,154.3 414.2,231.0 438.7,133.3 463.1,264.9 487.6,338.3 512.0,235.7 536.4,157.0 560.9,293.7 585.3,315.4 609.8,220.7 634.2,159.5 658.7,238.5 683.1,245.8 707.6,125.0 732.0,111.0" fill="none" stroke="#d92d20" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /><circle cx="218.7" cy="236.8" r="3.2" fill="#d92d20" /><circle cx="365.3" cy="154.3" r="3.2" fill="#d92d20" /><circle cx="512.0" cy="235.7" r="3.2" fill="#d92d20" /><circle cx="658.7" cy="238.5" r="3.2" fill="#d92d20" /><circle cx="732.0" cy="111.0" r="3.2" fill="#d92d20" /><text x="72.0" y="402" text-anchor="middle" font-size="12" fill="#667085">06/23</text><text x="218.7" y="402" text-anchor="middle" font-size="12" fill="#667085">06/30</text><text x="365.3" y="402" text-anchor="middle" font-size="12" fill="#667085">07/07</text><text x="512.0" y="402" text-anchor="middle" font-size="12" fill="#667085">07/14</text><text x="658.7" y="402" text-anchor="middle" font-size="12" fill="#667085">07/21</text><text x="732.0" y="402" text-anchor="middle" font-size="12" fill="#667085">07/24</text></svg>
+        <canvas id="chart" width="1080" height="420"></canvas>
+      </div>
+    </section>
+
+    <section class="below">
+      <div class="table-frame">
+        <table aria-label="일별 가격 데이터">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>가락</th>
+              <th>KAMIS 소매</th>
+            </tr>
+          </thead>
+          <tbody id="rows"><tr><td>07/24</td><td>10,219</td><td>-</td></tr>
+<tr><td>07/23</td><td>9,860</td><td>10,740</td></tr>
+<tr><td>07/22</td><td>6,757</td><td>10,470</td></tr>
+<tr><td>07/21</td><td>6,943</td><td>10,470</td></tr>
+<tr><td>07/20</td><td>8,973</td><td>10,470</td></tr>
+<tr><td>07/18</td><td>7,400</td><td>-</td></tr>
+<tr><td>07/17</td><td>4,969</td><td>-</td></tr>
+<tr><td>07/16</td><td>5,526</td><td>10,470</td></tr>
+<tr><td>07/15</td><td>9,037</td><td>10,470</td></tr>
+<tr><td>07/14</td><td>7,015</td><td>10,470</td></tr>
+<tr><td>07/13</td><td>4,381</td><td>10,470</td></tr>
+<tr><td>07/11</td><td>6,266</td><td>-</td></tr>
+<tr><td>07/10</td><td>9,645</td><td>10,470</td></tr>
+<tr><td>07/09</td><td>7,137</td><td>10,470</td></tr>
+<tr><td>07/08</td><td>-</td><td>10,470</td></tr>
+<tr><td>07/07</td><td>9,107</td><td>10,470</td></tr>
+<tr><td>07/06</td><td>6,116</td><td>10,470</td></tr>
+<tr><td>07/04</td><td>5,449</td><td>-</td></tr>
+<tr><td>07/03</td><td>4,655</td><td>10,470</td></tr>
+<tr><td>07/02</td><td>6,814</td><td>10,470</td></tr>
+<tr><td>07/01</td><td>6,339</td><td>11,295</td></tr>
+<tr><td>06/30</td><td>6,989</td><td>11,205</td></tr>
+<tr><td>06/29</td><td>6,146</td><td>11,040</td></tr>
+<tr><td>06/27</td><td>7,286</td><td>-</td></tr>
+<tr><td>06/26</td><td>6,945</td><td>11,040</td></tr>
+<tr><td>06/25</td><td>5,844</td><td>10,980</td></tr>
+<tr><td>06/24</td><td>5,777</td><td>10,770</td></tr>
+<tr><td>06/23</td><td>-</td><td>10,725</td></tr></tbody>
+        </table>
+      </div>
+      <aside class="note">
+        <b>판정 메모</b>
+        <div id="noteText">가락 도매 기준일 07/24, KAMIS 소매 기준일 20260723. 판정 watch. 가락 26일, KAMIS 소매 perDay 858건. KAMIS 소매 포기 가격을 3포기 묶음으로 환산. 브라우저에는 API 키가 포함되지 않습니다.</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const fallbackReport = {
+      "generatedAt": "2026-07-24T09:20:00+09:00",
+      "source": "Garak Market public-data + data.go.kr B552845 KAMIS/aT",
+      "items": [
+            {
+                  "label": "배추 봄 상품 / 소매",
+                  "anchor": "20260723",
+                  "unit": "포기 1",
+                  "level": "watch",
+                  "current": 11706.0,
+                  "displayCurrent": 10219.0,
+                  "displayUnit": "10키로망대",
+                  "deltas": {
+                        "week": 9.4,
+                        "month": 3.9,
+                        "median7": 2.6,
+                        "median30": 2.6
+                  },
+                  "garak": {
+                        "anchor": "20260724",
+                        "current": 10219.0,
+                        "deltaDay": 3.6,
+                        "unit": "10키로망대",
+                        "points": [
+                              {
+                                    "date": "20260624",
+                                    "price": 5777.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 5844.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 6945.0
+                              },
+                              {
+                                    "date": "20260627",
+                                    "price": 7286.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 6146.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 6989.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 6339.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 6814.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 4655.0
+                              },
+                              {
+                                    "date": "20260704",
+                                    "price": 5449.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 6116.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 9107.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 7137.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 9645.0
+                              },
+                              {
+                                    "date": "20260711",
+                                    "price": 6266.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 4381.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 7015.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 9037.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 5526.0
+                              },
+                              {
+                                    "date": "20260717",
+                                    "price": 4969.0
+                              },
+                              {
+                                    "date": "20260718",
+                                    "price": 7400.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 8973.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 6943.0
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 6757.0
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 9860.0
+                              },
+                              {
+                                    "date": "20260724",
+                                    "price": 10219.0
+                              }
+                        ],
+                        "error": null
+                  },
+                  "kamis": {
+                        "anchor": "20260723",
+                        "current": 11706.0,
+                        "unit": "3포기 환산",
+                        "points": [
+                              {
+                                    "date": "20260623",
+                                    "price": 10725.0
+                              },
+                              {
+                                    "date": "20260624",
+                                    "price": 10770.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 10980.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 11040.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 11040.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 11205.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 11295.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260708",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 10470.0
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 10740.0
+                              }
+                        ],
+                        "adjustment": "KAMIS 소매 포기 가격을 3포기 묶음으로 환산"
+                  },
+                  "counts": {
+                        "recent": 10,
+                        "perDay": 858,
+                        "perYearMonth": 58,
+                        "perRegion": 0,
+                        "garak": 26
+                  },
+                  "range": {
+                        "low": 10470.0,
+                        "high": 11295.0,
+                        "p25": 10470.0,
+                        "p75": 10762.5
+                  },
+                  "points": [
+                        {
+                              "date": "20260623",
+                              "price": 10725.0
+                        },
+                        {
+                              "date": "20260624",
+                              "price": 10770.0
+                        },
+                        {
+                              "date": "20260625",
+                              "price": 10980.0
+                        },
+                        {
+                              "date": "20260626",
+                              "price": 11040.0
+                        },
+                        {
+                              "date": "20260629",
+                              "price": 11040.0
+                        },
+                        {
+                              "date": "20260630",
+                              "price": 11205.0
+                        },
+                        {
+                              "date": "20260701",
+                              "price": 11295.0
+                        },
+                        {
+                              "date": "20260702",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260703",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260706",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260707",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260708",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260709",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260710",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260713",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260714",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260715",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260716",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260720",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260721",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260722",
+                              "price": 10470.0
+                        },
+                        {
+                              "date": "20260723",
+                              "price": 10740.0
+                        }
+                  ]
+            },
+            {
+                  "label": "파 대파 상품 / 소매",
+                  "anchor": "20260723",
+                  "unit": "kg 1",
+                  "level": "normal",
+                  "current": 2797.0,
+                  "displayCurrent": 2233.0,
+                  "displayUnit": "kg 1",
+                  "deltas": {
+                        "week": 0.1,
+                        "month": 5.4,
+                        "median7": -2.7,
+                        "median30": -1.6
+                  },
+                  "garak": {
+                        "anchor": "20260724",
+                        "current": 2233.0,
+                        "deltaDay": -2.5,
+                        "unit": "kg 1",
+                        "points": [
+                              {
+                                    "date": "20260624",
+                                    "price": 1740.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 1745.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 1963.0
+                              },
+                              {
+                                    "date": "20260627",
+                                    "price": 2462.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 2038.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 2038.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 1869.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 1882.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 2071.0
+                              },
+                              {
+                                    "date": "20260704",
+                                    "price": 2053.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 2238.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 2274.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 2193.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 2344.0
+                              },
+                              {
+                                    "date": "20260711",
+                                    "price": 2105.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 1898.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 1792.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 1809.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 1935.0
+                              },
+                              {
+                                    "date": "20260717",
+                                    "price": 1993.0
+                              },
+                              {
+                                    "date": "20260718",
+                                    "price": 1881.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 1854.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 1860.0
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 2269.0
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 2290.0
+                              },
+                              {
+                                    "date": "20260724",
+                                    "price": 2233.0
+                              }
+                        ],
+                        "error": null
+                  },
+                  "kamis": {
+                        "anchor": "20260723",
+                        "current": 2797.0,
+                        "unit": "kg 1",
+                        "points": [
+                              {
+                                    "date": "20260623",
+                                    "price": 2500.0
+                              },
+                              {
+                                    "date": "20260624",
+                                    "price": 2500.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 2540.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 2550.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 2635.0
+                              },
+                              {
+                                    "date": "20260708",
+                                    "price": 2575.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 2740.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 2570.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 2770.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 2725.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 2680.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 2500.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 2500.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 2500.0
+                              }
+                        ],
+                        "adjustment": null
+                  },
+                  "counts": {
+                        "recent": 1,
+                        "perDay": 900,
+                        "perYearMonth": 58,
+                        "perRegion": 0,
+                        "garak": 26
+                  },
+                  "range": {
+                        "low": 2500.0,
+                        "high": 2770.0,
+                        "p25": 2530.0,
+                        "p75": 2590.0
+                  },
+                  "points": [
+                        {
+                              "date": "20260623",
+                              "price": 2500.0
+                        },
+                        {
+                              "date": "20260624",
+                              "price": 2500.0
+                        },
+                        {
+                              "date": "20260625",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260626",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260629",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260630",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260701",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260702",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260703",
+                              "price": 2540.0
+                        },
+                        {
+                              "date": "20260706",
+                              "price": 2550.0
+                        },
+                        {
+                              "date": "20260707",
+                              "price": 2635.0
+                        },
+                        {
+                              "date": "20260708",
+                              "price": 2575.0
+                        },
+                        {
+                              "date": "20260709",
+                              "price": 2740.0
+                        },
+                        {
+                              "date": "20260710",
+                              "price": 2570.0
+                        },
+                        {
+                              "date": "20260713",
+                              "price": 2770.0
+                        },
+                        {
+                              "date": "20260714",
+                              "price": 2725.0
+                        },
+                        {
+                              "date": "20260715",
+                              "price": 2680.0
+                        },
+                        {
+                              "date": "20260716",
+                              "price": 2500.0
+                        },
+                        {
+                              "date": "20260720",
+                              "price": 2500.0
+                        },
+                        {
+                              "date": "20260721",
+                              "price": 2500.0
+                        }
+                  ]
+            },
+            {
+                  "label": "양파 양파 상품 / 소매",
+                  "anchor": "20260723",
+                  "unit": "kg 1",
+                  "level": "watch",
+                  "current": 1713.0,
+                  "displayCurrent": 1360.0,
+                  "displayUnit": "kg 1",
+                  "deltas": {
+                        "week": 10.2,
+                        "month": -6.0,
+                        "median7": 0.0,
+                        "median30": 0.0
+                  },
+                  "garak": {
+                        "anchor": "20260724",
+                        "current": 1360.0,
+                        "deltaDay": 6.4,
+                        "unit": "kg 1",
+                        "points": [
+                              {
+                                    "date": "20260624",
+                                    "price": 802.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 882.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 890.0
+                              },
+                              {
+                                    "date": "20260627",
+                                    "price": 905.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 900.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 953.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 934.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 927.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 958.0
+                              },
+                              {
+                                    "date": "20260704",
+                                    "price": 982.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 1184.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 1294.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 1157.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 1165.0
+                              },
+                              {
+                                    "date": "20260711",
+                                    "price": 1131.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 1074.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 1004.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 1051.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 1134.0
+                              },
+                              {
+                                    "date": "20260717",
+                                    "price": 1123.0
+                              },
+                              {
+                                    "date": "20260718",
+                                    "price": 1198.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 1289.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 1315.0
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 1255.0
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 1278.0
+                              },
+                              {
+                                    "date": "20260724",
+                                    "price": 1360.0
+                              }
+                        ],
+                        "error": null
+                  },
+                  "kamis": {
+                        "anchor": "20260723",
+                        "current": 1713.0,
+                        "unit": "kg 1",
+                        "points": [
+                              {
+                                    "date": "20260623",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260624",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 1660.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260708",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 1590.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 1590.0
+                              }
+                        ],
+                        "adjustment": null
+                  },
+                  "counts": {
+                        "recent": 2,
+                        "perDay": 905,
+                        "perYearMonth": 58,
+                        "perRegion": 0,
+                        "garak": 26
+                  },
+                  "range": {
+                        "low": 1590.0,
+                        "high": 1660.0,
+                        "p25": 1590.0,
+                        "p75": 1660.0
+                  },
+                  "points": [
+                        {
+                              "date": "20260623",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260624",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260625",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260626",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260629",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260630",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260701",
+                              "price": 1660.0
+                        },
+                        {
+                              "date": "20260702",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260703",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260706",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260707",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260708",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260709",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260710",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260713",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260714",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260715",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260716",
+                              "price": 1590.0
+                        },
+                        {
+                              "date": "20260720",
+                              "price": 1590.0
+                        }
+                  ]
+            },
+            {
+                  "label": "무 봄 상품 / 소매",
+                  "anchor": "20260723",
+                  "unit": "개 1",
+                  "level": "normal",
+                  "current": 2048.0,
+                  "displayCurrent": 782.0,
+                  "displayUnit": "개 환산(1.2kg)",
+                  "deltas": {
+                        "week": 3.5,
+                        "month": 6.1,
+                        "median7": 0.0,
+                        "median30": 0.0
+                  },
+                  "garak": {
+                        "anchor": "20260724",
+                        "current": 782.0,
+                        "deltaDay": -1.6,
+                        "unit": "개 환산(1.2kg)",
+                        "points": [
+                              {
+                                    "date": "20260624",
+                                    "price": 1471.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 1220.6
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 1046.5
+                              },
+                              {
+                                    "date": "20260627",
+                                    "price": 1034.8
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 1115.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 1042.6
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 893.5
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 1060.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 1093.1
+                              },
+                              {
+                                    "date": "20260704",
+                                    "price": 1056.1
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 1265.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 1018.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 979.2
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 1099.1
+                              },
+                              {
+                                    "date": "20260711",
+                                    "price": 968.3
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 836.6
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 830.3
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 1071.4
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 837.7
+                              },
+                              {
+                                    "date": "20260717",
+                                    "price": 675.5
+                              },
+                              {
+                                    "date": "20260718",
+                                    "price": 757.8
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 712.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 674.5
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 682.7
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 794.7
+                              },
+                              {
+                                    "date": "20260724",
+                                    "price": 782.0
+                              }
+                        ],
+                        "error": null
+                  },
+                  "kamis": {
+                        "anchor": "20260723",
+                        "current": 2048.0,
+                        "unit": "개 1",
+                        "points": [
+                              {
+                                    "date": "20260623",
+                                    "price": 1985.0
+                              },
+                              {
+                                    "date": "20260624",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260625",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260626",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260629",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260630",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260701",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260702",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260703",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260706",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260707",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260708",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260709",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260710",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260713",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260714",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260715",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260716",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260720",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260721",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260722",
+                                    "price": 1990.0
+                              },
+                              {
+                                    "date": "20260723",
+                                    "price": 1990.0
+                              }
+                        ],
+                        "adjustment": "가락 무는 20kg 상자를 1개≈1.2kg으로 러프 환산"
+                  },
+                  "counts": {
+                        "recent": 6,
+                        "perDay": 886,
+                        "perYearMonth": 56,
+                        "perRegion": 0,
+                        "garak": 26
+                  },
+                  "range": {
+                        "low": 1985.0,
+                        "high": 1990.0,
+                        "p25": 1990.0,
+                        "p75": 1990.0
+                  },
+                  "points": [
+                        {
+                              "date": "20260623",
+                              "price": 1985.0
+                        },
+                        {
+                              "date": "20260624",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260625",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260626",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260629",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260630",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260701",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260702",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260703",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260706",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260707",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260708",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260709",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260710",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260713",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260714",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260715",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260716",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260720",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260721",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260722",
+                              "price": 1990.0
+                        },
+                        {
+                              "date": "20260723",
+                              "price": 1990.0
+                        }
+                  ]
+            }
+      ],
+      "errors": []
+};
+
+    var report = fallbackReport;
+    var css = getComputedStyle(document.documentElement);
+    var canvas = document.getElementById("chart");
+    var ctx = canvas.getContext("2d");
+    var activeIndex = 0;
+
+    function formatDate(value) {
+      if (!value) return "-";
+      return value.slice(4, 6) + "/" + value.slice(6, 8);
+    }
+
+    function formatPrice(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "-";
+      return Math.round(value).toLocaleString("ko-KR");
+    }
+
+    function formatPct(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
+      return (value > 0 ? "+" : "") + value.toFixed(1) + "%";
+    }
+
+    function setGenerated() {
+      document.getElementById("generated").textContent =
+        "생성 시각 " + report.generatedAt.replace("T", " ").replace("+09:00", " KST");
+    }
+
+    function pointsByDate(points) {
+      var result = {};
+      points.forEach(function(point) {
+        result[point.date] = point.price;
+      });
+      return result;
+    }
+
+    function uniqueSortedDates(seriesList, reverse) {
+      var seen = {};
+      seriesList.forEach(function(points) {
+        points.forEach(function(point) {
+          seen[point.date] = true;
+        });
+      });
+      var dates = Object.keys(seen).sort();
+      return reverse ? dates.reverse() : dates;
+    }
+
+    function chartSize() {
+      var rect = canvas.getBoundingClientRect();
+      var parent = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : rect;
+      return {
+        width: Math.max(280, rect.width || parent.width || canvas.clientWidth || 0),
+        height: Math.max(240, rect.height || parent.height || canvas.clientHeight || 0)
+      };
+    }
+
+    function drawChart(item) {
+      var dpr = window.devicePixelRatio || 1;
+      var size = chartSize();
+      canvas.width = Math.round(size.width * dpr);
+      canvas.height = Math.round(size.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      var width = size.width;
+      var height = size.height;
+      var isCompact = width < 520;
+      var pad = isCompact
+        ? { top: 18, right: 8, bottom: 34, left: 48 }
+        : { top: 24, right: 24, bottom: 42, left: 70 };
+      var garakPoints = item.garak && item.garak.points ? item.garak.points : [];
+      var kamisPoints = item.kamis && item.kamis.points ? item.kamis.points : (item.points || []);
+      var dates = uniqueSortedDates([garakPoints, kamisPoints], false);
+      var garakByDate = pointsByDate(garakPoints);
+      var kamisByDate = pointsByDate(kamisPoints);
+      var prices = garakPoints.concat(kamisPoints).map(function(point) {
+        return point.price;
+      });
+      if (!dates.length || !prices.length) return;
+      var min = Math.min.apply(null, prices);
+      var max = Math.max.apply(null, prices);
+      var range = Math.max(1, max - min);
+      var yMin = min - range * 0.14;
+      var yMax = max + range * 0.16;
+      var plotW = Math.max(1, width - pad.left - pad.right);
+      var plotH = Math.max(1, height - pad.top - pad.bottom);
+      var labelEvery = isCompact ? 8 : 5;
+      function x(i) {
+        return pad.left + (dates.length === 1 ? 0 : (plotW * i) / (dates.length - 1));
+      }
+      function y(price) {
+        return pad.top + ((yMax - price) / (yMax - yMin)) * plotH;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = css.getPropertyValue("--line").trim();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = css.getPropertyValue("--muted").trim();
+      ctx.font = (isCompact ? "10px" : "12px") + " -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      var gridCount = isCompact ? 3 : 4;
+      for (var i = 0; i <= gridCount; i += 1) {
+        var price = yMin + ((yMax - yMin) * i) / gridCount;
+        var yy = y(price);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(width - pad.right, yy);
+        ctx.stroke();
+        ctx.fillText(formatPrice(price), pad.left - 6, yy);
+      }
+
+      function drawLine(points, color, widthPx) {
+        var started = false;
+        ctx.beginPath();
+        points.forEach(function(point) {
+          var index = dates.indexOf(point.date);
+          var price = point.price;
+          if (index === -1 || price === undefined || price === null) return;
+          var xx = x(index);
+          var yy = y(price);
+          if (!started) {
+            ctx.moveTo(xx, yy);
+            started = true;
+          } else {
+            ctx.lineTo(xx, yy);
+          }
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = widthPx;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        points.forEach(function(point, pointIndex) {
+          var index = dates.indexOf(point.date);
+          var price = point.price;
+          if (index === -1 || price === undefined || price === null) return;
+          if (index !== 0 && index !== dates.length - 1 && index % labelEvery !== 0) return;
+          ctx.beginPath();
+          ctx.arc(x(index), y(price), isCompact ? 2.6 : 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        });
+      }
+
+      drawLine(kamisPoints, css.getPropertyValue("--kamis").trim(), isCompact ? 2 : 2.4);
+      drawLine(garakPoints, css.getPropertyValue("--garak").trim(), isCompact ? 2.6 : 3.2);
+
+      ctx.fillStyle = css.getPropertyValue("--muted").trim();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      dates.forEach(function(date, index) {
+        if (index !== 0 && index !== dates.length - 1 && index % labelEvery !== 0) return;
+        ctx.fillText(formatDate(date), x(index), height - pad.bottom + 14);
+      });
+    }
+
+    function setMetric(id, value, isDelta = false) {
+      var el = document.getElementById(id);
+      el.textContent = value;
+      el.classList.remove("up", "down");
+      if (isDelta) {
+        var numeric = Number.parseFloat(value);
+        if (numeric > 0) el.classList.add("up");
+        if (numeric < 0) el.classList.add("down");
+      }
+    }
+
+    function render(index) {
+      activeIndex = index;
+      var item = report.items[index];
+      document.querySelectorAll("#itemButtons button").forEach(function(button, i) {
+        button.setAttribute("aria-pressed", String(i === index));
+      });
+      setMetric("metricLabel", item.label);
+      setMetric("metricCurrent", formatPrice(item.displayCurrent || item.current) + " (" + (item.displayUnit || item.unit) + ")");
+      var dayDelta = item.garak && item.garak.deltaDay !== undefined && item.garak.deltaDay !== null ? item.garak.deltaDay : item.deltas.week;
+      setMetric("metricWeek", formatPct(dayDelta), true);
+      setMetric("metricMonth", formatPct(item.deltas.month), true);
+      var garakAnchor = item.garak && item.garak.anchor ? formatDate(item.garak.anchor) : "없음";
+      var kamisAnchor = item.kamis && item.kamis.anchor ? item.kamis.anchor : item.anchor;
+      var adjustment = item.kamis && item.kamis.adjustment ? " " + item.kamis.adjustment + "." : "";
+      document.getElementById("noteText").textContent =
+        "가락 도매 기준일 " + garakAnchor + ", KAMIS 소매 기준일 " + kamisAnchor + ". 판정 " + item.level + ". 가락 " + (item.counts.garak || 0) + "일, KAMIS 소매 perDay " + item.counts.perDay + "건." + adjustment + " 브라우저에는 API 키가 포함되지 않습니다.";
+      var garakPoints = item.garak && item.garak.points ? item.garak.points : [];
+      var kamisPoints = item.kamis && item.kamis.points ? item.kamis.points : (item.points || []);
+      var garakByDate = pointsByDate(garakPoints);
+      var kamisByDate = pointsByDate(kamisPoints);
+      var dates = uniqueSortedDates([garakPoints, kamisPoints], true);
+      document.getElementById("rows").innerHTML = dates
+        .map(function(date) {
+          return "<tr><td>" + formatDate(date) + "</td><td>" + formatPrice(garakByDate[date]) + "</td><td>" + formatPrice(kamisByDate[date]) + "</td></tr>";
+        })
+        .join("");
+      drawChart(item);
+    }
+
+    function redrawSoon(delay) {
+      window.setTimeout(function() {
+        if (report.items && report.items[activeIndex]) {
+          drawChart(report.items[activeIndex]);
+        }
+      }, delay);
+    }
+
+    function buildButtons() {
+      var host = document.getElementById("itemButtons");
+      host.innerHTML = "";
+      report.items.forEach(function(item, index) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.textContent = item.label.split(" / ")[0];
+        button.addEventListener("click", function() {
+          render(index);
+        });
+        host.appendChild(button);
+      });
+    }
+
+    window.addEventListener("resize", function() {
+      render(activeIndex);
+    });
+
+    window.addEventListener("orientationchange", function() {
+      redrawSoon(80);
+      redrawSoon(320);
+    });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(function() {
+        redrawSoon(0);
+      }).observe(canvas.parentElement || canvas);
+    }
+
+    function drawFallback() {
+      document.body.classList.add("js-ready");
+      setGenerated();
+      buildButtons();
+      render(0);
+      window.requestAnimationFrame(function() {
+        redrawSoon(0);
+      });
+      redrawSoon(250);
+    }
+
+    function boot() {
+      if (!window.fetch) {
+        drawFallback();
+        return;
+      }
+      fetch("report.json", { cache: "no-store" })
+        .then(function(response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function(loaded) {
+          if (loaded && Array.isArray(loaded.items) && loaded.items.length > 0) {
+            report = loaded;
+          }
+          drawFallback();
+        })
+        .catch(function() {
+          drawFallback();
+        });
+    }
+
+    boot();
+  </script>
+</body>
+</html>
