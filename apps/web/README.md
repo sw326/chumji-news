@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Ops Import Status
+
+This app was preserve-imported from `sw326/chumji-news` into `apps/web/` for review and preview-only validation.
+
+Do not connect, deploy, relink, or cut over this directory to a production Vercel or Supabase project without explicit approval. Local `.env` files, `.vercel/` metadata, and production credentials are intentionally not imported.
+
 ## Getting Started
 
 First, run the development server:
