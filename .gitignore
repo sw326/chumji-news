@@ -1,0 +1,42 @@
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and runtime output
+logs/
+*.log
+*.pid
+*.pid.lock
+run/
+tmp/
+coverage/
+
+# Dependencies and builds
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+secrets/
+
