@@ -1,4 +1,13 @@
-export type Category = "news" | "it" | "trend" | "realestate" | "moltbook" | "opendata" | "system" | "issues" | "reddit";
+export type Category =
+  | "news"
+  | "it"
+  | "trend"
+  | "realestate"
+  | "moltbook"
+  | "opendata"
+  | "system"
+  | "issues"
+  | "reddit";
 
 export interface NewsPost {
   id: string;
@@ -20,4 +29,14 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   reddit: "Reddit",
 };
 
-export const CATEGORIES: Category[] = ["news", "it", "trend", "realestate", "moltbook", "opendata", "system", "issues", "reddit"];
+export const CATEGORIES: Category[] = [
+  "news",
+  "it",
+  "trend",
+  "realestate",
+  "moltbook",
+  "opendata",
+  "system",
+  "issues",
+  "reddit",
+];

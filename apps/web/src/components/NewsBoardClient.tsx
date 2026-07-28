@@ -5,6 +5,7 @@ import { NewsPost, Category } from "@/lib/types";
 import { groupByDate } from "@/lib/data";
 import { fetchPostsPage } from "@/lib/data";
 import CategoryTabs from "./CategoryTabs";
+import MainTabs from "./MainTabs";
 import NewsCard from "./NewsCard";
 import NewsCardSkeleton from "./NewsCardSkeleton";
 import ScrollToTop from "./ScrollToTop";
@@ -36,7 +37,7 @@ export default function NewsBoardClient({
 }: NewsBoardClientProps) {
   const [filter, setFilter] = useState<Category | "all">("all");
   const [posts, setPosts] = useState<NewsPost[]>(initialPosts);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -83,11 +84,6 @@ export default function NewsBoardClient({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  // 초기 page 카운터 설정 (initialPosts는 page 0에서 온 것)
-  useEffect(() => {
-    setPage(1);
-  }, []);
-
   const grouped = useMemo(() => groupByDate(posts), [posts]);
 
   return (
@@ -97,6 +93,7 @@ export default function NewsBoardClient({
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold tracking-tight">뉴스 브리핑</h1>
+            <MainTabs active="news" />
           </div>
           <CategoryTabs selected={filter} onChange={handleFilterChange} />
         </div>

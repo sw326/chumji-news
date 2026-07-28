@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 import { NewsPost, Category } from "./types";
 
 export const PAGE_SIZE = 20;
+export const PRICE_SNAPSHOT_CATEGORY: Category = "opendata";
+export const PRICE_SNAPSHOT_PREFIX = "# 신선식품 가격 스냅샷";
 
 export async function getAllPosts(): Promise<NewsPost[]> {
   if (!supabase) return [];
@@ -40,6 +42,87 @@ export async function getPost(
     .select("*")
     .eq("date", date)
     .eq("category", category)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+  return data as NewsPost;
+}
+
+export async function getLatestPostByCategory(
+  category: Category
+): Promise<NewsPost | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select("*")
+    .eq("category", category)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+  return data as NewsPost;
+}
+
+export async function getRecentPostsByCategory(
+  category: Category,
+  limit = 14
+): Promise<NewsPost[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select("*")
+    .eq("category", category)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as NewsPost[];
+}
+
+export async function getLatestPriceSnapshot(): Promise<NewsPost | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select("*")
+    .eq("category", PRICE_SNAPSHOT_CATEGORY)
+    .ilike("content", `${PRICE_SNAPSHOT_PREFIX}%`)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+  return data as NewsPost;
+}
+
+export async function getRecentPriceSnapshots(limit = 14): Promise<NewsPost[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select("*")
+    .eq("category", PRICE_SNAPSHOT_CATEGORY)
+    .ilike("content", `${PRICE_SNAPSHOT_PREFIX}%`)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as NewsPost[];
+}
+
+export async function getPriceSnapshot(date: string): Promise<NewsPost | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select("*")
+    .eq("date", date)
+    .eq("category", PRICE_SNAPSHOT_CATEGORY)
+    .ilike("content", `${PRICE_SNAPSHOT_PREFIX}%`)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
