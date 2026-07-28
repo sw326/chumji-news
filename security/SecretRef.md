@@ -30,3 +30,28 @@ secretRefs:
     rotation: review-quarterly
 ```
 
+## Alert Hub Shadow References
+
+These entries are names and lookup metadata only for the inactive shadow import in `services/alert-hub`.
+
+```yaml
+secretRefs:
+  - name: alert-hub.telegram-token
+    provider: local-file
+    scope: earthquake-alert-production
+    owner: ops
+    lookup: /Users/ops/.config/earthquake-alert/telegram-token
+    rotation: approval-required
+  - name: alert-hub.telegram-chat-id
+    provider: deployment-config
+    scope: earthquake-alert-production
+    owner: ops
+    lookup: /Users/ops/.config/earthquake-alert/config.json
+    rotation: approval-required
+  - name: alert-hub.launchdaemon-config
+    provider: macos-launchd
+    scope: earthquake-alert-production
+    owner: ops
+    lookup: com.chumji.earthquake-alert
+    rotation: approval-required
+```
