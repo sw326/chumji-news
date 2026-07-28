@@ -30,25 +30,25 @@ export const ALERT_STATUSES: AlertStatus[] = [
 ];
 
 export const ALERT_CATEGORY_LABELS: Record<AlertCategory, string> = {
-  earthquake: "Earthquake",
-  weather: "Weather",
-  "space-weather": "Space weather",
-  tsunami: "Tsunami",
-  system: "System",
+  earthquake: "지진",
+  weather: "기상",
+  "space-weather": "우주 기상",
+  tsunami: "지진해일",
+  system: "시스템",
 };
 
 export const ALERT_SEVERITY_LABELS: Record<AlertSeverity, string> = {
-  critical: "Critical",
-  high: "High",
-  medium: "Medium",
-  low: "Low",
+  critical: "긴급",
+  high: "높음",
+  medium: "보통",
+  low: "낮음",
 };
 
 export const ALERT_STATUS_LABELS: Record<AlertStatus, string> = {
-  open: "Open",
-  monitoring: "Monitoring",
-  resolved: "Resolved",
-  suppressed: "Suppressed",
+  open: "발생",
+  monitoring: "관찰 중",
+  resolved: "해결",
+  suppressed: "알림 제외",
 };
 
 export interface AlertFilters {

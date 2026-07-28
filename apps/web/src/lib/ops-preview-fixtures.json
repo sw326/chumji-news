@@ -5,33 +5,33 @@
       "category": "weather",
       "severity": "high",
       "status": "monitoring",
-      "title": "KMA heavy-rain watch imported for preview",
-      "source": "alert-hub shadow fixture",
-      "region": "Seoul metro",
+      "title": "기상청 호우 예비특보 미리보기",
+      "source": "알림 허브 섀도 샘플",
+      "region": "수도권",
       "observedAt": "2026-07-29T06:30:00+09:00",
       "updatedAt": "2026-07-29T07:10:00+09:00",
-      "publicSummary": "Preview record showing how a KMA public weather alert would appear after normalization. No delivery channel is connected.",
+      "publicSummary": "기상청 공개 기상특보를 표준 형식으로 변환했을 때 표시되는 미리보기 기록입니다. 실제 발송 채널은 연결되어 있지 않습니다.",
       "privacyClass": "public-status",
       "timeline": [
         {
           "at": "2026-07-29T06:30:00+09:00",
           "actor": "kma-adapter.shadow",
-          "title": "Observed",
-          "note": "Public bulletin metadata was normalized into the preview schema.",
+          "title": "관측",
+          "note": "공개 특보 메타데이터를 미리보기 스키마로 표준화했습니다.",
           "status": "open"
         },
         {
           "at": "2026-07-29T06:45:00+09:00",
           "actor": "alert-hub.shadow",
-          "title": "Deduplicated",
-          "note": "Duplicate key matched the same source event and region.",
+          "title": "중복 제거",
+          "note": "동일한 출처·사건·지역의 중복 키를 확인했습니다.",
           "status": "monitoring"
         },
         {
           "at": "2026-07-29T07:10:00+09:00",
           "actor": "ops-preview",
-          "title": "Displayed",
-          "note": "Read-only detail timeline rendered from local fixtures.",
+          "title": "화면 표시",
+          "note": "로컬 샘플에서 읽기 전용 상세 기록을 표시했습니다.",
           "status": "monitoring"
         }
       ]
@@ -41,33 +41,33 @@
       "category": "earthquake",
       "severity": "medium",
       "status": "resolved",
-      "title": "Regional earthquake fixture resolved",
-      "source": "EMSC local fixture",
-      "region": "Western Pacific",
+      "title": "지역 지진 샘플 처리 완료",
+      "source": "EMSC 로컬 샘플",
+      "region": "서태평양",
       "observedAt": "2026-07-28T21:14:00+09:00",
       "updatedAt": "2026-07-28T22:05:00+09:00",
-      "publicSummary": "A non-production earthquake fixture completed the dry-run path and was marked resolved for preview.",
+      "publicSummary": "비운영 지진 샘플이 시험 실행 경로를 완료해 해결 상태로 표시됐습니다.",
       "privacyClass": "public-status",
       "timeline": [
         {
           "at": "2026-07-28T21:14:00+09:00",
           "actor": "emsc-fixture",
-          "title": "Fixture loaded",
-          "note": "Local testdata/event.json was processed with dry-run delivery.",
+          "title": "샘플 불러옴",
+          "note": "로컬 testdata/event.json을 시험 발송 모드로 처리했습니다.",
           "status": "open"
         },
         {
           "at": "2026-07-28T21:20:00+09:00",
           "actor": "alert-hub.shadow",
-          "title": "Classified",
-          "note": "Magnitude and distance placed the event below urgent delivery threshold.",
+          "title": "등급 분류",
+          "note": "규모와 거리를 기준으로 긴급 발송 기준 미만으로 분류했습니다.",
           "status": "monitoring"
         },
         {
           "at": "2026-07-28T22:05:00+09:00",
           "actor": "ops-preview",
-          "title": "Resolved",
-          "note": "No follow-up fixture updates were present.",
+          "title": "해결",
+          "note": "추가로 갱신된 샘플이 없습니다.",
           "status": "resolved"
         }
       ]
@@ -77,26 +77,26 @@
       "category": "space-weather",
       "severity": "low",
       "status": "suppressed",
-      "title": "SWPC advisory suppressed in preview",
-      "source": "SWPC public feed fixture",
-      "region": "Global",
+      "title": "SWPC 주의보 미리보기 알림 제외",
+      "source": "SWPC 공개 피드 샘플",
+      "region": "전 세계",
       "observedAt": "2026-07-27T12:00:00+09:00",
       "updatedAt": "2026-07-27T12:05:00+09:00",
-      "publicSummary": "Low-severity space-weather advisory retained for audit display but suppressed from any future delivery queue.",
+      "publicSummary": "중요도가 낮은 우주 기상 주의보를 감사 기록에는 보존하되 발송 대기열에서는 제외했습니다.",
       "privacyClass": "public-status",
       "timeline": [
         {
           "at": "2026-07-27T12:00:00+09:00",
           "actor": "swpc-adapter.shadow",
-          "title": "Observed",
-          "note": "Public advisory entered the inactive adapter contract.",
+          "title": "관측",
+          "note": "공개 주의보가 비활성 어댑터 계약에 입력됐습니다.",
           "status": "open"
         },
         {
           "at": "2026-07-27T12:05:00+09:00",
           "actor": "alert-hub.shadow",
-          "title": "Suppressed",
-          "note": "Severity policy marked the event as display-only.",
+          "title": "알림 제외",
+          "note": "중요도 정책에 따라 화면 표시 전용으로 분류했습니다.",
           "status": "suppressed"
         }
       ]
@@ -106,26 +106,26 @@
       "category": "system",
       "severity": "medium",
       "status": "open",
-      "title": "Preview status schema needs approval before persistence",
-      "source": "ops-preview fixture",
-      "region": "Repository",
+      "title": "미리보기 상태 스키마 저장 전 승인 필요",
+      "source": "운영 미리보기 샘플",
+      "region": "저장소",
       "observedAt": "2026-07-26T09:00:00+09:00",
       "updatedAt": "2026-07-29T09:00:00+09:00",
-      "publicSummary": "Schema, upload API, auth boundary, and rollback are documented as proposals only and have not been applied to Supabase.",
+      "publicSummary": "스키마, 업로드 API, 인증 경계, 롤백 절차는 제안으로만 문서화됐으며 Supabase에는 적용하지 않았습니다.",
       "privacyClass": "public-status",
       "timeline": [
         {
           "at": "2026-07-26T09:00:00+09:00",
           "actor": "issue-15",
-          "title": "Contract drafted",
-          "note": "The preview UI depends on public-status fields only.",
+          "title": "계약 초안 작성",
+          "note": "미리보기 화면은 공개 상태 필드만 사용합니다.",
           "status": "open"
         },
         {
           "at": "2026-07-29T09:00:00+09:00",
           "actor": "ops-preview",
-          "title": "Approval pending",
-          "note": "No production database, scheduler, or delivery path has been changed.",
+          "title": "승인 대기",
+          "note": "운영 데이터베이스, 스케줄러, 발송 경로는 변경하지 않았습니다.",
           "status": "open"
         }
       ]
@@ -139,98 +139,98 @@
       {
         "id": "svc-alert-hub-shadow",
         "kind": "service",
-        "name": "Alert Hub shadow import",
+        "name": "알림 허브 섀도 편입",
         "owner": "ops",
         "declaredIn": "services/alert-hub/README.md",
-        "schedule": "inactive shadow service; dry-run fixture only",
+        "schedule": "비활성 섀도 서비스 · 샘플 시험 실행 전용",
         "lastRunAt": "2026-07-29T08:20:00+09:00",
         "nextExpectedAt": null,
         "freshnessMinutes": 40,
         "status": "shadow-ready",
-        "failureState": "none",
-        "publicSummary": "Go service can process local fixture with dry-run delivery. LaunchAgent template remains disabled.",
+        "failureState": "없음",
+        "publicSummary": "Go 서비스가 로컬 샘플을 시험 발송 모드로 처리할 수 있습니다. LaunchAgent 템플릿은 비활성 상태입니다.",
         "controlPolicy": "read-only-preview",
         "checks": [
           {
-            "name": "fixture dry-run",
+            "name": "샘플 시험 실행",
             "status": "pass",
             "observedAt": "2026-07-29T08:20:00+09:00",
-            "summary": "Local EMSC fixture path exits without Telegram delivery."
+            "summary": "로컬 EMSC 샘플 경로가 Telegram 발송 없이 정상 종료됩니다."
           },
           {
-            "name": "launchd boundary",
+            "name": "launchd 경계",
             "status": "pass",
             "observedAt": "2026-07-29T08:20:00+09:00",
-            "summary": "Template file is disabled and not loaded."
+            "summary": "템플릿 파일은 비활성 상태이며 로드되지 않았습니다."
           }
         ]
       },
       {
         "id": "job-news-batch",
         "kind": "job",
-        "name": "News batch migration plan",
+        "name": "뉴스 배치 이전 계획",
         "owner": "ops",
         "declaredIn": "jobs/news/contract.md",
-        "schedule": "inactive; cadence inventory-confirmed",
+        "schedule": "비활성 · 기존 실행 주기 확인 완료",
         "lastRunAt": null,
         "nextExpectedAt": null,
         "freshnessMinutes": null,
         "status": "preview-only",
-        "failureState": "placeholder",
-        "publicSummary": "Contract declares inputs, outputs, duplicate policy, and cutover gates. No scheduler is configured.",
+        "failureState": "준비 중",
+        "publicSummary": "계약서에 입력, 출력, 중복 정책, 전환 승인 조건이 정의돼 있습니다. 스케줄러는 설정하지 않았습니다.",
         "controlPolicy": "read-only-preview",
         "checks": [
           {
-            "name": "contract",
+            "name": "계약서",
             "status": "pass",
             "observedAt": "2026-07-29T09:00:00+09:00",
-            "summary": "Required planning headings are present."
+            "summary": "필수 계획 항목이 모두 포함돼 있습니다."
           }
         ]
       },
       {
         "id": "job-fresh-food-batch",
         "kind": "job",
-        "name": "Fresh-food batch migration plan",
+        "name": "신선식품 배치 이전 계획",
         "owner": "ops",
         "declaredIn": "jobs/fresh-food/contract.md",
-        "schedule": "inactive; cadence inventory-confirmed",
+        "schedule": "비활성 · 기존 실행 주기 확인 완료",
         "lastRunAt": null,
         "nextExpectedAt": null,
         "freshnessMinutes": null,
         "status": "preview-only",
-        "failureState": "placeholder",
-        "publicSummary": "Preview contract includes Vercel/Supabase SecretRefs by name only; no preview deployment is linked.",
+        "failureState": "준비 중",
+        "publicSummary": "미리보기 계약에는 Vercel/Supabase SecretRef 이름만 포함돼 있습니다. 실제 쓰기 권한은 연결하지 않았습니다.",
         "controlPolicy": "read-only-preview",
         "checks": [
           {
-            "name": "production destinations",
+            "name": "운영 대상",
             "status": "pass",
             "observedAt": "2026-07-29T09:00:00+09:00",
-            "summary": "Manifest keeps publish and productionDestinations disabled."
+            "summary": "매니페스트에서 게시와 운영 대상이 비활성 상태로 유지됩니다."
           }
         ]
       },
       {
         "id": "job-global-intel-batch",
         "kind": "job",
-        "name": "Global-intel batch migration plan",
+        "name": "국제정세 배치 이전 계획",
         "owner": "ops",
         "declaredIn": "jobs/global-intel/contract.md",
-        "schedule": "inactive; cadence inventory-confirmed",
+        "schedule": "비활성 · 기존 실행 주기 확인 완료",
         "lastRunAt": null,
         "nextExpectedAt": null,
         "freshnessMinutes": null,
         "status": "stale",
-        "failureState": "stale",
-        "publicSummary": "No last-run placeholder exists yet because runtime inventory is still approval-gated.",
+        "failureState": "갱신 지연",
+        "publicSummary": "런타임 목록 확인이 승인 대기 중이어서 최근 실행 기록이 아직 없습니다.",
         "controlPolicy": "read-only-preview",
         "checks": [
           {
-            "name": "runtime evidence",
+            "name": "런타임 근거",
             "status": "warn",
             "observedAt": "2026-07-29T09:00:00+09:00",
-            "summary": "Awaiting explicit approval before any production-data shadow run."
+            "summary": "운영 데이터 기반 섀도 실행 전 명시 승인을 기다리고 있습니다."
           }
         ]
       }

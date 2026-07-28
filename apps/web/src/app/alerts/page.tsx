@@ -44,6 +44,10 @@ function formatDateTime(value: string): string {
   }).format(new Date(value));
 }
 
+function privacyLabel(value: string): string {
+  return value === "public-status" ? "공개 상태" : value;
+}
+
 function severityClass(severity: OpsAlert["severity"]): string {
   const classes: Record<OpsAlert["severity"], string> = {
     critical: "border-red-300 bg-red-50 text-red-700",
@@ -80,38 +84,38 @@ export default async function AlertsPage({
       <header className="flex flex-col gap-4 border-b border-card-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Preview only
+            미리보기 전용
           </p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">
-            Alert review
+            알림 기록
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Local public-status fixtures for alert triage review. This screen has
-            no production Supabase connection and exposes no delivery controls.
+            공개 상태 샘플을 이용한 알림 검토 화면입니다. 실제 알림 발송이나
+            운영 제어 기능은 연결되어 있지 않습니다.
           </p>
         </div>
         <MainTabs active="alerts" />
       </header>
 
       <form className="grid gap-3 rounded-lg border border-card-border bg-card p-4 shadow-sm md:grid-cols-5">
-        <FilterSelect name="category" label="Category" value={filters.category}>
-          <option value="">All categories</option>
+        <FilterSelect name="category" label="분류" value={filters.category}>
+          <option value="">전체 분류</option>
           {ALERT_CATEGORIES.map((category) => (
             <option key={category} value={category}>
               {ALERT_CATEGORY_LABELS[category]}
             </option>
           ))}
         </FilterSelect>
-        <FilterSelect name="severity" label="Severity" value={filters.severity}>
-          <option value="">All severities</option>
+        <FilterSelect name="severity" label="중요도" value={filters.severity}>
+          <option value="">전체 중요도</option>
           {ALERT_SEVERITIES.map((severity) => (
             <option key={severity} value={severity}>
               {ALERT_SEVERITY_LABELS[severity]}
             </option>
           ))}
         </FilterSelect>
-        <FilterSelect name="status" label="Status" value={filters.status}>
-          <option value="">All statuses</option>
+        <FilterSelect name="status" label="상태" value={filters.status}>
+          <option value="">전체 상태</option>
           {ALERT_STATUSES.map((status) => (
             <option key={status} value={status}>
               {ALERT_STATUS_LABELS[status]}
@@ -119,7 +123,7 @@ export default async function AlertsPage({
           ))}
         </FilterSelect>
         <label className="flex flex-col gap-1 text-xs font-semibold text-muted">
-          Date
+          날짜
           <input
             type="date"
             name="date"
@@ -132,13 +136,13 @@ export default async function AlertsPage({
             type="submit"
             className="h-10 rounded-md bg-foreground px-4 text-sm font-semibold text-background"
           >
-            Apply
+            적용
           </button>
           <Link
             href="/alerts"
             className="flex h-10 items-center rounded-md border border-card-border px-4 text-sm font-semibold text-muted hover:text-accent"
           >
-            Reset
+            초기화
           </Link>
         </div>
       </form>
@@ -147,9 +151,9 @@ export default async function AlertsPage({
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">
-              Matching events
+              조회된 알림
             </h2>
-            <span className="text-xs text-muted">{alerts.length} records</span>
+            <span className="text-xs text-muted">{alerts.length}건</span>
           </div>
           {alerts.map((alert) => (
             <Link
@@ -190,7 +194,7 @@ export default async function AlertsPage({
                 {alert.publicSummary}
               </p>
               <p className="mt-3 text-xs text-muted">
-                Updated {formatDateTime(alert.updatedAt)}
+                갱신 {formatDateTime(alert.updatedAt)}
               </p>
             </Link>
           ))}
@@ -207,12 +211,12 @@ export default async function AlertsPage({
                   {selectedAlert.title}
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  {selectedAlert.region} · observed{" "}
+                  {selectedAlert.region} · 관측{" "}
                   {formatDateTime(selectedAlert.observedAt)}
                 </p>
               </div>
               <span className="rounded-md border border-card-border px-2.5 py-1 text-xs font-semibold text-muted">
-                {selectedAlert.privacyClass}
+                {privacyLabel(selectedAlert.privacyClass)}
               </span>
             </div>
             <p className="mt-5 text-sm leading-6 text-foreground">
@@ -220,7 +224,7 @@ export default async function AlertsPage({
             </p>
 
             <h3 className="mt-7 text-sm font-semibold text-foreground">
-              Event detail and update timeline
+              상세 내용 및 갱신 기록
             </h3>
             <ol className="mt-4 space-y-4">
               {selectedAlert.timeline.map((event) => (
@@ -254,7 +258,7 @@ export default async function AlertsPage({
           </article>
         ) : (
           <div className="rounded-lg border border-card-border bg-card p-5 text-sm text-muted">
-            No alert fixture matches the selected filters.
+            선택한 조건에 맞는 알림 기록이 없습니다.
           </div>
         )}
       </section>
