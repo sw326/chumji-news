@@ -1,0 +1,239 @@
+{
+  "alerts": [
+    {
+      "id": "alert-2026-07-29-kma-rain",
+      "category": "weather",
+      "severity": "high",
+      "status": "monitoring",
+      "title": "KMA heavy-rain watch imported for preview",
+      "source": "alert-hub shadow fixture",
+      "region": "Seoul metro",
+      "observedAt": "2026-07-29T06:30:00+09:00",
+      "updatedAt": "2026-07-29T07:10:00+09:00",
+      "publicSummary": "Preview record showing how a KMA public weather alert would appear after normalization. No delivery channel is connected.",
+      "privacyClass": "public-status",
+      "timeline": [
+        {
+          "at": "2026-07-29T06:30:00+09:00",
+          "actor": "kma-adapter.shadow",
+          "title": "Observed",
+          "note": "Public bulletin metadata was normalized into the preview schema.",
+          "status": "open"
+        },
+        {
+          "at": "2026-07-29T06:45:00+09:00",
+          "actor": "alert-hub.shadow",
+          "title": "Deduplicated",
+          "note": "Duplicate key matched the same source event and region.",
+          "status": "monitoring"
+        },
+        {
+          "at": "2026-07-29T07:10:00+09:00",
+          "actor": "ops-preview",
+          "title": "Displayed",
+          "note": "Read-only detail timeline rendered from local fixtures.",
+          "status": "monitoring"
+        }
+      ]
+    },
+    {
+      "id": "alert-2026-07-28-emsc-quake",
+      "category": "earthquake",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Regional earthquake fixture resolved",
+      "source": "EMSC local fixture",
+      "region": "Western Pacific",
+      "observedAt": "2026-07-28T21:14:00+09:00",
+      "updatedAt": "2026-07-28T22:05:00+09:00",
+      "publicSummary": "A non-production earthquake fixture completed the dry-run path and was marked resolved for preview.",
+      "privacyClass": "public-status",
+      "timeline": [
+        {
+          "at": "2026-07-28T21:14:00+09:00",
+          "actor": "emsc-fixture",
+          "title": "Fixture loaded",
+          "note": "Local testdata/event.json was processed with dry-run delivery.",
+          "status": "open"
+        },
+        {
+          "at": "2026-07-28T21:20:00+09:00",
+          "actor": "alert-hub.shadow",
+          "title": "Classified",
+          "note": "Magnitude and distance placed the event below urgent delivery threshold.",
+          "status": "monitoring"
+        },
+        {
+          "at": "2026-07-28T22:05:00+09:00",
+          "actor": "ops-preview",
+          "title": "Resolved",
+          "note": "No follow-up fixture updates were present.",
+          "status": "resolved"
+        }
+      ]
+    },
+    {
+      "id": "alert-2026-07-27-swpc",
+      "category": "space-weather",
+      "severity": "low",
+      "status": "suppressed",
+      "title": "SWPC advisory suppressed in preview",
+      "source": "SWPC public feed fixture",
+      "region": "Global",
+      "observedAt": "2026-07-27T12:00:00+09:00",
+      "updatedAt": "2026-07-27T12:05:00+09:00",
+      "publicSummary": "Low-severity space-weather advisory retained for audit display but suppressed from any future delivery queue.",
+      "privacyClass": "public-status",
+      "timeline": [
+        {
+          "at": "2026-07-27T12:00:00+09:00",
+          "actor": "swpc-adapter.shadow",
+          "title": "Observed",
+          "note": "Public advisory entered the inactive adapter contract.",
+          "status": "open"
+        },
+        {
+          "at": "2026-07-27T12:05:00+09:00",
+          "actor": "alert-hub.shadow",
+          "title": "Suppressed",
+          "note": "Severity policy marked the event as display-only.",
+          "status": "suppressed"
+        }
+      ]
+    },
+    {
+      "id": "alert-2026-07-26-status",
+      "category": "system",
+      "severity": "medium",
+      "status": "open",
+      "title": "Preview status schema needs approval before persistence",
+      "source": "ops-preview fixture",
+      "region": "Repository",
+      "observedAt": "2026-07-26T09:00:00+09:00",
+      "updatedAt": "2026-07-29T09:00:00+09:00",
+      "publicSummary": "Schema, upload API, auth boundary, and rollback are documented as proposals only and have not been applied to Supabase.",
+      "privacyClass": "public-status",
+      "timeline": [
+        {
+          "at": "2026-07-26T09:00:00+09:00",
+          "actor": "issue-15",
+          "title": "Contract drafted",
+          "note": "The preview UI depends on public-status fields only.",
+          "status": "open"
+        },
+        {
+          "at": "2026-07-29T09:00:00+09:00",
+          "actor": "ops-preview",
+          "title": "Approval pending",
+          "note": "No production database, scheduler, or delivery path has been changed.",
+          "status": "open"
+        }
+      ]
+    }
+  ],
+  "operations": {
+    "schemaVersion": "ops-public-status/v0.proposal",
+    "generatedAt": "2026-07-29T09:00:00+09:00",
+    "privacyClass": "public-status-only",
+    "runtimes": [
+      {
+        "id": "svc-alert-hub-shadow",
+        "kind": "service",
+        "name": "Alert Hub shadow import",
+        "owner": "ops",
+        "declaredIn": "services/alert-hub/README.md",
+        "schedule": "inactive shadow service; dry-run fixture only",
+        "lastRunAt": "2026-07-29T08:20:00+09:00",
+        "nextExpectedAt": null,
+        "freshnessMinutes": 40,
+        "status": "shadow-ready",
+        "failureState": "none",
+        "publicSummary": "Go service can process local fixture with dry-run delivery. LaunchAgent template remains disabled.",
+        "controlPolicy": "read-only-preview",
+        "checks": [
+          {
+            "name": "fixture dry-run",
+            "status": "pass",
+            "observedAt": "2026-07-29T08:20:00+09:00",
+            "summary": "Local EMSC fixture path exits without Telegram delivery."
+          },
+          {
+            "name": "launchd boundary",
+            "status": "pass",
+            "observedAt": "2026-07-29T08:20:00+09:00",
+            "summary": "Template file is disabled and not loaded."
+          }
+        ]
+      },
+      {
+        "id": "job-news-batch",
+        "kind": "job",
+        "name": "News batch migration plan",
+        "owner": "ops",
+        "declaredIn": "jobs/news/contract.md",
+        "schedule": "inactive; cadence inventory-confirmed",
+        "lastRunAt": null,
+        "nextExpectedAt": null,
+        "freshnessMinutes": null,
+        "status": "preview-only",
+        "failureState": "placeholder",
+        "publicSummary": "Contract declares inputs, outputs, duplicate policy, and cutover gates. No scheduler is configured.",
+        "controlPolicy": "read-only-preview",
+        "checks": [
+          {
+            "name": "contract",
+            "status": "pass",
+            "observedAt": "2026-07-29T09:00:00+09:00",
+            "summary": "Required planning headings are present."
+          }
+        ]
+      },
+      {
+        "id": "job-fresh-food-batch",
+        "kind": "job",
+        "name": "Fresh-food batch migration plan",
+        "owner": "ops",
+        "declaredIn": "jobs/fresh-food/contract.md",
+        "schedule": "inactive; cadence inventory-confirmed",
+        "lastRunAt": null,
+        "nextExpectedAt": null,
+        "freshnessMinutes": null,
+        "status": "preview-only",
+        "failureState": "placeholder",
+        "publicSummary": "Preview contract includes Vercel/Supabase SecretRefs by name only; no preview deployment is linked.",
+        "controlPolicy": "read-only-preview",
+        "checks": [
+          {
+            "name": "production destinations",
+            "status": "pass",
+            "observedAt": "2026-07-29T09:00:00+09:00",
+            "summary": "Manifest keeps publish and productionDestinations disabled."
+          }
+        ]
+      },
+      {
+        "id": "job-global-intel-batch",
+        "kind": "job",
+        "name": "Global-intel batch migration plan",
+        "owner": "ops",
+        "declaredIn": "jobs/global-intel/contract.md",
+        "schedule": "inactive; cadence inventory-confirmed",
+        "lastRunAt": null,
+        "nextExpectedAt": null,
+        "freshnessMinutes": null,
+        "status": "stale",
+        "failureState": "stale",
+        "publicSummary": "No last-run placeholder exists yet because runtime inventory is still approval-gated.",
+        "controlPolicy": "read-only-preview",
+        "checks": [
+          {
+            "name": "runtime evidence",
+            "status": "warn",
+            "observedAt": "2026-07-29T09:00:00+09:00",
+            "summary": "Awaiting explicit approval before any production-data shadow run."
+          }
+        ]
+      }
+    ]
+  }
+}
