@@ -1,0 +1,57 @@
+{
+  "websocket_url": "wss://www.seismicportal.eu/standing_order/websocket",
+  "telegram_chat_id": "SECRETREF:alert-hub.telegram-chat-id",
+  "telegram_token_file": "SECRETREF:alert-hub.telegram-token",
+  "state_file": "/tmp/chumji-alert-hub-shadow/state.json",
+  "health_file": "/tmp/chumji-alert-hub-shadow/health.json",
+  "gdacs": {
+    "enabled": true,
+    "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC%3BFL%3BVO%3BWF%3BDR&alertlevel=red%3Borange&pageSize=100&pageNumber=1&caller=chumji-alert-hub-shadow",
+    "rss_fallback_url": "https://www.gdacs.org/xml/rss.xml",
+    "interval_minutes": 10
+  },
+  "tsunami": {
+    "enabled": true,
+    "url": "https://www.tsunami.gov/events/xml/PHEBTEX.xml",
+    "idle_interval_minutes": 10,
+    "active_interval_minutes": 2
+  },
+  "swpc": {
+    "enabled": true,
+    "url": "https://services.swpc.noaa.gov/products/alerts.json",
+    "interval_minutes": 10
+  },
+  "kma": {
+    "enabled": true,
+    "url": "https://www.weather.go.kr/w/special-report/list.do",
+    "station": "109",
+    "interval_minutes": 10
+  },
+  "typhoon": {
+    "enabled": true,
+    "url_template": "https://www.data.jma.go.jp/multi/data/VPTW60/%d_kr.json",
+    "interval_minutes": 10,
+    "korea_influence_km": 800,
+    "korea_nearby_km": 2000,
+    "track_shift_km": 200
+  },
+  "history": {
+    "enabled": true,
+    "database_file": "/tmp/chumji-alert-hub-shadow/history.sqlite3",
+    "summary_enabled": false,
+    "summary_weekday": 0,
+    "summary_hour": 20,
+    "summary_minute": 0,
+    "timezone": "Asia/Seoul"
+  },
+  "filters": {
+    "korea_center_lat": 36.3,
+    "korea_center_lon": 127.8,
+    "korea_radius_km": 500,
+    "korea_min_magnitude": 3.0,
+    "regional_radius_km": 1800,
+    "regional_min_magnitude": 4.5,
+    "global_min_magnitude": 6.0,
+    "urgent_min_magnitude": 7.0
+  }
+}
