@@ -23,6 +23,8 @@ def error_category(value) -> str | None:
     if not value:
         return None
     text = str(value).casefold()
+    if "account_temporarily_blocked" in text or "flood_user_blocked" in text:
+        return "account_temporarily_blocked"
     if "invalid_grant" in text or "authentication failed" in text:
         return "invalid_credentials"
     if "403" in text or "forbidden" in text:

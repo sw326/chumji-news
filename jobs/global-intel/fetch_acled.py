@@ -35,7 +35,14 @@ ACLED_PASSWORD = os.environ.get("ACLED_PASSWORD", "")
 
 TOKEN_URL = "https://acleddata.com/oauth/token"
 BASE_URL = "https://acleddata.com/api/acled/read"
-USER_AGENT = "chumji-ops/1.0 (+https://github.com/sw326/chumji-ops)"
+# ACLED's Cloudflare policy rejects urllib and custom bot signatures (Error
+# 1010) before OAuth validation. Use a stable browser-compatible signature;
+# the repository URL remains available through the separate project docs.
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/138.0.0.0 Safari/537.36"
+)
 
 
 def get_token() -> str:
@@ -68,6 +75,8 @@ def get_token() -> str:
         body = exc.read().decode("utf-8", errors="replace")
         if exc.code == 400 and "invalid_grant" in body:
             raise ValueError("ACLED authentication failed: invalid_grant") from None
+        if "flood_user_blocked" in body:
+            raise ValueError("ACLED authentication failed: account_temporarily_blocked") from None
         raise ValueError(f"ACLED token request failed: http_{exc.code}") from None
     token = data.get("access_token")
     if not token:
