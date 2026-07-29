@@ -1,6 +1,6 @@
 # Global Intel Batch Contract
 
-Status: planning-only, inactive.
+Status: shadow implementation, inactive.
 
 ## Ownership
 
@@ -22,6 +22,7 @@ Status: planning-only, inactive.
 - Job-run summary.
 - Last-success marker.
 - Diff report against approved legacy output samples.
+- Deterministic source-health and observation briefing.
 
 ## Inactive Schedule Metadata
 
@@ -51,6 +52,8 @@ Claude session, personal Gemini auth, or OpenClaw runtime state.
   language against legacy samples.
 - Record run ID, input window, API/model route names, counts, and redacted
   errors.
+- Record `model_route=none` and `publication=disabled`; aircraft counts must
+  not be represented as proof of military activity.
 
 ## Duplicate Prevention
 
