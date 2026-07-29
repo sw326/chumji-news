@@ -97,15 +97,8 @@ context, or direct chat delivery. The target design is:
 ## `claude-workspace` Assessment
 
 `/Users/ops/services/claude-workspace` is not required as a general workspace
-for the Mac mini server. The live dependency is specifically:
-
-`project/investment-assistant-pack`
-
-The Investment Assistant LaunchDaemon runs
-`remote/index.js` from that path and uses it as its working directory.
-Therefore the directory cannot be removed or moved without a service cutover.
-
-Target layout:
+for the Mac mini server. The live Investment Assistant dependency was moved on
+2026-07-29 to a standalone service path:
 
 ```text
 /Users/ops/services/
@@ -115,18 +108,14 @@ Target layout:
   investment-assistant/
 ```
 
-Recommended migration:
+Development remains at
+`/Users/chumji/workspace/claude-workspace/project/investment-assistant-pack`.
+Committed project snapshots are staged for `ops`; the service account does not
+pull the full workspace. Credentials and mutable data remain under
+`/Users/ops/Library/Application Support/InvestmentAssistant`.
 
-1. Copy `investment-assistant-pack` to a standalone service directory.
-2. Preserve credentials and mutable data in their existing external paths.
-3. Update a staged LaunchDaemon definition.
-4. Perform one controlled restart and health/OAuth/Kiwoom checks.
-5. Preserve the old path for rollback.
-6. Archive the remaining `claude-workspace` only after proving no live
-   references remain.
-
-This migration requires separate approval because it changes a live financial
-data service path and LaunchDaemon.
+The previous `ops` workspace path remains temporarily as rollback evidence.
+Archive it only after a final reference scan and an approved cleanup.
 
 ## Known Gaps
 
@@ -135,6 +124,6 @@ data service path and LaunchDaemon.
 3. Repair ACLED authentication and replace or supplement unreliable GDELT
    queries.
 4. Replace alerts and operations preview fixtures with a real event store.
-5. Move the Investment Assistant out of the general-purpose workspace.
+5. Archive the obsolete `ops` workspace after the rollback retention period.
 6. Reconcile installed LaunchDaemon definitions with versioned deployment
    manifests after each completed cutover.
