@@ -88,6 +88,7 @@ Mac mini, ops account
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | Integrated web | Vercel | Git deployment | protected preview | read-only preview |
+| Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
 
 ## Web and Data Boundaries
 
@@ -153,6 +154,14 @@ Development remains at
 Committed project snapshots are staged for `ops`; the service account does not
 pull the full workspace. Credentials and mutable data remain under
 `/Users/ops/Library/Application Support/InvestmentAssistant`.
+
+The live path is a symlink to a commit-addressed release under
+`/Users/ops/services/investment-assistant-releases`. As of 2026-07-29 it points
+to Claude workspace commit `5cb16f5`, which reads domestic and US Kiwoom
+holdings independently, preserves native-currency and KRW-converted values,
+and records partial source failures without exposing credentials, account
+numbers, or raw broker responses. The previous standalone directory is
+preserved as a rollback release.
 
 The previous `ops` workspace path remains temporarily as rollback evidence.
 Archive it only after a final reference scan and an approved cleanup.
