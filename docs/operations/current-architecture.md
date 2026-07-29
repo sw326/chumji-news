@@ -164,5 +164,3 @@ Archive it only after a final reference scan and an approved cleanup.
 3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
 4. Archive the obsolete `ops` workspace after the rollback retention period.
-5. Reconcile installed LaunchDaemon definitions with versioned deployment
-   manifests after each completed cutover.
