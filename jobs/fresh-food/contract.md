@@ -1,6 +1,6 @@
 # Fresh Food Batch Contract
 
-Status: planning-only, inactive.
+Status: shadow implementation, inactive.
 
 ## Ownership
 
@@ -24,6 +24,7 @@ Status: planning-only, inactive.
 - Job-run summary.
 - Last-success marker.
 - Diff report against approved legacy snapshots.
+- Date-partitioned `shadow-status.json` with model and publication routes.
 
 ## Inactive Schedule Metadata
 
@@ -54,6 +55,7 @@ keychain user session, purchasing account cookies, or private GUI state.
 - Compare product coverage, price values, timestamps, missing items, and schema
   against legacy samples.
 - Verify preview artifact target is not production Vercel or Supabase.
+- Record `model_route=none` and `publication=disabled` in every shadow status.
 
 ## Duplicate Prevention
 
