@@ -1,6 +1,6 @@
 # News Batch Contract
 
-Status: planning-only, inactive.
+Status: shadow implementation, inactive.
 
 ## Ownership
 
@@ -14,6 +14,7 @@ Status: planning-only, inactive.
 - Public news, IT, trend, and Reddit source lists from the #11 inventory.
 - Approved legacy output samples for parity comparison.
 - Optional model/API credentials referenced only by SecretRef.
+- Existing public-feed collector JSON (`articles` array) for the AI-less route.
 
 ## Outputs
 
@@ -22,6 +23,7 @@ Status: planning-only, inactive.
 - Job-run summary.
 - Last-success marker.
 - Diff report against approved legacy output samples.
+- Deterministic Markdown and run report from the AI-less route.
 
 ## Inactive Schedule Metadata
 
@@ -44,6 +46,10 @@ Status: planning-only, inactive.
 
 Shadow implementation must not require GUI login, keychain user session, personal
 Claude session, personal Gemini auth, or OpenClaw runtime state.
+
+The default shadow route is `model_route=none`; `news.model.api` is reserved for
+a separately approved, exceptional interpretation route and is not required for
+daily collection.
 
 ## Shadow Validation
 
