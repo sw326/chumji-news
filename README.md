@@ -26,7 +26,7 @@ and scheduler map.
 - `services/alert-hub/` - Go source for the live disaster alert service.
 - `jobs/news/` - AI-less morning, IT, and trend briefing jobs.
 - `jobs/fresh-food/` - Garak Market and KAMIS price collection jobs.
-- `jobs/global-intel/` - ACLED, GDELT, and OpenSky collection jobs.
+- `jobs/global-intel/` - ACLED, ReliefWeb, and OpenSky collection jobs; GDELT is opt-in.
 - `deploy/macos/` - macOS deployment notes and templates.
 - `manifests/` - example manifests containing SecretRef metadata only.
 - `security/` - credential and SecretRef handling rules.

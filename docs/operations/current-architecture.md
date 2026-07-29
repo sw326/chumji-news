@@ -45,7 +45,7 @@ External sources
   |
   +-- RSS / Reddit / Hacker News ------ news shadow jobs
   +-- Garak Market / KAMIS ------------ fresh-food shadow job
-  +-- ACLED / GDELT / OpenSky --------- global-intel shadow job
+  +-- ACLED / ReliefWeb / OpenSky ----- global-intel shadow job
   +-- KMA / JMA / GDACS / PTWC / SWPC - live alert hub
   +-- HoYoLab -------------------------- live daily check-in
   |
@@ -155,8 +155,8 @@ Archive it only after a final reference scan and an approved cleanup.
 
 1. Compare five days of AI-less news output and decide the publication cutover.
 2. Compare fresh-food shadow and production results before moving publication.
-3. Repair ACLED authentication and replace or supplement unreliable GDELT
-   queries.
+3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
+   the default situation-report source; GDELT remains opt-in for diagnostics.
 4. Replace alerts and operations preview fixtures with a real event store.
 5. Archive the obsolete `ops` workspace after the rollback retention period.
 6. Reconcile installed LaunchDaemon definitions with versioned deployment

@@ -11,6 +11,7 @@ Output: JSON { events: [...], summary: {...} }
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta, timezone
@@ -34,6 +35,7 @@ ACLED_PASSWORD = os.environ.get("ACLED_PASSWORD", "")
 
 TOKEN_URL = "https://acleddata.com/oauth/token"
 BASE_URL = "https://acleddata.com/api/acled/read"
+USER_AGENT = "chumji-ops/1.0 (+https://github.com/sw326/chumji-ops)"
 
 
 def get_token() -> str:
@@ -46,16 +48,27 @@ def get_token() -> str:
         "password": ACLED_PASSWORD,
         "grant_type": "password",
         "client_id": "acled",
+        "scope": "authenticated",
     }).encode()
 
     req = urllib.request.Request(
         TOKEN_URL,
         data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+        },
         method="POST",
     )
-    resp = urllib.request.urlopen(req, timeout=15)
-    data = json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        if exc.code == 400 and "invalid_grant" in body:
+            raise ValueError("ACLED authentication failed: invalid_grant") from None
+        raise ValueError(f"ACLED token request failed: http_{exc.code}") from None
     token = data.get("access_token")
     if not token:
         raise ValueError(f"토큰 발급 실패: {data}")
@@ -86,6 +99,7 @@ def fetch_recent_events(days: int = 7, min_fatalities: int = 5, limit: int = 50)
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
+            "User-Agent": USER_AGENT,
         },
     )
 
