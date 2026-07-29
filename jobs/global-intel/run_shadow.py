@@ -14,14 +14,17 @@ import re
 import fetch_acled
 import fetch_gdelt
 import fetch_opensky
+import fetch_reliefweb
 
-POLICY_VERSION = "ailess-global-intel-v1"
+POLICY_VERSION = "ailess-global-intel-v2"
 
 
 def error_category(value) -> str | None:
     if not value:
         return None
     text = str(value).casefold()
+    if "invalid_grant" in text or "authentication failed" in text:
+        return "invalid_credentials"
     if "403" in text or "forbidden" in text:
         return "http_403"
     if "429" in text or "too many" in text:
@@ -37,25 +40,32 @@ def error_category(value) -> str | None:
 
 def collect() -> dict:
     acled = fetch_acled.fetch_recent_events(days=7)
+    reliefweb = fetch_reliefweb.fetch_reports(days=7)
     gdelt_regions = {}
-    for region in fetch_gdelt.REGIONS:
-        gdelt_regions[region["name"]] = {
-            "code": region["code"],
-            **fetch_gdelt.fetch_region_events(region["query"], days=1),
-        }
+    if os.environ.get("GDELT_ENABLED") == "1":
+        for region in fetch_gdelt.REGIONS:
+            gdelt_regions[region["name"]] = {
+                "code": region["code"],
+                **fetch_gdelt.fetch_region_events(region["query"], days=1),
+            }
     opensky_zones = {}
     for zone in fetch_opensky.ZONES:
         opensky_zones[zone["name"]] = fetch_opensky.fetch_zone(zone)
     return {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "acled": acled,
-        "gdelt": {"regions": gdelt_regions},
+        "reliefweb": reliefweb,
+        "gdelt": {
+            "enabled": os.environ.get("GDELT_ENABLED") == "1",
+            "regions": gdelt_regions,
+        },
         "opensky": {"zones": opensky_zones},
     }
 
 
 def source_health(payload: dict) -> dict:
     acled_error = error_category(payload["acled"].get("error"))
+    reliefweb_error = error_category(payload["reliefweb"].get("error"))
     gdelt_errors = {
         name: error_category(data.get("error"))
         for name, data in payload["gdelt"]["regions"].items()
@@ -71,10 +81,22 @@ def source_health(payload: dict) -> dict:
             "status": "error" if acled_error else "ok",
             "error": acled_error,
         },
+        "reliefweb": {
+            "status": "error" if reliefweb_error else "ok",
+            "error": reliefweb_error,
+            "successful_regions": sum(
+                1
+                for region in payload["reliefweb"].get("regions", {}).values()
+                if region.get("report_count", 0) > 0
+            ),
+            "total_regions": len(payload["reliefweb"].get("regions", {})),
+        },
         "gdelt": {
-            "status": "ok" if not gdelt_errors else (
+            "status": "disabled" if not payload["gdelt"].get("enabled") else (
+                "ok" if not gdelt_errors else (
                 "error" if len(gdelt_errors) == len(payload["gdelt"]["regions"])
                 else "partial"
+                )
             ),
             "successful_regions": len(payload["gdelt"]["regions"]) - len(gdelt_errors),
             "total_regions": len(payload["gdelt"]["regions"]),
@@ -99,6 +121,8 @@ def render_markdown(payload: dict, health: dict, run_date: str) -> str:
         "",
         f"- ACLED: {health['acled']['status']}"
         + (f" ({health['acled']['error']})" if health["acled"]["error"] else ""),
+        f"- ReliefWeb: {health['reliefweb']['status']} "
+        f"({health['reliefweb']['successful_regions']}/{health['reliefweb']['total_regions']} 권역)",
         f"- GDELT: {health['gdelt']['status']} "
         f"({health['gdelt']['successful_regions']}/{health['gdelt']['total_regions']} 지역)",
         f"- OpenSky: {health['opensky']['status']} "
@@ -118,8 +142,23 @@ def render_markdown(payload: dict, health: dict, run_date: str) -> str:
         lines.append("- 데이터 없음: 인증 또는 API 상태를 확인해야 합니다.")
     lines.append("")
 
-    lines.extend(["## GDELT 뉴스 긴장도", ""])
+    lines.extend(["## ReliefWeb 상황 보고", ""])
     citations = []
+    reliefweb_error = error_category(payload["reliefweb"].get("error"))
+    if reliefweb_error:
+        lines.append(f"- 수집 실패 ({reliefweb_error})")
+    for name, region in payload["reliefweb"].get("regions", {}).items():
+        lines.append(f"- {name}: 최근 보고서 {region.get('report_count', 0)}건")
+        for report in region.get("reports", [])[:2]:
+            url = str(report.get("url") or "")
+            title = re.sub(r"\s+", " ", str(report.get("title") or "")).strip()
+            if title and url.startswith(("http://", "https://")):
+                citations.append((title, url, report.get("source") or "ReliefWeb"))
+    lines.append("")
+
+    lines.extend(["## GDELT 뉴스 긴장도", ""])
+    if not payload["gdelt"].get("enabled"):
+        lines.append("- 반복적인 HTTP 429로 기본 비활성화했습니다.")
     for name, region in payload["gdelt"]["regions"].items():
         category = error_category(region.get("error"))
         if category:

@@ -23,6 +23,7 @@ Status: shadow implementation, inactive.
 - Last-success marker.
 - Diff report against approved legacy output samples.
 - Deterministic source-health and observation briefing.
+- ReliefWeb situation-report citations from its public RSS feed.
 
 ## Inactive Schedule Metadata
 
