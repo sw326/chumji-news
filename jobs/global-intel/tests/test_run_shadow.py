@@ -20,6 +20,12 @@ class GlobalIntelShadowTest(unittest.TestCase):
             MODULE.error_category("ACLED authentication failed: invalid_grant"),
             "invalid_credentials",
         )
+        self.assertEqual(
+            MODULE.error_category(
+                "ACLED authentication failed: account_temporarily_blocked"
+            ),
+            "account_temporarily_blocked",
+        )
 
     def test_source_health_supports_partial_results(self):
         payload = {
