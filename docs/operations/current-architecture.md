@@ -157,11 +157,13 @@ pull the full workspace. Credentials and mutable data remain under
 
 The live path is a symlink to a commit-addressed release under
 `/Users/ops/services/investment-assistant-releases`. As of 2026-07-29 it points
-to Claude workspace commit `5cb16f5`, which reads domestic and US Kiwoom
-holdings independently, preserves native-currency and KRW-converted values,
-and records partial source failures without exposing credentials, account
-numbers, or raw broker responses. The previous standalone directory is
-preserved as a rollback release.
+to Claude workspace commit `2f547ed`, which supports up to three independently
+encrypted Kiwoom connections per user, isolates tokens and failures by
+`connection_id`, and stores both connection-level and aggregate snapshots.
+Domestic and US holdings remain independently readable, native-currency and
+KRW-converted values are preserved, and partial failures do not expose
+credentials, account numbers, or raw broker responses. The prior `5cb16f5`
+release remains available for rollback.
 
 The previous `ops` workspace path remains temporarily as rollback evidence.
 Archive it only after a final reference scan and an approved cleanup.
