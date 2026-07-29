@@ -15,9 +15,18 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-POLICY_VERSION = "ailess-news-v1"
+POLICY_VERSION = "ailess-news-v2"
 TRACKING_KEYS = {"fbclid", "gclid", "ref", "source"}
 TRACKING_PREFIXES = ("utm_",)
+IT_TOPIC_TOKENS = {
+    "ai", "앱", "보안", "기술", "로봇", "모델", "반도체", "배터리", "소프트웨어",
+    "스마트폰", "오픈소스", "인공지능", "자동차", "전기차", "컴퓨팅", "클라우드",
+    "플랫폼", "해킹", "데이터", "security", "software", "tech", "robot", "chip",
+}
+IT_OFFTOPIC_TOKENS = {
+    "대통령", "트럼프", "네타냐후", "젤렌스키", "전쟁", "종전", "미사일",
+    "회담", "선거", "국회", "관세", "war", "election", "president",
+}
 
 PROFILES = {
     "morning": {
@@ -86,6 +95,35 @@ def clean_text(value: Any, limit: int) -> str:
     return text[:limit].rstrip()
 
 
+def clean_summary(value: Any, limit: int = 180) -> str:
+    text = clean_text(value, 2_000)
+    text = re.sub(
+        r"\bArticle URL:.*?(?=(?:Comments URL:|Points:|$))", " ", text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\b(?:Comments URL|Points|# Comments):.*", " ", text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"^submitted by\s+/?u?/?[^\s]+(?:\s+\[[^\]]*)?\s*", "", text,
+                  flags=re.IGNORECASE)
+    if re.match(r"^submitted by\b", text, flags=re.IGNORECASE):
+        return ""
+    text = re.sub(r"\b(?:Discussion|Link)\s*(?:\||$)", " ", text,
+                  flags=re.IGNORECASE)
+    text = re.sub(r"\s*(?:<[^>]*|\[[^\]]*)$", "", text)
+    text = re.sub(r"\s+", " ", text).strip(" []|")
+    if not text:
+        return ""
+
+    sentences = re.split(r"(?<=[.!?。！？])\s+", text)
+    summary = " ".join(sentences[:2]).strip()
+    if len(summary) <= limit:
+        return summary
+    shortened = summary[:limit].rsplit(" ", 1)[0].rstrip(" ,.;:")
+    return (shortened or summary[:limit]).rstrip() + "…"
+
+
 def canonical_url(value: Any) -> str:
     raw = clean_text(value, 2_000)
     parts = urlsplit(raw)
@@ -112,6 +150,20 @@ def title_score(title: str, signals: dict[str, int]) -> int:
     return sum(weight for token, weight in signals.items() if token in lowered)
 
 
+def is_it_offtopic(title: str) -> bool:
+    lowered = title.casefold()
+    return (
+        any(token in lowered for token in IT_OFFTOPIC_TOKENS)
+        and not any(token in lowered for token in IT_TOPIC_TOKENS)
+    )
+
+
+def is_english_title(title: str) -> bool:
+    latin = len(re.findall(r"[A-Za-z]", title))
+    hangul = len(re.findall(r"[가-힣]", title))
+    return latin >= 8 and latin > hangul * 2
+
+
 def select_articles(
     payload: dict[str, Any], profile_name: str
 ) -> tuple[list[Article], dict[str, Any]]:
@@ -135,6 +187,9 @@ def select_articles(
         if not title or not source or not url:
             rejected["missing_required_field"] += 1
             continue
+        if profile_name == "it" and is_it_offtopic(title):
+            rejected["category_offtopic"] += 1
+            continue
         title_key = normalized_title(title)
         if url in seen_urls or title_key in seen_titles:
             rejected["duplicate"] += 1
@@ -147,7 +202,7 @@ def select_articles(
                 category=clean_text(raw.get("category"), 60) or "기타",
                 title=title,
                 url=url,
-                summary=clean_text(raw.get("summary"), 280),
+                summary=clean_summary(raw.get("summary")),
                 input_index=index,
                 score=title_score(title, profile["signals"]),
             )
@@ -218,7 +273,10 @@ def render_markdown(articles: list[Article], profile_name: str, run_date: str) -
     for category, items in grouped.items():
         lines.extend([f"## {category}", ""])
         for article in items:
-            lines.append(f"- [{article.title}]({article.url}) · {article.source}")
+            language = " · 영문" if is_english_title(article.title) else ""
+            lines.append(
+                f"- [{article.title}]({article.url}) · {article.source}{language}"
+            )
             if article.summary:
                 lines.append(f"  - {article.summary}")
         lines.append("")
