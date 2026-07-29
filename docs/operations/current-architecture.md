@@ -5,6 +5,39 @@ Status date: 2026-07-29
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
 
+## Source of Truth and Discovery
+
+This file is the single declared source of truth for the Mac mini operations
+architecture:
+
+`sw326/chumji-ops/docs/operations/current-architecture.md`
+
+Repository roles:
+
+- Development and documentation:
+  `/Users/chumji/workspace/chumji-ops`
+- Deployed jobs and web source:
+  `/Users/ops/services/chumji-ops`
+- Standalone runtime services:
+  `/Users/ops/services/<service-name>`
+
+Do not edit the `ops` deployment checkout as the normal development workflow.
+Make changes in the `chumji` checkout, merge them through GitHub, and deploy a
+reviewed commit or project snapshot.
+
+OpenClaw and Claude instruction files contain pointers to this document, not
+copies of its component status. Before any service, scheduler, data, or
+deployment mutation, read this document and then verify the installed runtime:
+
+- LaunchDaemon definitions and `launchctl` state;
+- OpenClaw cron configuration and run history;
+- current processes, listeners, and health endpoints;
+- Vercel, Supabase, and Telegram configuration in scope.
+
+When the document and runtime differ, stop and reconcile the discrepancy.
+Runtime observation describes what is currently happening; this document and
+its Git history describe the approved architecture and why it changed.
+
 ## Architecture
 
 ```text
@@ -68,7 +101,8 @@ Mac mini, ops account
 
 ## Runtime Storage
 
-- Source checkout: `/Users/ops/services/chumji-ops`
+- Development checkout: `/Users/chumji/workspace/chumji-ops`
+- Deployment checkout: `/Users/ops/services/chumji-ops`
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
 - Job logs: `/Users/ops/Library/Logs/chumji-ops`
