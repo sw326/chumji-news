@@ -10,6 +10,8 @@ import json
 import pathlib
 import re
 import sqlite3
+import urllib.error
+import urllib.request
 
 SCHEMA_VERSION = "ops-public-status/v1"
 
@@ -169,11 +171,65 @@ def operations_from_health(health_path: pathlib.Path) -> dict:
     }
 
 
+def load_env_file(path: pathlib.Path) -> dict[str, str]:
+    values = {}
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+def upload_snapshots(payload: dict, env_path: pathlib.Path) -> None:
+    environment = load_env_file(env_path)
+    base_url = environment.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+    service_key = environment.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not base_url or not service_key:
+        raise ValueError("Supabase URL or service-role SecretRef is missing")
+    rows = [
+        {
+            "kind": "alerts",
+            "schema_version": payload["schemaVersion"],
+            "payload": payload["alerts"],
+            "generated_at": payload["generatedAt"],
+            "updated_at": payload["generatedAt"],
+        },
+        {
+            "kind": "operations",
+            "schema_version": payload["schemaVersion"],
+            "payload": payload["operations"],
+            "generated_at": payload["generatedAt"],
+            "updated_at": payload["generatedAt"],
+        },
+    ]
+    request = urllib.request.Request(
+        f"{base_url}/rest/v1/ops_public_snapshots?on_conflict=kind",
+        data=json.dumps(rows, ensure_ascii=False).encode(),
+        method="POST",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            if response.status not in {200, 201, 204}:
+                raise RuntimeError(f"Supabase upload failed: http_{response.status}")
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Supabase upload failed: http_{exc.code}") from None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--history-db", type=pathlib.Path, required=True)
     parser.add_argument("--health-file", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
+    parser.add_argument("--supabase-env", type=pathlib.Path)
+    parser.add_argument("--upload", action="store_true")
     args = parser.parse_args()
 
     payload = {
@@ -184,7 +240,19 @@ def main() -> int:
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
-    print(json.dumps({"alerts": len(payload["alerts"]), "schemaVersion": SCHEMA_VERSION}))
+    if args.upload:
+        if not args.supabase_env:
+            parser.error("--upload requires --supabase-env")
+        upload_snapshots(payload, args.supabase_env)
+    print(
+        json.dumps(
+            {
+                "alerts": len(payload["alerts"]),
+                "schemaVersion": SCHEMA_VERSION,
+                "uploaded": args.upload,
+            }
+        )
+    )
     return 0
 
 

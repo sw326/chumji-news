@@ -39,6 +39,16 @@ class ExportPublicStatusTest(unittest.TestCase):
             self.assertEqual(len(alerts[0]["timeline"]), 2)
             self.assertNotIn("<b>", alerts[0]["publicSummary"])
 
+    def test_env_loader_ignores_comments(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "service.env"
+            path.write_text("# secret refs\nNEXT_PUBLIC_SUPABASE_URL=https://example.test\n")
+            values = MODULE.load_env_file(path)
+            self.assertEqual(
+                values["NEXT_PUBLIC_SUPABASE_URL"], "https://example.test"
+            )
+            self.assertNotIn("# secret refs", values)
+
 
 if __name__ == "__main__":
     unittest.main()
