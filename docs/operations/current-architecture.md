@@ -157,8 +157,9 @@ Archive it only after a final reference scan and an approved cleanup.
 2. Compare fresh-food shadow and production results before moving publication.
 3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
-4. Apply and schedule the reviewed public-status exporter. The web code supports
-   Supabase snapshots with fixture fallback; production upload remains disabled.
+4. Apply Supabase migration 003, then install the reviewed five-minute
+   public-status exporter. The manifest and ops SecretRef are prepared, but the
+   scheduler remains uninstalled until the table exists.
 5. Archive the obsolete `ops` workspace after the rollback retention period.
 6. Reconcile installed LaunchDaemon definitions with versioned deployment
    manifests after each completed cutover.

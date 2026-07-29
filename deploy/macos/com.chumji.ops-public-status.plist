@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chumji.ops-public-status</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-B</string>
+    <string>/Users/ops/services/chumji-ops/jobs/ops-status/export_public_status.py</string>
+    <string>--history-db</string>
+    <string>/Users/ops/Library/Application Support/EarthquakeAlert/history.sqlite3</string>
+    <string>--health-file</string>
+    <string>/Users/ops/Library/Application Support/EarthquakeAlert/health.json</string>
+    <string>--output</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/public-status/latest.json</string>
+    <string>--supabase-env</string>
+    <string>/Users/ops/.config/chumji-ops/secrets/supabase-ops-status.env</string>
+    <string>--upload</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/ops/services/chumji-ops/jobs/ops-status</string>
+  <key>UserName</key>
+  <string>ops</string>
+  <key>GroupName</key>
+  <string>staff</string>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/ops-public-status.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/ops-public-status.stderr.log</string>
+</dict>
+</plist>
