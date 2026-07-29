@@ -86,15 +86,21 @@ Mac mini, ops account
 | Legacy morning/IT/trend news | OpenClaw | OpenClaw cron | production | Supabase, Vercel, Telegram path |
 | Legacy fresh-food snapshot | OpenClaw | OpenClaw cron, 09:20 | production | Supabase, Vercel, Telegram path |
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
+| Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | Integrated web | Vercel | Git deployment | protected preview | read-only preview |
 
 ## Web and Data Boundaries
 
 - News and price pages read existing Supabase `news_posts` data with the anon
   client.
-- Alerts and operations pages currently use preview fixtures, not the live
-  service event stream.
+- Alerts and operations pages read the redacted `ops_public_snapshots` rows.
+  Preview fixtures remain only as a fallback when the remote snapshot is
+  unavailable.
+- The connected Supabase project is displayed as `chumji-finance`; its project
+  ref is `sdshtmydiylvtqkbatmb`.
 - The preview project does not receive a Supabase service-role key.
+- The `ops` exporter holds its service-role key only in an ops-owned SecretRef
+  and upserts the two public rows `alerts` and `operations`.
 - Shadow jobs do not write to Supabase or send Telegram messages.
 - The existing `chumji-news` production project remains authoritative until a
   separate web cutover.
@@ -157,9 +163,6 @@ Archive it only after a final reference scan and an approved cleanup.
 2. Compare fresh-food shadow and production results before moving publication.
 3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
-4. Apply Supabase migration 003, then install the reviewed five-minute
-   public-status exporter. The manifest and ops SecretRef are prepared, but the
-   scheduler remains uninstalled until the table exists.
-5. Archive the obsolete `ops` workspace after the rollback retention period.
-6. Reconcile installed LaunchDaemon definitions with versioned deployment
+4. Archive the obsolete `ops` workspace after the rollback retention period.
+5. Reconcile installed LaunchDaemon definitions with versioned deployment
    manifests after each completed cutover.
