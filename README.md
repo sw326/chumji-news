@@ -59,9 +59,8 @@ inside it:
 
 - `/Users/ops/services/hoyolab-auto`
 - `/Users/ops/services/earthquake-alert`
-- Investment Assistant currently at
-  `/Users/ops/services/claude-workspace/project/investment-assistant-pack`
+- `/Users/ops/services/investment-assistant`
 
-The Investment Assistant is a live server dependency. Its target layout is a
-standalone service directory such as `/Users/ops/services/investment-assistant`;
-moving it requires a separate approved cutover and health validation.
+Investment Assistant development remains under the `chumji` workspace. The
+`ops` account runs only the standalone deployed service; mutable data and
+secrets remain outside the source tree.
