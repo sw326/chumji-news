@@ -31,6 +31,25 @@ Each run writes:
 The input must be a JSON object containing an `articles` array. Each article
 uses `source`, `category`, `title`, `url`, and optional `summary` fields.
 
+The independent collector and one-profile shadow runner are:
+
+```bash
+python3 jobs/news/fetch_public_feeds.py --profile morning
+python3 jobs/news/run_shadow.py \
+  --profile morning \
+  --output-root /path/to/shadow-root
+```
+
+`run_shadow.py` writes date-partitioned input, briefing, and report artifacts.
+It has no publication code or credential inputs.
+
+The inactive launchd example uses the `morning` profile at 08:10. Deployed
+copies use separate labels and the following comparison times:
+
+- `morning`: 08:10
+- `it`: 09:10
+- `trend`: 13:10
+
 ## Deterministic policy
 
 1. Strip HTML and tracking parameters.

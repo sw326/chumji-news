@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chumji.ops-news-shadow.PROFILE</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3</string>
+    <string>/Users/ops/services/chumji-ops/jobs/news/run_shadow.py</string>
+    <string>--profile</string>
+    <string>PROFILE</string>
+    <string>--output-root</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/shadow/news</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>10</integer>
+  </dict>
+  <key>UserName</key>
+  <string>ops</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/ops/services/chumji-ops/jobs/news</string>
+  <key>StandardOutPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/news-shadow-PROFILE.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/news-shadow-PROFILE.error.log</string>
+</dict>
+</plist>
