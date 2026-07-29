@@ -206,15 +206,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.acled_secret_file:
         os.environ["ACLED_SECRET_FILE"] = str(args.acled_secret_file)
-        # The imported module loads at import time; load approved values here
-        # without printing them.
-        if args.acled_secret_file.exists():
-            for line in args.acled_secret_file.read_text().splitlines():
-                if "=" in line and not line.lstrip().startswith("#"):
-                    key, value = line.split("=", 1)
-                    os.environ.setdefault(key.strip(), value.strip())
-            fetch_acled.ACLED_EMAIL = os.environ.get("ACLED_EMAIL", "")
-            fetch_acled.ACLED_PASSWORD = os.environ.get("ACLED_PASSWORD", "")
+        fetch_acled.load_credentials(args.acled_secret_file, overwrite=True)
+        fetch_acled.ACLED_EMAIL = os.environ.get("ACLED_EMAIL", "")
+        fetch_acled.ACLED_PASSWORD = os.environ.get("ACLED_PASSWORD", "")
 
     run_date = dt.datetime.now().astimezone().strftime("%Y-%m-%d")
     output_dir = args.output_root / run_date

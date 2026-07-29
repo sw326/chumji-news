@@ -17,18 +17,28 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# Load secrets
-secrets_path = Path(
-    os.getenv(
-        "ACLED_SECRET_FILE",
-        str(Path.home() / ".config/global-intel/secrets.env"),
+def load_credentials(secret_path=None, *, overwrite: bool = False) -> None:
+    """Load credentials without failing when a legacy default path is unreadable."""
+    path = secret_path or Path(
+        os.getenv(
+            "ACLED_SECRET_FILE",
+            str(Path.home() / ".config/global-intel/secrets.env"),
+        )
     )
-)
-if secrets_path.exists():
-    for line in secrets_path.read_text().splitlines():
-        if "=" in line and not line.startswith("#"):
-            k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip())
+    try:
+        lines = path.read_text().splitlines()
+    except (FileNotFoundError, PermissionError):
+        return
+    for line in lines:
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, value = line.split("=", 1)
+            if overwrite:
+                os.environ[key.strip()] = value.strip()
+            else:
+                os.environ.setdefault(key.strip(), value.strip())
+
+
+load_credentials()
 
 ACLED_EMAIL = os.environ.get("ACLED_EMAIL", "")
 ACLED_PASSWORD = os.environ.get("ACLED_PASSWORD", "")
