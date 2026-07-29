@@ -1,4 +1,5 @@
 import fixtures from "./ops-preview-fixtures.json";
+import { supabase } from "./supabase";
 import {
   AlertCategory,
   AlertSeverity,
@@ -61,8 +62,20 @@ export interface AlertFilters {
 const alerts = fixtures.alerts as OpsAlert[];
 const operations = fixtures.operations as OperationsSnapshot;
 
-export function getAlerts(filters: AlertFilters = {}): OpsAlert[] {
-  return alerts
+async function liveSnapshot<T>(kind: "alerts" | "operations"): Promise<T | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("ops_public_snapshots")
+    .select("payload")
+    .eq("kind", kind)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.payload as T;
+}
+
+export async function getAlerts(filters: AlertFilters = {}): Promise<OpsAlert[]> {
+  const liveAlerts = (await liveSnapshot<OpsAlert[]>("alerts")) ?? alerts;
+  return liveAlerts
     .filter((alert) => {
       if (filters.category && alert.category !== filters.category) return false;
       if (filters.severity && alert.severity !== filters.severity) return false;
@@ -75,13 +88,16 @@ export function getAlerts(filters: AlertFilters = {}): OpsAlert[] {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function getAlertById(id: string | undefined): OpsAlert | undefined {
-  if (!id) return alerts[0];
-  return alerts.find((alert) => alert.id === id);
+export function getAlertById(
+  alertsToSearch: OpsAlert[],
+  id: string | undefined
+): OpsAlert | undefined {
+  if (!id) return alertsToSearch[0];
+  return alertsToSearch.find((alert) => alert.id === id);
 }
 
-export function getOperationsSnapshot(): OperationsSnapshot {
-  return operations;
+export async function getOperationsSnapshot(): Promise<OperationsSnapshot> {
+  return (await liveSnapshot<OperationsSnapshot>("operations")) ?? operations;
 }
 
 export function isAlertCategory(value: string): value is AlertCategory {

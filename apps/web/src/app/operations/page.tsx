@@ -2,6 +2,8 @@ import MainTabs from "@/components/MainTabs";
 import { getOperationsSnapshot } from "@/lib/ops-preview-data";
 import { OpsRuntime, PublicStatusCheck } from "@/lib/ops-preview-types";
 
+export const revalidate = 60;
+
 function formatDateTime(value: string | null): string {
   if (!value) return "미리보기에서 실행되지 않음";
   return new Intl.DateTimeFormat("ko-KR", {
@@ -57,8 +59,8 @@ function controlPolicyLabel(value: string): string {
   return value === "read-only-preview" ? "읽기 전용 미리보기" : value;
 }
 
-export default function OperationsPage() {
-  const snapshot = getOperationsSnapshot();
+export default async function OperationsPage() {
+  const snapshot = await getOperationsSnapshot();
   const services = snapshot.runtimes.filter((runtime) => runtime.kind === "service");
   const jobs = snapshot.runtimes.filter((runtime) => runtime.kind === "job");
 

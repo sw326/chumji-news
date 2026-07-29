@@ -75,9 +75,9 @@ export default async function AlertsPage({
 }) {
   const params = await searchParams;
   const { filters, selectedId } = readFilters(params);
-  const alerts = getAlerts(filters);
+  const alerts = await getAlerts(filters);
   const selectedAlert =
-    getAlertById(selectedId) ?? alerts[0] ?? getAlertById(undefined);
+    getAlertById(alerts, selectedId) ?? alerts[0];
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
