@@ -2,8 +2,10 @@ import MainTabs from "@/components/MainTabs";
 import { getOperationsSnapshot } from "@/lib/ops-preview-data";
 import { OpsRuntime, PublicStatusCheck } from "@/lib/ops-preview-types";
 
+export const revalidate = 60;
+
 function formatDateTime(value: string | null): string {
-  if (!value) return "Not run in preview";
+  if (!value) return "미리보기에서 실행되지 않음";
   return new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -33,8 +35,32 @@ function checkClass(status: PublicStatusCheck["status"]): string {
   return classes[status];
 }
 
-export default function OperationsPage() {
-  const snapshot = getOperationsSnapshot();
+const RUNTIME_STATUS_LABELS: Record<OpsRuntime["status"], string> = {
+  inactive: "비활성",
+  "shadow-ready": "섀도 준비 완료",
+  "preview-only": "미리보기 전용",
+  fresh: "정상",
+  stale: "갱신 지연",
+  failing: "실패",
+};
+
+const CHECK_STATUS_LABELS: Record<PublicStatusCheck["status"], string> = {
+  pass: "통과",
+  warn: "주의",
+  fail: "실패",
+  unknown: "미확인",
+};
+
+function privacyLabel(value: string): string {
+  return value === "public-status-only" ? "공개 상태만" : value;
+}
+
+function controlPolicyLabel(value: string): string {
+  return value === "read-only-preview" ? "읽기 전용 미리보기" : value;
+}
+
+export default async function OperationsPage() {
+  const snapshot = await getOperationsSnapshot();
   const services = snapshot.runtimes.filter((runtime) => runtime.kind === "service");
   const jobs = snapshot.runtimes.filter((runtime) => runtime.kind === "job");
 
@@ -43,27 +69,27 @@ export default function OperationsPage() {
       <header className="flex flex-col gap-4 border-b border-card-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Read-only preview
+            읽기 전용 미리보기
           </p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">
-            Operations status
+            운영 기록
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Declared services and jobs from local public-status fixtures. The
-            screen intentionally omits start, stop, retry, and control actions.
+            공개 상태 샘플에 선언된 서비스와 작업을 보여줍니다. 시작, 중지,
+            재시도 같은 실제 제어 기능은 제공하지 않습니다.
           </p>
         </div>
         <MainTabs active="operations" />
       </header>
 
       <section className="grid gap-3 rounded-lg border border-card-border bg-card p-4 shadow-sm md:grid-cols-3">
-        <StatusMetric label="Schema" value={snapshot.schemaVersion} />
-        <StatusMetric label="Generated" value={formatDateTime(snapshot.generatedAt)} />
-        <StatusMetric label="Privacy class" value={snapshot.privacyClass} />
+        <StatusMetric label="스키마" value={snapshot.schemaVersion} />
+        <StatusMetric label="생성 시각" value={formatDateTime(snapshot.generatedAt)} />
+        <StatusMetric label="공개 범위" value={privacyLabel(snapshot.privacyClass)} />
       </section>
 
-      <RuntimeSection title="Declared services" runtimes={services} />
-      <RuntimeSection title="Declared jobs" runtimes={jobs} />
+      <RuntimeSection title="등록된 서비스" runtimes={services} />
+      <RuntimeSection title="등록된 배치 작업" runtimes={jobs} />
     </main>
   );
 }
@@ -100,7 +126,7 @@ function RuntimeSection({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  {runtime.owner} · {runtime.kind}
+                  {runtime.owner} · {runtime.kind === "service" ? "서비스" : "배치 작업"}
                 </p>
                 <h3 className="mt-1 text-lg font-semibold text-foreground">
                   {runtime.name}
@@ -111,7 +137,7 @@ function RuntimeSection({
                   runtime.status
                 )}`}
               >
-                {runtime.status}
+                {RUNTIME_STATUS_LABELS[runtime.status]}
               </span>
             </div>
 
@@ -120,30 +146,30 @@ function RuntimeSection({
             </p>
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-              <InfoItem label="Declared in" value={runtime.declaredIn} />
-              <InfoItem label="Schedule" value={runtime.schedule} />
-              <InfoItem label="Last run" value={formatDateTime(runtime.lastRunAt)} />
+              <InfoItem label="선언 위치" value={runtime.declaredIn} />
+              <InfoItem label="실행 일정" value={runtime.schedule} />
+              <InfoItem label="최근 실행" value={formatDateTime(runtime.lastRunAt)} />
               <InfoItem
-                label="Next expected"
+                label="다음 예상 실행"
                 value={formatDateTime(runtime.nextExpectedAt)}
               />
               <InfoItem
-                label="Freshness"
+                label="갱신 경과"
                 value={
                   runtime.freshnessMinutes === null
-                    ? "Placeholder"
-                    : `${runtime.freshnessMinutes} minutes`
+                    ? "준비 중"
+                    : `${runtime.freshnessMinutes}분`
                 }
               />
-              <InfoItem label="Failure state" value={runtime.failureState} />
+              <InfoItem label="장애 상태" value={runtime.failureState} />
             </dl>
 
             <div className="mt-5 rounded-md border border-card-border bg-background p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Control policy
+                제어 정책
               </p>
               <p className="mt-1 text-sm font-semibold text-foreground">
-                {runtime.controlPolicy}
+                {controlPolicyLabel(runtime.controlPolicy)}
               </p>
             </div>
 
@@ -156,7 +182,7 @@ function RuntimeSection({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{check.name}</p>
                     <span className="text-xs font-semibold uppercase">
-                      {check.status}
+                      {CHECK_STATUS_LABELS[check.status]}
                     </span>
                   </div>
                   <p className="mt-1 text-xs">

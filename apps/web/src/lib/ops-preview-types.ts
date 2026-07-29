@@ -67,7 +67,7 @@ export interface OpsRuntime {
 }
 
 export interface OperationsSnapshot {
-  schemaVersion: "ops-public-status/v0.proposal";
+  schemaVersion: "ops-public-status/v0.proposal" | "ops-public-status/v1";
   generatedAt: string;
   privacyClass: "public-status-only";
   runtimes: OpsRuntime[];
