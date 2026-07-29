@@ -6,7 +6,7 @@
   <string>com.chumji.ops-news-shadow.PROFILE</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/python3</string>
+    <string>/usr/bin/python3</string>
     <string>/Users/ops/services/chumji-ops/jobs/news/run_shadow.py</string>
     <string>--profile</string>
     <string>PROFILE</string>
