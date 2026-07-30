@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-07-29
+Status date: 2026-07-30
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -77,7 +77,7 @@ Mac mini, ops account
 | Component | Runtime owner | Scheduler | State | Publication |
 | --- | --- | --- | --- | --- |
 | Disaster alert hub | `ops` | always-on LaunchDaemon | production | Telegram |
-| HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | cut over; first scheduled verification pending | HoYoLab account action |
+| HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | production; first scheduled run verified | HoYoLab account action |
 | Morning news shadow | `ops` | LaunchDaemon, 08:10 | shadow | local only |
 | IT news shadow | `ops` | LaunchDaemon, 09:10 | shadow | local only |
 | Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
@@ -156,14 +156,16 @@ pull the full workspace. Credentials and mutable data remain under
 `/Users/ops/Library/Application Support/InvestmentAssistant`.
 
 The live path is a symlink to a commit-addressed release under
-`/Users/ops/services/investment-assistant-releases`. As of 2026-07-29 it points
-to Claude workspace commit `2f547ed`, which supports up to three independently
+`/Users/ops/services/investment-assistant-releases`. As of 2026-07-30 it points
+to Claude workspace commit `dc59b2c`, which supports up to three independently
 encrypted Kiwoom connections per user, isolates tokens and failures by
 `connection_id`, and stores both connection-level and aggregate snapshots.
 Domestic and US holdings remain independently readable, native-currency and
 KRW-converted values are preserved, and partial failures do not expose
-credentials, account numbers, or raw broker responses. The prior `5cb16f5`
-release remains available for rollback.
+credentials, account numbers, or raw broker responses. MCP discovery now
+provides Korean display names, request aliases, examples, and a read-only help
+tool while preserving the stable English tool identifiers. The prior
+`2f547ed` and `5cb16f5` releases remain available for rollback.
 
 The previous `ops` workspace path remains temporarily as rollback evidence.
 Archive it only after a final reference scan and an approved cleanup.
