@@ -24,11 +24,11 @@ class AILessBriefingTest(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first_report, second_report)
         self.assertEqual(first_report["model_route"], "none")
-        self.assertEqual(first_report["rejected"]["duplicate"], 1)
+        self.assertEqual(first_report["rejected"]["category_offtopic"], 3)
         self.assertEqual(first_report["rejected"]["missing_required_field"], 1)
         self.assertEqual(first_report["rejected"]["source_quota"], 1)
-        self.assertEqual(len(first), 5)
-        self.assertEqual(first_report["selected_source_count"], 2)
+        self.assertEqual(len(first), 3)
+        self.assertEqual(first_report["selected_source_count"], 1)
 
     def test_tracking_and_html_are_removed(self):
         selected, _ = MODULE.select_articles(self.payload, "morning")
@@ -70,6 +70,35 @@ class AILessBriefingTest(unittest.TestCase):
         selected, report = MODULE.select_articles(payload, "it")
         self.assertEqual([article.title for article in selected], ["AI 반도체 신제품 공개"])
         self.assertEqual(report["rejected"]["category_offtopic"], 1)
+
+    def test_it_rejects_category_noise_and_missing_summary(self):
+        payload = {
+            "articles": [
+                {"source": "전자신문", "category": "국내", "title": "아이돌 판매량 신기록", "url": "https://example.com/idol", "summary": "연예 기사"},
+                {"source": "전자신문", "category": "국내", "title": "AI 반도체 신제품 공개", "url": "https://example.com/chip", "summary": ""},
+                {"source": "전자신문", "category": "국내", "title": "클라우드 보안 기술 공개", "url": "https://example.com/security", "summary": "새 보안 기술을 공개했다."},
+            ]
+        }
+        selected, report = MODULE.select_articles(payload, "it")
+        self.assertEqual([article.title for article in selected], ["클라우드 보안 기술 공개"])
+        self.assertEqual(report["rejected"]["category_offtopic"], 1)
+        self.assertEqual(report["rejected"]["missing_summary"], 1)
+
+    def test_it_limits_english_and_semantic_duplicates(self):
+        articles = []
+        for index in range(6):
+            articles.append({
+                "source": f"Source {index}", "category": "해외",
+                "title": f"AI cloud security platform release number {index}",
+                "url": f"https://example.com/en/{index}", "summary": "Technical release details.",
+            })
+        articles.extend([
+            {"source": "국내A", "category": "국내", "title": "클라우드 보안 플랫폼 공개", "url": "https://example.com/ko/1", "summary": "새 기술이다."},
+            {"source": "국내B", "category": "국내", "title": "클라우드 보안 플랫폼 정식 공개", "url": "https://example.com/ko/2", "summary": "같은 기술이다."},
+        ])
+        selected, report = MODULE.select_articles({"articles": articles}, "it")
+        self.assertLessEqual(report["selected_english_count"], 4)
+        self.assertGreaterEqual(report["rejected"].get("semantic_duplicate", 0), 1)
 
     def test_english_title_is_marked(self):
         selected, _ = MODULE.select_articles(self.payload, "it")

@@ -15,17 +15,23 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-POLICY_VERSION = "ailess-news-v2"
+POLICY_VERSION = "ailess-news-v3"
 TRACKING_KEYS = {"fbclid", "gclid", "ref", "source"}
 TRACKING_PREFIXES = ("utm_",)
 IT_TOPIC_TOKENS = {
     "ai", "앱", "보안", "기술", "로봇", "모델", "반도체", "배터리", "소프트웨어",
     "스마트폰", "오픈소스", "인공지능", "자동차", "전기차", "컴퓨팅", "클라우드",
     "플랫폼", "해킹", "데이터", "security", "software", "tech", "robot", "chip",
+    "agent", "api", "app", "cloud", "code", "commit", "computer", "cyber",
+    "developer", "device", "digital", "github", "gpu", "internet", "iphone",
+    "llm", "linux", "microsoft", "openai", "python", "startup", "tesla", "web",
+    "개발", "네트워크", "디지털", "버그", "서버", "스타트업", "애플",
+    "에이전트", "인터넷", "코드", "컴퓨터", "테슬라", "프로그래밍",
 }
 IT_OFFTOPIC_TOKENS = {
     "대통령", "트럼프", "네타냐후", "젤렌스키", "전쟁", "종전", "미사일",
-    "회담", "선거", "국회", "관세", "war", "election", "president",
+    "회담", "선거", "국회", "관세", "코스피", "코스닥", "한터차트", "아이돌",
+    "커피", "영화", "채용", "구인", "is hiring", "war", "election", "president",
 }
 
 PROFILES = {
@@ -45,8 +51,9 @@ PROFILES = {
     },
     "it": {
         "label": "IT·테크",
-        "limit": 18,
-        "per_source": 4,
+        "limit": 10,
+        "per_source": 3,
+        "max_english": 4,
         "signals": {
             "release": 2,
             "launch": 2,
@@ -158,6 +165,30 @@ def is_it_offtopic(title: str) -> bool:
     )
 
 
+def is_it_relevant(title: str) -> bool:
+    return any(token in title.casefold() for token in IT_TOPIC_TOKENS)
+
+
+def title_terms(title: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[0-9a-z가-힣]+", title.casefold())
+        if len(token) >= 2
+    }
+
+
+def is_similar_title(title: str, previous: list[str], threshold: float = 0.62) -> bool:
+    terms = title_terms(title)
+    if not terms:
+        return False
+    for item in previous:
+        other = title_terms(item)
+        union = terms | other
+        if union and len(terms & other) / len(union) >= threshold:
+            return True
+    return False
+
+
 def is_english_title(title: str) -> bool:
     latin = len(re.findall(r"[A-Za-z]", title))
     hangul = len(re.findall(r"[가-힣]", title))
@@ -187,9 +218,14 @@ def select_articles(
         if not title or not source or not url:
             rejected["missing_required_field"] += 1
             continue
-        if profile_name == "it" and is_it_offtopic(title):
-            rejected["category_offtopic"] += 1
-            continue
+        summary = clean_summary(raw.get("summary"))
+        if profile_name == "it":
+            if is_it_offtopic(title) or not is_it_relevant(title):
+                rejected["category_offtopic"] += 1
+                continue
+            if not summary:
+                rejected["missing_summary"] += 1
+                continue
         title_key = normalized_title(title)
         if url in seen_urls or title_key in seen_titles:
             rejected["duplicate"] += 1
@@ -202,7 +238,7 @@ def select_articles(
                 category=clean_text(raw.get("category"), 60) or "기타",
                 title=title,
                 url=url,
-                summary=clean_summary(raw.get("summary")),
+                summary=summary,
                 input_index=index,
                 score=title_score(title, profile["signals"]),
             )
@@ -212,15 +248,36 @@ def select_articles(
     source_counts: Counter[str] = Counter()
     selected: list[Article] = []
     selected_keys: set[tuple[str, str]] = set()
+    selected_titles: list[str] = []
+    english_count = 0
+
+    def can_select(article: Article) -> bool:
+        if is_similar_title(article.title, selected_titles):
+            rejected["semantic_duplicate"] += 1
+            return False
+        maximum = profile.get("max_english")
+        if maximum is not None and is_english_title(article.title) and english_count >= maximum:
+            rejected["english_quota"] += 1
+            return False
+        return True
+
+    def add_selected(article: Article) -> None:
+        nonlocal english_count
+        selected.append(article)
+        selected_keys.add((article.source, article.url))
+        selected_titles.append(article.title)
+        source_counts[article.source] += 1
+        if is_english_title(article.title):
+            english_count += 1
 
     # Seed one high-scoring item per source before filling the remaining slots.
     # This makes source coverage explicit instead of relying on feed order.
     for article in candidates:
         if source_counts[article.source]:
             continue
-        selected.append(article)
-        selected_keys.add((article.source, article.url))
-        source_counts[article.source] += 1
+        if not can_select(article):
+            continue
+        add_selected(article)
         if len(selected) >= profile["limit"]:
             break
 
@@ -230,9 +287,9 @@ def select_articles(
         if source_counts[article.source] >= profile["per_source"]:
             rejected["source_quota"] += 1
             continue
-        selected.append(article)
-        selected_keys.add((article.source, article.url))
-        source_counts[article.source] += 1
+        if not can_select(article):
+            continue
+        add_selected(article)
         if len(selected) >= profile["limit"]:
             break
 
@@ -253,6 +310,7 @@ def select_articles(
         "input_source_count": len(input_sources),
         "selected_source_count": len(source_counts),
         "selected_by_source": dict(sorted(source_counts.items())),
+        "selected_english_count": english_count,
         "rejected": dict(sorted(rejected.items())),
     }
     return selected, report

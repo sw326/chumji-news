@@ -62,6 +62,11 @@ copies use separate labels and the following comparison times:
 The report records input/selected counts, rejection reasons, source coverage,
 policy version, and confirms `model_route: "none"`.
 
+During shadow validation, the `ailess-news-v3` IT policy selects at most 10
+articles, caps English titles at four, requires a technology signal in the
+title and a non-empty summary, limits each source to three articles, and
+rejects near-duplicate titles. It does not change the production news path.
+
 ## Validate
 
 ```bash
