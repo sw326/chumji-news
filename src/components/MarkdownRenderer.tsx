@@ -1,6 +1,10 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { createArticleKey } from "@/lib/article-key";
+import { useScraps } from "./ScrapProvider";
+import type { Category, NewsScrapDraft } from "@/lib/types";
 
 interface ParsedArticle {
   type: "article";
@@ -95,10 +99,14 @@ function parseBlock(lines: string[]): ParsedBlock {
   // Line 3+: [Source](url) or *source*
   const firstLine = lines[0]?.trim() ?? "";
 
+  // Emoji may include a variation selector (for example, "🛢️" is U+1F6E2
+  // followed by U+FE0F) or a ZWJ sequence. Keep the whole prefix together so
+  // those headlines do not fall back to a plain paragraph between cards.
+  const emojiPrefix = String.raw`(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:[\uFE0E\uFE0F])?(?:\u200D\p{Extended_Pictographic}(?:[\uFE0E\uFE0F])?)*)`;
   // Bold title: 🚀 **Title** (기존 방식)
-  const boldMatch = firstLine.match(/^([\p{Emoji}\u{1F1E0}-\u{1F1FF}🇺-🇿]*\s*)\*\*([^*]+)\*\*/u);
+  const boldMatch = firstLine.match(new RegExp(`^(${emojiPrefix}\\s*)?\\*\\*([^*]+)\\*\\*`, "u"));
   // Emoji-only title: 🚀 Title without bold (Haiku가 볼드 생략 시)
-  const emojiOnlyMatch = firstLine.match(/^([\p{Emoji}]\s+)(.+)/u);
+  const emojiOnlyMatch = firstLine.match(new RegExp(`^(${emojiPrefix}\\s+)(.+)`, "u"));
   // Block 내 링크 존재 여부 (article 식별 보조 신호)
   const hasLink = lines.some((l) => /^\[([^\]]+)\]\(([^)]+)\)/.test(l.trim()));
 
@@ -231,9 +239,46 @@ function parseContent(content: string): ParsedNode[] {
 }
 
 // Render an article card
-function ArticleCard({ article }: { article: ParsedArticle }) {
+function ArticleCard({ article, postId, postDate, category }: {
+  article: ParsedArticle;
+  postId: string;
+  postDate: string;
+  category: Category;
+}) {
+  const router = useRouter();
+  const { isScrapped, toggleScrap } = useScraps();
+  const articleKey = createArticleKey(postId, article.sourceUrl, article.title);
+  const saved = isScrapped(articleKey);
+
+  async function handleScrap() {
+    const draft: NewsScrapDraft = {
+      article_key: articleKey,
+      post_id: postId,
+      post_date: postDate,
+      category,
+      emoji: article.emoji,
+      title: article.title,
+      description: article.description,
+      source_text: article.sourceText,
+      source_url: article.sourceUrl,
+    };
+    const result = await toggleScrap(draft);
+    if (result === "login") router.push("/scraps");
+  }
+
   return (
-    <div className="rounded-xl border border-card-border bg-card/60 p-4 hover:border-accent/30 hover:bg-card transition-all">
+    <div className="relative rounded-xl border border-card-border bg-card/60 p-4 pr-12 hover:border-accent/30 hover:bg-card transition-all">
+      <button
+        type="button"
+        onClick={() => void handleScrap()}
+        aria-label={saved ? "스크랩 해제" : "기사 스크랩"}
+        aria-pressed={saved}
+        className={`absolute right-3 top-3 rounded-md p-2 transition-colors ${saved ? "bg-accent/10 text-accent" : "text-muted hover:bg-accent/10 hover:text-accent"}`}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+        </svg>
+      </button>
       <div className="flex items-start gap-2">
         {article.emoji && (
           <span className="text-lg leading-none mt-0.5 shrink-0">{article.emoji}</span>
@@ -271,7 +316,7 @@ function ArticleCard({ article }: { article: ParsedArticle }) {
   );
 }
 
-function renderBlock(block: ParsedBlock, index: number): React.ReactNode {
+function renderBlock(block: ParsedBlock, index: number, postId: string, postDate: string, category: Category): React.ReactNode {
   if (block.type === "list") {
     return (
       <ul key={index} className="space-y-1 my-1">
@@ -288,7 +333,7 @@ function renderBlock(block: ParsedBlock, index: number): React.ReactNode {
     return <hr key={index} className="my-4 border-card-border" />;
   }
   if (block.type === "article") {
-    return <ArticleCard key={index} article={block} />;
+    return <ArticleCard key={index} article={block} postId={postId} postDate={postDate} category={category} />;
   }
   // paragraph
   const text = block.text;
@@ -313,7 +358,12 @@ function renderBlock(block: ParsedBlock, index: number): React.ReactNode {
   );
 }
 
-export default function MarkdownRenderer({ content }: { content: string }) {
+export default function MarkdownRenderer({ content, postId, postDate, category }: {
+  content: string;
+  postId: string;
+  postDate: string;
+  category: Category;
+}) {
   const nodes = parseContent(content);
 
   return (
@@ -327,12 +377,12 @@ export default function MarkdownRenderer({ content }: { content: string }) {
                 <span className="h-px flex-1 bg-card-border" />
               </h2>
               <div className="space-y-2.5">
-                {node.items.map((block, j) => renderBlock(block, j))}
+                {node.items.map((block, j) => renderBlock(block, j, postId, postDate, category))}
               </div>
             </section>
           );
         }
-        return renderBlock(node as ParsedBlock, i);
+        return renderBlock(node as ParsedBlock, i, postId, postDate, category);
       })}
     </div>
   );

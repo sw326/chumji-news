@@ -4,6 +4,6 @@ import NewsBoardClient from "@/components/NewsBoardClient";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { posts, hasMore } = await fetchPostsPage(0, "all");
-  return <NewsBoardClient initialPosts={posts} initialHasMore={hasMore} />;
+  const { posts, hasMore, nextCursor } = await fetchPostsPage(null, "all");
+  return <NewsBoardClient initialPosts={posts} initialHasMore={hasMore} initialCursor={nextCursor} />;
 }

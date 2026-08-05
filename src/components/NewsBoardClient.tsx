@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { NewsPost, Category } from "@/lib/types";
-import { groupByDate } from "@/lib/data";
+import { groupByDate, PostsCursor } from "@/lib/data";
 import { fetchPostsPage } from "@/lib/data";
 import CategoryTabs from "./CategoryTabs";
+import MainTabs from "./MainTabs";
 import NewsCard from "./NewsCard";
 import NewsCardSkeleton from "./NewsCardSkeleton";
 import ScrollToTop from "./ScrollToTop";
@@ -28,15 +29,17 @@ function formatDateLabel(dateStr: string): string {
 interface NewsBoardClientProps {
   initialPosts: NewsPost[];
   initialHasMore: boolean;
+  initialCursor: PostsCursor | null;
 }
 
 export default function NewsBoardClient({
   initialPosts,
   initialHasMore,
+  initialCursor,
 }: NewsBoardClientProps) {
   const [filter, setFilter] = useState<Category | "all">("all");
   const [posts, setPosts] = useState<NewsPost[]>(initialPosts);
-  const [page, setPage] = useState(0);
+  const [cursor, setCursor] = useState<PostsCursor | null>(initialCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -46,11 +49,10 @@ export default function NewsBoardClient({
     setFilter(cat);
     setLoading(true);
     setPosts([]);
-    setPage(0);
-    const result = await fetchPostsPage(0, cat);
+    const result = await fetchPostsPage(null, cat);
     setPosts(result.posts);
     setHasMore(result.hasMore);
-    setPage(1);
+    setCursor(result.nextCursor);
     setLoading(false);
   }, []);
 
@@ -58,12 +60,12 @@ export default function NewsBoardClient({
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true);
-    const result = await fetchPostsPage(page, filter);
+    const result = await fetchPostsPage(cursor, filter);
     setPosts((prev) => [...prev, ...result.posts]);
     setHasMore(result.hasMore);
-    setPage((p) => p + 1);
+    setCursor(result.nextCursor);
     setLoading(false);
-  }, [loading, hasMore, page, filter]);
+  }, [loading, hasMore, cursor, filter]);
 
   // IntersectionObserver — sentinel 감지
   useEffect(() => {
@@ -83,11 +85,6 @@ export default function NewsBoardClient({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  // 초기 page 카운터 설정 (initialPosts는 page 0에서 온 것)
-  useEffect(() => {
-    setPage(1);
-  }, []);
-
   const grouped = useMemo(() => groupByDate(posts), [posts]);
 
   return (
@@ -97,6 +94,7 @@ export default function NewsBoardClient({
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold tracking-tight">뉴스 브리핑</h1>
+            <MainTabs active="news" />
           </div>
           <CategoryTabs selected={filter} onChange={handleFilterChange} />
         </div>
@@ -105,7 +103,7 @@ export default function NewsBoardClient({
       {/* Card list */}
       <main className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
         {Array.from(grouped.entries()).map(([date, datePosts]) => (
-          <section key={date}>
+          <section key={date} className="lazy-section">
             <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
               <span className="h-px flex-1 bg-card-border" />
               {formatDateLabel(date)}

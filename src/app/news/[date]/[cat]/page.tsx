@@ -71,7 +71,7 @@ export default async function NewsPage({ params }: PageProps) {
         {date} · {CATEGORY_LABELS[category]}
       </div>
       <article className="prose max-w-none">
-        <MarkdownRenderer content={post.content} />
+        <MarkdownRenderer content={post.content} postId={post.id} postDate={post.date} category={post.category} />
       </article>
     </main>
   );

@@ -40,6 +40,12 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Native list virtualization: off-screen date groups skip layout and paint. */
+.lazy-section {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 420px;
+}
+
 /* Markdown content styling */
 .prose h1 {
   font-size: 1.5rem;
