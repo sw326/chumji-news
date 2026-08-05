@@ -1,12 +1,14 @@
 import { getPost } from "@/lib/data";
 import { Category, CATEGORIES, CATEGORY_LABELS } from "@/lib/types";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import DetailBackLink from "@/components/DetailBackLink";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ date: string; cat: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -19,8 +21,9 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function NewsPage({ params }: PageProps) {
+export default async function NewsPage({ params, searchParams }: PageProps) {
   const { date, cat } = await params;
+  const { from } = await searchParams;
   const category = cat as Category;
 
   if (!CATEGORIES.includes(category)) {
@@ -47,25 +50,7 @@ export default async function NewsPage({ params }: PageProps) {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <nav className="mb-6">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          뉴스 메인
-        </Link>
+        <DetailBackLink from={from} />
       </nav>
       <div className="text-xs text-muted mb-4">
         {date} · {CATEGORY_LABELS[category]}

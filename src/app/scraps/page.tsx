@@ -11,15 +11,15 @@ export default function ScrapsPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
   const [token, setToken] = useState("");
 
   async function handleSignIn(event: FormEvent) {
     event.preventDefault();
     setSending(true);
     const error = await signIn(email);
-    if (!error) setCodeSent(true);
-    setMessage(error ?? "이메일로 받은 8자리 인증코드를 입력해주세요.");
+    setMessage(error
+      ? "이메일 발송 한도에 걸렸습니다. 새로 요청하지 말고, 이미 받은 최신 8자리 코드를 아래에 입력해주세요."
+      : "이메일로 받은 8자리 인증코드를 입력해주세요.");
     setSending(false);
   }
 
@@ -47,7 +47,7 @@ export default function ScrapsPage() {
           <section className="rounded-xl border border-card-border bg-card p-5">
             <h2 className="font-semibold">이메일로 로그인</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted">Telegram 화면을 벗어나지 않고 이메일 인증코드를 입력하면 이 브라우저에 로그인이 유지됩니다.</p>
-            {!codeSent ? <form onSubmit={handleSignIn} className="mt-4 flex gap-2">
+            <form onSubmit={handleSignIn} className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input
                 type="email"
                 required
@@ -56,10 +56,11 @@ export default function ScrapsPage() {
                 placeholder="이메일 주소"
                 className="min-w-0 flex-1 rounded-lg border border-card-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
               />
-              <button disabled={sending} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <button disabled={sending} className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
                 {sending ? "전송 중" : "인증코드 받기"}
               </button>
-            </form> : <form onSubmit={handleVerify} className="mt-4 flex gap-2">
+            </form>
+            <form onSubmit={handleVerify} className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -71,10 +72,10 @@ export default function ScrapsPage() {
                 placeholder="8자리 인증코드"
                 className="min-w-0 flex-1 rounded-lg border border-card-border bg-background px-3 py-2 text-sm tracking-widest outline-none focus:border-accent"
               />
-              <button disabled={sending || token.length !== 8} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <button disabled={sending || token.length !== 8} className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
                 {sending ? "확인 중" : "로그인"}
               </button>
-            </form>}
+            </form>
             {message && <p className="mt-3 text-xs text-muted">{message}</p>}
           </section>
         )}
@@ -118,7 +119,7 @@ export default function ScrapsPage() {
                     {scrap.description && <p className="mt-1.5 text-xs leading-relaxed text-muted">{scrap.description}</p>}
                     <div className="mt-3 flex gap-4 text-xs font-medium text-accent">
                       {scrap.source_url && <a href={scrap.source_url} target="_blank" rel="noopener noreferrer">원문 보기</a>}
-                      <Link href={`/news/${scrap.post_date}/${scrap.category}`}>브리핑 보기</Link>
+                      <Link href={`/news/${scrap.post_date}/${scrap.category}?from=scraps`} scroll={false}>브리핑 보기</Link>
                     </div>
                   </article>
                 ))}

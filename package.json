@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "verify:production": "node scripts/verify-deployment.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.3",
