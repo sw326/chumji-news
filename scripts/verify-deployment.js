@@ -27,7 +27,7 @@ async function main() {
     throw new Error("/scraps: expected scrap page content was not found");
   }
 
-  const detailMatch = pages.get("/").match(/href="(\/news\/\d{4}-\d{2}-\d{2}\/[a-z]+)"/);
+  const detailMatch = pages.get("/").match(/href="(\/news\/\d{4}-\d{2}-\d{2}\/[a-z]+)(?:\?[^\"]*)?"/);
   if (!detailMatch) {
     throw new Error("/: no news detail route was found");
   }
