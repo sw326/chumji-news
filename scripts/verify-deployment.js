@@ -38,6 +38,22 @@ async function main() {
     throw new Error(`${detailPath}: scrap return control was not found`);
   }
   console.log(`ok ${detailPath}`);
+
+  const newsDetailBody = await fetchPage(`${detailMatch[1]}?from=news`);
+  if (!newsDetailBody.includes("뉴스 목록으로 돌아가기")) {
+    throw new Error(`${detailMatch[1]}?from=news: news return control was not found`);
+  }
+  console.log(`ok ${detailMatch[1]}?from=news`);
+
+  const priceMatch = pages.get("/prices").match(/href="(\/prices\/\d{4}-\d{2}-\d{2})\?from=prices"/);
+  if (!priceMatch) {
+    throw new Error("/prices: no price detail route was found");
+  }
+  const priceDetailBody = await fetchPage(`${priceMatch[1]}?from=prices`);
+  if (!priceDetailBody.includes("가격 목록으로 돌아가기")) {
+    throw new Error(`${priceMatch[1]}?from=prices: price return control was not found`);
+  }
+  console.log(`ok ${priceMatch[1]}?from=prices`);
   console.log(`verified ${baseUrl}`);
 }
 

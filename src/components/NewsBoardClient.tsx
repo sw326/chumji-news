@@ -10,6 +10,22 @@ import NewsCard from "./NewsCard";
 import NewsCardSkeleton from "./NewsCardSkeleton";
 import ScrollToTop from "./ScrollToTop";
 
+const NEWS_STATE_KEY = "chumji-news:list-state:v1";
+const NEWS_STATE_TTL = 30 * 60 * 1000;
+
+interface SavedNewsState {
+  savedAt: number;
+  filter: Category | "all";
+  posts: NewsPost[];
+  cursor: PostsCursor | null;
+  hasMore: boolean;
+  scrollY: number;
+}
+
+function isFilter(value: unknown): value is Category | "all" {
+  return value === "all" || ["news", "it", "trend", "realestate", "moltbook", "opendata", "system", "issues", "reddit"].includes(String(value));
+}
+
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const today = new Date();
@@ -42,11 +58,98 @@ export default function NewsBoardClient({
   const [cursor, setCursor] = useState<PostsCursor | null>(initialCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [restored, setRestored] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // 상세 화면에서 돌아올 때 필터, 로드된 페이지, 스크롤 위치를 함께 복원한다.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreState() {
+      try {
+        const requestedValue = new URLSearchParams(window.location.search).get("category");
+        const requestedFilter = isFilter(requestedValue) ? requestedValue : null;
+        const raw = sessionStorage.getItem(NEWS_STATE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw) as SavedNewsState;
+          if (
+            Date.now() - saved.savedAt < NEWS_STATE_TTL &&
+            isFilter(saved.filter) &&
+            Array.isArray(saved.posts) &&
+            (!requestedFilter || requestedFilter === saved.filter)
+          ) {
+            setFilter(saved.filter);
+            setPosts(saved.posts);
+            setCursor(saved.cursor);
+            setHasMore(saved.hasMore);
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => window.scrollTo({ top: saved.scrollY }));
+            });
+            return;
+          }
+          sessionStorage.removeItem(NEWS_STATE_KEY);
+        }
+
+        if (isFilter(requestedFilter) && requestedFilter !== "all") {
+          const result = await fetchPostsPage(null, requestedFilter);
+          if (cancelled) return;
+          setFilter(requestedFilter);
+          setPosts(result.posts);
+          setHasMore(result.hasMore);
+          setCursor(result.nextCursor);
+        }
+      } catch {
+        sessionStorage.removeItem(NEWS_STATE_KEY);
+      } finally {
+        if (!cancelled) setRestored(true);
+      }
+    }
+
+    void restoreState();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!restored) return;
+
+    let frame = 0;
+    const saveState = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const state: SavedNewsState = {
+          savedAt: Date.now(),
+          filter,
+          posts,
+          cursor,
+          hasMore,
+          scrollY: window.scrollY,
+        };
+        try {
+          sessionStorage.setItem(NEWS_STATE_KEY, JSON.stringify(state));
+        } catch {
+          // Storage may be unavailable or full; navigation still works via history.
+        }
+      });
+    };
+
+    saveState();
+    window.addEventListener("scroll", saveState, { passive: true });
+    window.addEventListener("pagehide", saveState);
+    return () => {
+      window.removeEventListener("scroll", saveState);
+      window.removeEventListener("pagehide", saveState);
+      saveState();
+    };
+  }, [restored, filter, posts, cursor, hasMore]);
 
   // 카테고리 변경 시 리셋 + 첫 페이지 로드
   const handleFilterChange = useCallback(async (cat: Category | "all") => {
     setFilter(cat);
+    window.scrollTo({ top: 0 });
+    const nextUrl = cat === "all" ? "/" : `/?category=${cat}`;
+    window.history.replaceState({ ...window.history.state }, "", nextUrl);
     setLoading(true);
     setPosts([]);
     const result = await fetchPostsPage(null, cat);
@@ -69,6 +172,7 @@ export default function NewsBoardClient({
 
   // IntersectionObserver — sentinel 감지
   useEffect(() => {
+    if (!restored) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -83,7 +187,7 @@ export default function NewsBoardClient({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, restored]);
 
   const grouped = useMemo(() => groupByDate(posts), [posts]);
 

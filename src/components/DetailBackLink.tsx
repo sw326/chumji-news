@@ -9,9 +9,16 @@ interface DetailBackLinkProps {
 
 export default function DetailBackLink({ from }: DetailBackLinkProps) {
   const router = useRouter();
-  const fromScraps = from === "scraps";
+  const destinations = {
+    news: "뉴스 목록으로 돌아가기",
+    prices: "가격 목록으로 돌아가기",
+    scraps: "스크랩으로 돌아가기",
+  } as const;
+  const returnLabel = from && from in destinations
+    ? destinations[from as keyof typeof destinations]
+    : null;
 
-  if (!fromScraps) {
+  if (!returnLabel) {
     return <BackLink href="/" label="뉴스 메인" />;
   }
 
@@ -22,7 +29,7 @@ export default function DetailBackLink({ from }: DetailBackLinkProps) {
       className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
     >
       <BackIcon />
-      스크랩으로 돌아가기
+      {returnLabel}
     </button>
   );
 }

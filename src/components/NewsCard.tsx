@@ -11,7 +11,8 @@ export default function NewsCard({ post }: NewsCardProps) {
 
   return (
     <Link
-      href={`/news/${post.date}/${post.category}`}
+      href={`/news/${post.date}/${post.category}?from=news`}
+      scroll={false}
       className="group block w-full text-left rounded-xl border border-card-border bg-card px-5 py-4 transition-all hover:border-accent/50 hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
     >
       <div className="flex items-center gap-2 mb-2.5">

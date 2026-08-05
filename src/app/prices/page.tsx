@@ -149,7 +149,8 @@ export default async function PricesPage({ searchParams }: PricesPageProps) {
                   return (
                     <Link
                       key={post.id}
-                      href={`/prices/${post.date}`}
+                      href={`/prices/${post.date}?from=prices`}
+                      scroll={false}
                       className="group block w-full rounded-xl border border-card-border bg-card px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-md hover:shadow-accent/5"
                     >
                       <div className="mb-2.5 flex items-center gap-2">

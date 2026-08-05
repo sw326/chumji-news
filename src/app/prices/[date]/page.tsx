@@ -1,9 +1,10 @@
 import MainTabs from "@/components/MainTabs";
+import DetailBackLink from "@/components/DetailBackLink";
 import { getPriceSnapshot } from "@/lib/data";
-import Link from "next/link";
 
 interface PageProps {
   params: Promise<{ date: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -14,8 +15,9 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function PriceSnapshotPage({ params }: PageProps) {
+export default async function PriceSnapshotPage({ params, searchParams }: PageProps) {
   const { date } = await params;
+  const { from } = await searchParams;
   const post = await getPriceSnapshot(date);
   const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
 
@@ -32,25 +34,7 @@ export default async function PriceSnapshotPage({ params }: PageProps) {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-0 py-0 sm:px-4 sm:py-4">
         <nav className="px-4 py-3 sm:px-0">
-          <Link
-            href="/prices"
-            className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-            가격 목록
-          </Link>
+          <DetailBackLink from={from === "prices" ? "prices" : undefined} />
         </nav>
 
         {post && safeDate ? (
