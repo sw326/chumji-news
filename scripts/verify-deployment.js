@@ -54,6 +54,9 @@ async function main() {
     throw new Error(`${priceMatch[1]}?from=prices: price return control was not found`);
   }
   console.log(`ok ${priceMatch[1]}?from=prices`);
+  const priceDate = priceMatch[1].split("/").at(-1);
+  await fetchPage(`/fresh-food/${priceDate}/index.html`);
+  console.log(`ok /fresh-food/${priceDate}/index.html`);
   console.log(`verified ${baseUrl}`);
 }
 
