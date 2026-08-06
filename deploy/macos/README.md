@@ -20,3 +20,7 @@ Manifest conventions:
 The Investment Assistant keeps its own LaunchDaemon template in its project
 repository. The disaster alert hub retains a disabled template because its
 production replacement and restart require a separate approval gate.
+
+`com.chumji.ops-trade-market-briefing.plist` runs the validated cathode market
+board refresh weekly. It reuses only the ops-owned data.go.kr SecretRef and
+publishes local artifacts; GACC remains a manual verification step.

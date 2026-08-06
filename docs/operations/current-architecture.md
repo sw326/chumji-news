@@ -81,6 +81,7 @@ Mac mini, ops account
 | Morning news shadow | `ops` | LaunchDaemon, 08:10 | shadow | local only |
 | IT news shadow | `ops` | LaunchDaemon, 09:10 | shadow | local only |
 | Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
+| Cathode market board | `ops` | LaunchDaemon, Monday 10:20 | production, validated local artifact | local JSON and HTML |
 | Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
 | Trend shadow | `ops` | LaunchDaemon, 13:10 | shadow | local only |
 | Legacy morning/IT/trend news | OpenClaw | OpenClaw cron | production | Supabase, Vercel, Telegram path |
@@ -112,6 +113,8 @@ Mac mini, ops account
 - Deployment checkout: `/Users/ops/services/chumji-ops`
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
+- Cathode market-board output:
+  `/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing`
 - Job logs: `/Users/ops/Library/Logs/chumji-ops`
 - Secret files: `/Users/ops/.config/chumji-ops/secrets`
 - Alert configuration: `/Users/ops/.config/earthquake-alert`

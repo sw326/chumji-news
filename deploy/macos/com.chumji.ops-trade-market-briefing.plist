@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chumji.ops-trade-market-briefing</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-B</string>
+    <string>/Users/ops/services/chumji-ops/jobs/trade-market-briefing/refresh_current_market.py</string>
+    <string>--key-file</string>
+    <string>/Users/ops/.config/chumji-ops/secrets/data-go-kr-api-key</string>
+    <string>--census-key-file</string>
+    <string>/Users/ops/.config/chumji-ops/secrets/census-api-key</string>
+    <string>--output</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing/output/cathode-current-market.json</string>
+    <string>--html-output</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing/deploy/cathode-current.html</string>
+    <string>--state-output</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing/output/cathode-refresh-status.json</string>
+    <string>--lock-file</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing/output/.cathode-refresh.lock</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>2</integer>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>20</integer>
+  </dict>
+  <key>UserName</key>
+  <string>ops</string>
+  <key>GroupName</key>
+  <string>staff</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/ops/services/chumji-ops/jobs/trade-market-briefing</string>
+  <key>StandardOutPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/trade-market-briefing.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/trade-market-briefing.error.log</string>
+</dict>
+</plist>
