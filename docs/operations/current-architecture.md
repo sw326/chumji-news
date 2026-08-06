@@ -114,7 +114,8 @@ Mac mini, ops account
 
 ### Web rollback reference
 
-- Current market cutover deployment: `dpl_BRES5LDMHVHavFC8HwLeVW98vb9N`
+- Current integrated web deployment: `dpl_BBqnNhceZzob4x1jurSC9DRQRUuC`
+- Pre-scrap-restoration deployment: `dpl_BRES5LDMHVHavFC8HwLeVW98vb9N`
 - Pre-cutover production deployment: `dpl_EKrCjGtvxMBsXqV6yHzicsHUdEhy`
 - Roll back by promoting the pre-cutover deployment only if the production
   routes or market data contract fail; the preview project remains available
