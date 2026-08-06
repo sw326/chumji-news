@@ -1,0 +1,21 @@
+{
+  "284190": "concept-hs-284190",
+  "Comext": "source-eurostat-comext",
+  "EV 수요 둔화 가설": "hypothesis-final-demand-slowdown",
+  "Eurostat 무역통계": "source-eurostat-comext",
+  "GROUND Ladder": "rule-ground-ladder",
+  "HS6 284190": "concept-hs-284190",
+  "LLM Wiki": "root-index",
+  "PL": "entity-country-poland",
+  "Poland": "entity-country-poland",
+  "Polska": "entity-country-poland",
+  "Wiki page schema": "rule-page-schema",
+  "cathode material": "concept-cathode-material",
+  "market-board-fixture.json": "source-market-board-fixture",
+  "가격·수량·품목구성 가설": "hypothesis-price-volume-composition",
+  "수입대체 가설": "hypothesis-local-production-substitution",
+  "양극 활물질": "concept-cathode-material",
+  "질문-증거 프로토콜": "rule-research-protocol",
+  "폴란드 -79.5% 신호": "question-poland-import-decline-2026",
+  "폴란드 파일럿 기준 분석": "note-poland-import-baseline"
+}

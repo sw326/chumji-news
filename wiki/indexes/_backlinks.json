@@ -1,0 +1,55 @@
+{
+  "concept-cathode-material": [
+    "concept-hs-284190"
+  ],
+  "concept-hs-284190": [
+    "concept-cathode-material",
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026",
+    "source-eurostat-comext"
+  ],
+  "entity-country-poland": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ],
+  "hypothesis-final-demand-slowdown": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ],
+  "hypothesis-local-production-substitution": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ],
+  "hypothesis-price-volume-composition": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ],
+  "note-poland-import-baseline": [
+    "entity-country-poland"
+  ],
+  "question-poland-import-decline-2026": [
+    "entity-country-poland",
+    "hypothesis-final-demand-slowdown",
+    "hypothesis-local-production-substitution",
+    "hypothesis-price-volume-composition",
+    "note-poland-import-baseline",
+    "root-index"
+  ],
+  "rule-ground-ladder": [
+    "root-index"
+  ],
+  "rule-research-protocol": [
+    "root-index"
+  ],
+  "source-eurostat-comext": [
+    "entity-country-poland",
+    "hypothesis-final-demand-slowdown",
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026",
+    "source-market-board-fixture"
+  ],
+  "source-market-board-fixture": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ]
+}
