@@ -25,7 +25,7 @@ export default function NewsContent({ post }: NewsContentProps) {
         </span>
         <span className="text-xs text-muted">{post.date}</span>
       </div>
-      <MarkdownRenderer content={post.content} />
+      <MarkdownRenderer content={post.content} postId={post.id} postDate={post.date} category={post.category} />
     </article>
   );
 }

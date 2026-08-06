@@ -17,6 +17,23 @@ export interface NewsPost {
   created_at: string;
 }
 
+export interface NewsScrap {
+  id: string;
+  user_id: string;
+  article_key: string;
+  post_id: string;
+  post_date: string;
+  category: Category;
+  emoji: string;
+  title: string;
+  description: string;
+  source_text: string;
+  source_url: string;
+  created_at: string;
+}
+
+export type NewsScrapDraft = Omit<NewsScrap, "id" | "user_id" | "created_at">;
+
 export const CATEGORY_LABELS: Record<Category, string> = {
   news: "뉴스",
   it: "IT",

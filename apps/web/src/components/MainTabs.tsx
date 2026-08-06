@@ -1,14 +1,15 @@
 import Link from "next/link";
 
 interface MainTabsProps {
-  active: "news" | "prices" | "market" | "alerts" | "operations";
+  active: "news" | "prices" | "scraps" | "market" | "alerts" | "operations";
 }
 
 export default function MainTabs({ active }: MainTabsProps) {
   return (
-    <nav className="grid w-full grid-cols-5 gap-1.5 md:flex md:w-auto md:items-center" aria-label="주요 화면">
+    <nav className="grid w-full grid-cols-3 gap-1.5 sm:grid-cols-6 md:w-auto" aria-label="주요 화면">
       <MainTab href="/" label="뉴스" active={active === "news"} />
       <MainTab href="/prices" label="가격" active={active === "prices"} />
+      <MainTab href="/scraps" label="스크랩" active={active === "scraps"} />
       <MainTab href="/market" label="시장" active={active === "market"} />
       <MainTab href="/alerts" label="알림" active={active === "alerts"} />
       <MainTab href="/operations" label="운영" active={active === "operations"} />
