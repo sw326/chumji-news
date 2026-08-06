@@ -288,6 +288,7 @@ def build_market_signals(
     """Create conservative review signals; they are leads, never causal claims."""
     signals: list[dict[str, Any]] = []
     for series in time_series:
+        series_signals: list[dict[str, Any]] = []
         for point in series.get("points", []):
             growth = point.get("growth_rate")
             previous = point.get("previous_value")
@@ -297,7 +298,7 @@ def build_market_signals(
             if abs(float(growth)) < growth_threshold:
                 continue
             direction = "surge" if growth > 0 else "drop"
-            signals.append({
+            series_signals.append({
                 "type": f"year-over-year-{direction}",
                 "severity": "review",
                 "country_code": series["country_code"],
@@ -310,6 +311,10 @@ def build_market_signals(
                 "detail": "월간 금액이 전년 동월 대비 50% 이상 변동했습니다.",
                 "comparison_basis": "same-source, same-month, same-currency, same-classification",
             })
+        if series_signals:
+            # One actionable card per source is enough; the chart retains the
+            # full history without flooding the review queue.
+            signals.append(max(series_signals, key=lambda item: item["period"] or ""))
     for row in comparisons:
         if not row.get("mirror_comparable") or row.get("mirror_gap_usd") is None:
             continue
