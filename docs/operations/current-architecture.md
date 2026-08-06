@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-07-30
+Status date: 2026-08-06
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -81,14 +81,14 @@ Mac mini, ops account
 | Morning news shadow | `ops` | LaunchDaemon, 08:10 | shadow | local only |
 | IT news shadow | `ops` | LaunchDaemon, 09:10 | shadow | local only |
 | Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
-| Cathode market board | `ops` | LaunchDaemon, Monday 10:20 | production, validated local artifact | local JSON and HTML |
+| Cathode market board | `ops` | LaunchDaemon, Monday 10:20 | production | validated local artifact, Supabase, Vercel `/market` |
 | Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
 | Trend shadow | `ops` | LaunchDaemon, 13:10 | shadow | local only |
 | Legacy morning/IT/trend news | OpenClaw | OpenClaw cron | production | Supabase, Vercel, Telegram path |
 | Legacy fresh-food snapshot | OpenClaw | OpenClaw cron, 09:20 | production | Supabase, Vercel, Telegram path |
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
-| Integrated web | Vercel | Git deployment | protected preview | read-only preview |
+| Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
 
 ## Web and Data Boundaries
@@ -105,8 +105,20 @@ Mac mini, ops account
   It upserts `alerts` and `operations`; after migration 004 approval it may also
   publish the validated `trade-market` row.
 - Shadow jobs do not write to Supabase or send Telegram messages.
-- The existing `chumji-news` production project remains authoritative until a
-  separate web cutover.
+- The `chumji-news` Vercel project is the authoritative production web surface.
+  The cathode market board was cut over at `/market` on 2026-08-06 after
+  Supabase, fallback, pending-review, mobile, and route regression rehearsals.
+- The `chumji-ops-preview` project remains a validation surface and has the
+  same public Supabase URL and anon-key variable names. Neither web project
+  receives a Supabase service-role key.
+
+### Web rollback reference
+
+- Current market cutover deployment: `dpl_BRES5LDMHVHavFC8HwLeVW98vb9N`
+- Pre-cutover production deployment: `dpl_EKrCjGtvxMBsXqV6yHzicsHUdEhy`
+- Roll back by promoting the pre-cutover deployment only if the production
+  routes or market data contract fail; the preview project remains available
+  for diagnosis.
 
 ## Runtime Storage
 
