@@ -40,12 +40,39 @@ class CurrentMarketBoardTest(unittest.TestCase):
         self.assertAlmostEqual(0.2, result["period_comparison"]["growth_rate"])
         self.assertEqual("high", result["source"]["quality_grade"])
 
+    def test_korea_monthly_series_keeps_same_month_comparison(self):
+        def fake_fetcher(key, country, start, end, code, timeout):
+            year = start[:4]
+            base = 100 if year == "2025" else 120
+            return [
+                {"hsCd": code, "statCd": country, "statKor": "품목", "statCdCntnKor1": country,
+                 "year": f"{year}.01", "expDlr": base, "impDlr": 0, "expWgt": 1, "impWgt": 0},
+                {"hsCd": code, "statCd": country, "statKor": "품목", "statCdCntnKor1": country,
+                 "year": f"{year}.02", "expDlr": base * 2, "impDlr": 0, "expWgt": 1, "impWgt": 0},
+            ]
+        result = collect_korea_cumulative(
+            "key", "202602", countries=("US",), codes=("2841909020",), fetcher=fake_fetcher,
+        )
+        self.assertEqual(["2026-01", "2026-02"], [point["period"] for point in result["monthly_series"]])
+        self.assertAlmostEqual(.2, result["monthly_series"][0]["growth_rate"])
+
     def test_us_uses_census_ytd_value(self):
         def fake_fetcher(period, country, code):
             return [{"GEN_VAL_YR": "120" if period == "2026-06" else "100"}]
         result = collect_us_cumulative("202606", hs6_codes=("284190",), fetcher=fake_fetcher)
         self.assertEqual(120, result["value"])
         self.assertAlmostEqual(.2, result["growth_rate"])
+
+    def test_us_monthly_series_uses_month_value_not_ytd(self):
+        def fake_fetcher(period, country, code):
+            if period.startswith("from"):
+                year = period.split()[1][:4]
+                value = "12" if year == "2026" else "10"
+                return [{"time": f"{year}-01", "GEN_VAL_MO": value}]
+            return [{"GEN_VAL_YR": "12" if period == "2026-01" else "10"}]
+        result = collect_us_cumulative("202601", hs6_codes=("284190",), fetcher=fake_fetcher)
+        self.assertEqual(12, result["monthly_series"][0]["value"])
+        self.assertAlmostEqual(.2, result["monthly_series"][0]["growth_rate"])
 
     def test_eu_uses_latest_common_month_and_previous_same_month(self):
         def fake_fetcher(country, partner, code, year, flow):

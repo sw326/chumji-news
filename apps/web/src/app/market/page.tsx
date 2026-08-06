@@ -1,4 +1,5 @@
 import MainTabs from "@/components/MainTabs";
+import MarketTrendChart from "@/components/MarketTrendChart";
 import { getCathodeMarketBoard } from "@/lib/market-board-data";
 
 export const revalidate = 300;
@@ -68,6 +69,14 @@ export default async function MarketPage() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-lg border border-card-border bg-card p-4 shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-foreground">월별 추세</h2>
+          <p className="mt-1 text-xs leading-5 text-muted">출처별 통화와 HS 범위를 유지한 작은 차트입니다. 서로 다른 통화·품목 범위는 한 축에 합치지 않습니다.</p>
+        </div>
+        <MarketTrendChart series={board.time_series ?? []} />
       </section>
 
       <section className="overflow-hidden rounded-lg border border-card-border bg-card shadow-sm">

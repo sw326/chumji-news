@@ -22,11 +22,29 @@ export interface PartnerStatistic {
   reexport_signal?: string;
 }
 
+export interface MarketSeriesPoint {
+  period: string;
+  value: number;
+  previous_period: string;
+  previous_value: number | null;
+  growth_rate: number | null;
+}
+
+export interface MarketTimeSeries {
+  country_code: string;
+  source: string;
+  currency: string;
+  classification: string;
+  measure: "monthly-export" | "monthly-import";
+  points: MarketSeriesPoint[];
+}
+
 export interface CathodeMarketBoard {
   title: string;
   as_of: string;
   latest_periods: Record<string, string | null>;
   aggregation_policy: string;
+  time_series?: MarketTimeSeries[];
   korea: {
     period: { start: string; end: string };
     totals: { export_usd: number; previous_export_usd: number };

@@ -31,6 +31,41 @@ def shift_month(period: str, offset: int) -> str:
     return f"{index // 12:04d}{index % 12 + 1:02d}"
 
 
+def _iso_month(period: str) -> str:
+    normalized = period.replace(".", "").replace("-", "")[:6]
+    return f"{normalized[:4]}-{normalized[4:]}"
+
+
+def _monthly_points(
+    current: dict[str, float], previous: dict[str, float]
+) -> list[dict[str, Any]]:
+    points = []
+    for period in sorted(current):
+        previous_period = f"{int(period[:4]) - 1:04d}{period[4:]}"
+        value = current[period]
+        previous_value = previous.get(previous_period)
+        points.append({
+            "period": _iso_month(period),
+            "value": value,
+            "previous_period": _iso_month(previous_period),
+            "previous_value": previous_value,
+            "growth_rate": value / previous_value - 1 if previous_value else None,
+        })
+    return points
+
+
+def _customs_monthly_values(items: list[dict[str, Any]]) -> dict[str, float]:
+    values: dict[str, float] = {}
+    for item in items:
+        if str(item.get("hsCd", "")) in {"", "-"} or str(item.get("statCd", "")) in {"", "-"}:
+            continue
+        period = str(item.get("year", "")).replace(".", "").replace("-", "")[:6]
+        if len(period) != 6:
+            continue
+        values[period] = values.get(period, 0.0) + float(item.get("expDlr", 0) or 0)
+    return values
+
+
 def latest_published_month(
     api_key: str,
     *,
@@ -105,6 +140,10 @@ def collect_korea_cumulative(
             "previous_export_usd": sum(float(row.get("export_usd", 0) or 0) for row in previous_rows),
         },
         "period_comparison": comparison,
+        "monthly_series": _monthly_points(
+            _customs_monthly_values(buckets["current"]),
+            _customs_monthly_values(buckets["previous"]),
+        ),
         "classification_precision": summarize_trade_precision(current_rows, "export_usd"),
         "market_structure": market_structure(
             current_rows, value_key="export_usd", country_key="country_code", weight_key="export_kg"
@@ -142,10 +181,26 @@ def collect_us_cumulative(
                 errors[f"{label}:{code}"] = str(exc)
     current = sum(float(row.get("GEN_VAL_YR", 0) or 0) for row in current_rows)
     previous = sum(float(row.get("GEN_VAL_YR", 0) or 0) for row in previous_rows)
+    monthly_current: dict[str, float] = {}
+    monthly_previous: dict[str, float] = {}
+    for label, year, end_month, destination in (
+        ("current", latest_period[:4], latest_period[4:], monthly_current),
+        ("previous", str(int(latest_period[:4]) - 1), latest_period[4:], monthly_previous),
+    ):
+        time_range = f"from {year}-01 to {year}-{end_month}"
+        for code in hs6_codes:
+            try:
+                for row in fetcher(time_range, "5800", code):
+                    period = str(row.get("time", "")).replace("-", "")[:6]
+                    if len(period) == 6:
+                        destination[period] = destination.get(period, 0.0) + float(row.get("GEN_VAL_MO", 0) or 0)
+            except RuntimeError as exc:
+                errors[f"monthly:{label}:{code}"] = str(exc)
     return {
         "country_code": "US", "period": iso_period,
         "previous_period": previous_period, "value": current, "previous_value": previous,
         "growth_rate": current / previous - 1 if previous else None,
+        "monthly_series": _monthly_points(monthly_current, monthly_previous),
         "currency": "USD", "classification": "HS6",
         "data_status": "available" if current_rows else "no-reported-rows",
         "quality": {"score": 80, "maximum": 100, "grade": "high", "limitations": ["한국 HSK10보다 넓은 HS6"]},
@@ -199,10 +254,23 @@ def collect_eu_cumulative(
     previous_value = total_through(previous_imports, previous_year, month) if latest else 0.0
     ratio = exports_value / imports_value if imports_value else None
     signal = "unknown" if ratio is None else "high" if ratio >= .5 else "medium" if ratio >= .1 else "low"
+    monthly_imports: dict[str, float] = {}
+    monthly_previous: dict[str, float] = {}
+    for _, result in imports:
+        for observation in result.get("observations", []):
+            period = str(observation.get("period", "")).replace("-", "")[:6]
+            if len(period) == 6 and period[:4] == requested_year and period[4:] <= month:
+                monthly_imports[period] = monthly_imports.get(period, 0.0) + float(observation.get("value", 0) or 0)
+    for _, result in previous_imports:
+        for observation in result.get("observations", []):
+            period = str(observation.get("period", "")).replace("-", "")[:6]
+            if len(period) == 6 and period[:4] == previous_year and period[4:] <= month:
+                monthly_previous[period] = monthly_previous.get(period, 0.0) + float(observation.get("value", 0) or 0)
     return {
         "country_code": country, "period": latest, "previous_period": f"{previous_year}-{month}" if latest else None,
         "value": imports_value, "previous_value": previous_value,
         "growth_rate": imports_value / previous_value - 1 if previous_value else None,
+        "monthly_series": _monthly_points(monthly_imports, monthly_previous),
         "world_export_value": exports_value, "world_export_to_import_ratio": ratio,
         "reexport_signal": signal, "currency": "EUR", "classification": "HS6",
         "data_status": "available" if latest else "no-reported-rows",
@@ -236,11 +304,23 @@ def assemble_market_board(korea: dict[str, Any], partners: list[dict[str, Any]],
                 "기간·통화 또는 코드 범위가 달라 직접 차액 비교 불가"
             ),
         })
+    korea_source = korea.get("source", {})
+    time_series = [{
+        "country_code": "KR", "source": korea_source.get("name", "Korea Customs"), "currency": "USD",
+        "classification": korea_source.get("classification", "HSK10"), "measure": "monthly-export",
+        "points": korea.get("monthly_series", []),
+    }]
+    time_series.extend({
+        "country_code": item["country_code"], "source": item["source"],
+        "currency": item["currency"], "classification": item["classification"],
+        "measure": "monthly-import", "points": item.get("monthly_series", []),
+    } for item in partners if item.get("monthly_series"))
     return {
         "title": "양극재 최신 시장판", "as_of": as_of,
         "latest_periods": {"korea_customs": korea_end, **{item["country_code"]: item.get("period") for item in partners}},
         "historical_baseline_separated": True,
         "korea": korea, "partner_statistics": comparisons,
+        "time_series": time_series,
         "aggregation_policy": "국가·출처별 최신 공개 월이 다르면 합산하지 않는다.",
     }
 
