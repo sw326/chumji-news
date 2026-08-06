@@ -136,11 +136,18 @@ export interface PostsCursor {
   createdAt: string;
 }
 
+export interface PostsPage {
+  posts: NewsPost[];
+  hasMore: boolean;
+  nextCursor: PostsCursor | null;
+  error?: string;
+}
+
 /** 커서 기반 페이지네이션. 데이터가 늘어도 큰 OFFSET을 스캔하지 않는다. */
 export async function fetchPostsPage(
   cursor: PostsCursor | null,
   category?: Category | "all"
-): Promise<{ posts: NewsPost[]; hasMore: boolean; nextCursor: PostsCursor | null }> {
+): Promise<PostsPage> {
   if (!supabase) return { posts: [], hasMore: false, nextCursor: null };
 
   let query = supabase
@@ -161,7 +168,14 @@ export async function fetchPostsPage(
   }
 
   const { data, error } = await query;
-  if (error || !data) return { posts: [], hasMore: false, nextCursor: null };
+  if (error || !data) {
+    return {
+      posts: [],
+      hasMore: Boolean(cursor),
+      nextCursor: cursor,
+      error: error?.message ?? "뉴스를 불러오지 못했습니다.",
+    };
+  }
 
   const hasMore = data.length > PAGE_SIZE;
   const posts = data.slice(0, PAGE_SIZE) as NewsPost[];

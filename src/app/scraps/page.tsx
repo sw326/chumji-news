@@ -39,7 +39,7 @@ function toDraft(scrap: NewsScrap): NewsScrapDraft {
 
 export default function ScrapsPage() {
   const router = useRouter();
-  const { user, scraps, loading, signIn, verifyOtp, signOut, toggleScrap } = useScraps();
+  const { user, scraps, loading, loadingMore, hasMore, loadError, loadMoreScraps, signIn, verifyOtp, signOut, toggleScrap } = useScraps();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -229,7 +229,7 @@ export default function ScrapsPage() {
         {!loading && user && (
           <>
             <div className="mb-5 flex items-center justify-between text-xs text-muted">
-              <span>{scraps.length}개 저장됨</span>
+              <span>{scraps.length}개{hasMore ? " 불러옴" : " 저장됨"}</span>
               <button onClick={() => void signOut()} className="hover:text-accent">로그아웃</button>
             </div>
 
@@ -273,7 +273,11 @@ export default function ScrapsPage() {
               </section>
             )}
 
-            {scraps.length === 0 ? (
+            {loadError && scraps.length === 0 ? (
+              <button type="button" onClick={() => void loadMoreScraps()} className="w-full rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+                {loadError} 눌러서 다시 시도
+              </button>
+            ) : scraps.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted">뉴스 카드의 북마크 버튼으로 기사를 저장해보세요.</p>
             ) : visibleScraps.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted">조건에 맞는 스크랩이 없습니다.</p>
@@ -310,6 +314,21 @@ export default function ScrapsPage() {
                     </div>
                   </article>
                 ))}
+                {hasMore && !loadError && (
+                  <button
+                    type="button"
+                    disabled={loadingMore}
+                    onClick={() => void loadMoreScraps()}
+                    className="w-full rounded-lg border border-card-border bg-card px-4 py-3 text-sm font-semibold text-accent hover:border-accent/50 disabled:opacity-50"
+                  >
+                    {loadingMore ? "불러오는 중" : "스크랩 더 불러오기"}
+                  </button>
+                )}
+                {loadError && (
+                  <button type="button" onClick={() => void loadMoreScraps()} className="w-full rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+                    {loadError} 눌러서 다시 시도
+                  </button>
+                )}
               </div>
             )}
           </>

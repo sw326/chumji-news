@@ -46,20 +46,25 @@ interface NewsBoardClientProps {
   initialPosts: NewsPost[];
   initialHasMore: boolean;
   initialCursor: PostsCursor | null;
+  initialError?: string;
 }
 
 export default function NewsBoardClient({
   initialPosts,
   initialHasMore,
   initialCursor,
+  initialError,
 }: NewsBoardClientProps) {
   const [filter, setFilter] = useState<Category | "all">("all");
   const [posts, setPosts] = useState<NewsPost[]>(initialPosts);
   const [cursor, setCursor] = useState<PostsCursor | null>(initialCursor);
-  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [hasMore, setHasMore] = useState(initialError ? true : initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(initialError ? "뉴스를 불러오지 못했습니다. 다시 시도해주세요." : "");
   const [restored, setRestored] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const requestSequence = useRef(0);
+  const requestInFlight = useRef(false);
 
   // 상세 화면에서 돌아올 때 필터, 로드된 페이지, 스크롤 위치를 함께 복원한다.
   useEffect(() => {
@@ -93,6 +98,7 @@ export default function NewsBoardClient({
         if (isFilter(requestedFilter) && requestedFilter !== "all") {
           const result = await fetchPostsPage(null, requestedFilter);
           if (cancelled) return;
+          if (result.error) setLoadError("뉴스를 불러오지 못했습니다. 다시 시도해주세요.");
           setFilter(requestedFilter);
           setPosts(result.posts);
           setHasMore(result.hasMore);
@@ -146,29 +152,60 @@ export default function NewsBoardClient({
 
   // 카테고리 변경 시 리셋 + 첫 페이지 로드
   const handleFilterChange = useCallback(async (cat: Category | "all") => {
+    const requestId = ++requestSequence.current;
+    requestInFlight.current = true;
     setFilter(cat);
+    setLoadError("");
     window.scrollTo({ top: 0 });
     const nextUrl = cat === "all" ? "/" : `/?category=${cat}`;
     window.history.replaceState({ ...window.history.state }, "", nextUrl);
     setLoading(true);
     setPosts([]);
-    const result = await fetchPostsPage(null, cat);
-    setPosts(result.posts);
-    setHasMore(result.hasMore);
-    setCursor(result.nextCursor);
-    setLoading(false);
+    setCursor(null);
+    setHasMore(true);
+    try {
+      const result = await fetchPostsPage(null, cat);
+      if (requestId !== requestSequence.current) return;
+      if (result.error) {
+        setLoadError("뉴스를 불러오지 못했습니다. 다시 시도해주세요.");
+        setHasMore(true);
+        return;
+      }
+      setPosts(result.posts);
+      setHasMore(result.hasMore);
+      setCursor(result.nextCursor);
+    } finally {
+      if (requestId === requestSequence.current) {
+        requestInFlight.current = false;
+        setLoading(false);
+      }
+    }
   }, []);
 
   // 다음 페이지 로드
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (requestInFlight.current || !hasMore) return;
+    const requestId = ++requestSequence.current;
+    requestInFlight.current = true;
+    setLoadError("");
     setLoading(true);
-    const result = await fetchPostsPage(cursor, filter);
-    setPosts((prev) => [...prev, ...result.posts]);
-    setHasMore(result.hasMore);
-    setCursor(result.nextCursor);
-    setLoading(false);
-  }, [loading, hasMore, cursor, filter]);
+    try {
+      const result = await fetchPostsPage(cursor, filter);
+      if (requestId !== requestSequence.current) return;
+      if (result.error) {
+        setLoadError("뉴스를 더 불러오지 못했습니다. 다시 시도해주세요.");
+        return;
+      }
+      setPosts((prev) => [...prev, ...result.posts]);
+      setHasMore(result.hasMore);
+      setCursor(result.nextCursor);
+    } finally {
+      if (requestId === requestSequence.current) {
+        requestInFlight.current = false;
+        setLoading(false);
+      }
+    }
+  }, [hasMore, cursor, filter]);
 
   // IntersectionObserver — sentinel 감지
   useEffect(() => {
@@ -230,6 +267,15 @@ export default function NewsBoardClient({
           </div>
         )}
 
+        {loadError && !loading && (
+          <div className="flex flex-col items-center gap-2 py-4 text-center">
+            <p className="text-sm text-muted">{loadError}</p>
+            <button type="button" onClick={() => void loadMore()} className="rounded-lg border border-card-border bg-card px-4 py-2 text-xs font-semibold text-accent hover:border-accent/50">
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* 더 이상 없음 */}
         {!hasMore && posts.length > 0 && !loading && (
           <p className="text-center text-xs text-muted py-4">
@@ -245,7 +291,7 @@ export default function NewsBoardClient({
         )}
 
         {/* IntersectionObserver 트리거 */}
-        {hasMore && <div ref={sentinelRef} className="h-1" />}
+        {hasMore && !loadError && <div ref={sentinelRef} className="h-1" />}
       </main>
 
       <ScrollToTop />
