@@ -1,17 +1,94 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import MainTabs from "@/components/MainTabs";
 import { useScraps } from "@/components/ScrapProvider";
-import { CATEGORY_LABELS } from "@/lib/types";
+import { CATEGORIES, CATEGORY_LABELS, Category, NewsScrap, NewsScrapDraft } from "@/lib/types";
+
+function toDraft(scrap: NewsScrap): NewsScrapDraft {
+  return {
+    article_key: scrap.article_key,
+    post_id: scrap.post_id,
+    post_date: scrap.post_date,
+    category: scrap.category,
+    emoji: scrap.emoji,
+    title: scrap.title,
+    description: scrap.description,
+    source_text: scrap.source_text,
+    source_url: scrap.source_url,
+  };
+}
 
 export default function ScrapsPage() {
+  const router = useRouter();
   const { user, scraps, loading, signIn, verifyOtp, signOut, toggleScrap } = useScraps();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [token, setToken] = useState("");
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [deletedDraft, setDeletedDraft] = useState<NewsScrapDraft | null>(null);
+  const [actionMessage, setActionMessage] = useState("");
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  }, []);
+
+  const visibleScraps = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
+    return scraps
+      .filter((scrap) => category === "all" || scrap.category === category)
+      .filter((scrap) => {
+        if (!normalizedQuery) return true;
+        return [scrap.title, scrap.description, scrap.source_text]
+          .join(" ")
+          .toLocaleLowerCase("ko-KR")
+          .includes(normalizedQuery);
+      })
+      .toSorted((a, b) => {
+        const difference = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return sort === "newest" ? difference : -difference;
+      });
+  }, [scraps, category, query, sort]);
+
+  function openBriefing(scrap: NewsScrap) {
+    router.push(`/news/${scrap.post_date}/${scrap.category}?from=scraps`, { scroll: false });
+  }
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLElement>, scrap: NewsScrap) {
+    if (event.key === "Enter" && !(event.target as HTMLElement).closest("a, button, input, select")) {
+      openBriefing(scrap);
+    }
+  }
+
+  async function handleDelete(scrap: NewsScrap) {
+    try {
+      const draft = toDraft(scrap);
+      await toggleScrap(draft);
+      setDeletedDraft(draft);
+      setActionMessage("");
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      undoTimer.current = setTimeout(() => setDeletedDraft(null), 6000);
+    } catch {
+      setActionMessage("스크랩을 삭제하지 못했습니다. 다시 시도해주세요.");
+    }
+  }
+
+  async function handleUndo() {
+    if (!deletedDraft) return;
+    try {
+      await toggleScrap(deletedDraft);
+      setDeletedDraft(null);
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+    } catch {
+      setActionMessage("스크랩을 복원하지 못했습니다. 다시 시도해주세요.");
+    }
+  }
 
   async function handleSignIn(event: FormEvent) {
     event.preventDefault();
@@ -87,26 +164,67 @@ export default function ScrapsPage() {
               <button onClick={() => void signOut()} className="hover:text-accent">로그아웃</button>
             </div>
 
+            {scraps.length > 0 && (
+              <section className="mb-5 space-y-3" aria-label="스크랩 검색 및 필터">
+                <div className="relative">
+                  <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="제목, 내용, 출처 검색"
+                    className="w-full rounded-lg border border-card-border bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:border-accent"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value as Category | "all")}
+                    aria-label="카테고리 필터"
+                    className="min-w-0 flex-1 rounded-lg border border-card-border bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+                  >
+                    <option value="all">모든 카테고리</option>
+                    {CATEGORIES.filter((item) => scraps.some((scrap) => scrap.category === item)).map((item) => (
+                      <option key={item} value={item}>{CATEGORY_LABELS[item]}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value as "newest" | "oldest")}
+                    aria-label="저장일 정렬"
+                    className="rounded-lg border border-card-border bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+                  >
+                    <option value="newest">최신 저장순</option>
+                    <option value="oldest">오래된 저장순</option>
+                  </select>
+                </div>
+                {(query || category !== "all") && (
+                  <p className="text-xs text-muted">검색 결과 {visibleScraps.length}개</p>
+                )}
+              </section>
+            )}
+
             {scraps.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted">뉴스 카드의 북마크 버튼으로 기사를 저장해보세요.</p>
+            ) : visibleScraps.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted">조건에 맞는 스크랩이 없습니다.</p>
             ) : (
               <div className="space-y-3">
-                {scraps.map((scrap) => (
-                  <article key={scrap.id} className="relative rounded-xl border border-card-border bg-card p-4 pr-12">
+                {visibleScraps.map((scrap) => (
+                  <article
+                    key={scrap.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      if (!(event.target as HTMLElement).closest("a, button, input, select")) openBriefing(scrap);
+                    }}
+                    onKeyDown={(event) => handleCardKeyDown(event, scrap)}
+                    className="relative cursor-pointer rounded-xl border border-card-border bg-card p-4 pr-12 transition-colors hover:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/40"
+                  >
                     <button
                       type="button"
                       aria-label="스크랩 삭제"
-                      onClick={() => void toggleScrap({
-                        article_key: scrap.article_key,
-                        post_id: scrap.post_id,
-                        post_date: scrap.post_date,
-                        category: scrap.category,
-                        emoji: scrap.emoji,
-                        title: scrap.title,
-                        description: scrap.description,
-                        source_text: scrap.source_text,
-                        source_url: scrap.source_url,
-                      })}
+                      onClick={() => void handleDelete(scrap)}
                       className="absolute right-3 top-3 rounded-md p-2 text-accent hover:bg-accent/10"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></svg>
@@ -128,6 +246,18 @@ export default function ScrapsPage() {
           </>
         )}
       </main>
+
+      {deletedDraft && (
+        <div className="fixed inset-x-4 bottom-5 z-50 mx-auto flex max-w-md items-center justify-between gap-4 rounded-xl border border-card-border bg-foreground px-4 py-3 text-sm text-background shadow-lg" role="status">
+          <span className="truncate">스크랩을 삭제했습니다.</span>
+          <button type="button" onClick={() => void handleUndo()} className="shrink-0 font-semibold text-accent">되돌리기</button>
+        </div>
+      )}
+      {actionMessage && (
+        <button type="button" onClick={() => setActionMessage("")} className="fixed inset-x-4 bottom-5 z-50 mx-auto max-w-md rounded-xl bg-red-600 px-4 py-3 text-left text-sm text-white shadow-lg">
+          {actionMessage}
+        </button>
+      )}
     </div>
   );
 }
