@@ -39,12 +39,27 @@ export interface MarketTimeSeries {
   points: MarketSeriesPoint[];
 }
 
+export interface MarketSignal {
+  type: "year-over-year-surge" | "year-over-year-drop" | "mirror-gap";
+  severity: "review";
+  country_code: string;
+  period: string | null;
+  currency: string;
+  value: number;
+  reference_value: number;
+  change_rate: number;
+  title: string;
+  detail: string;
+  comparison_basis: string;
+}
+
 export interface CathodeMarketBoard {
   title: string;
   as_of: string;
   latest_periods: Record<string, string | null>;
   aggregation_policy: string;
   time_series?: MarketTimeSeries[];
+  signals?: MarketSignal[];
   korea: {
     period: { start: string; end: string };
     totals: { export_usd: number; previous_export_usd: number };

@@ -280,6 +280,62 @@ def collect_eu_cumulative(
     }
 
 
+def build_market_signals(
+    time_series: list[dict[str, Any]], comparisons: list[dict[str, Any]],
+    *, growth_threshold: float = .5, monthly_materiality: float = 1_000_000,
+    mirror_ratio_threshold: float = .2, mirror_materiality: float = 10_000_000,
+) -> list[dict[str, Any]]:
+    """Create conservative review signals; they are leads, never causal claims."""
+    signals: list[dict[str, Any]] = []
+    for series in time_series:
+        for point in series.get("points", []):
+            growth = point.get("growth_rate")
+            previous = point.get("previous_value")
+            value = float(point.get("value", 0) or 0)
+            if growth is None or previous is None or max(value, float(previous)) < monthly_materiality:
+                continue
+            if abs(float(growth)) < growth_threshold:
+                continue
+            direction = "surge" if growth > 0 else "drop"
+            signals.append({
+                "type": f"year-over-year-{direction}",
+                "severity": "review",
+                "country_code": series["country_code"],
+                "period": point["period"],
+                "currency": series["currency"],
+                "value": value,
+                "reference_value": float(previous),
+                "change_rate": float(growth),
+                "title": "전년 동월 대비 급증" if growth > 0 else "전년 동월 대비 급감",
+                "detail": "월간 금액이 전년 동월 대비 50% 이상 변동했습니다.",
+                "comparison_basis": "same-source, same-month, same-currency, same-classification",
+            })
+    for row in comparisons:
+        if not row.get("mirror_comparable") or row.get("mirror_gap_usd") is None:
+            continue
+        gap = float(row["mirror_gap_usd"])
+        korean = float(row.get("korea_reported_export_usd", 0) or 0)
+        partner = float(row.get("value", 0) or 0)
+        denominator = max(abs(korean), abs(partner), 1.0)
+        ratio = abs(gap) / denominator
+        if abs(gap) < mirror_materiality or ratio < mirror_ratio_threshold:
+            continue
+        signals.append({
+            "type": "mirror-gap",
+            "severity": "review",
+            "country_code": row["country_code"],
+            "period": row.get("period"),
+            "currency": "USD",
+            "value": gap,
+            "reference_value": korean,
+            "change_rate": ratio,
+            "title": "동일 기간 신고 차이",
+            "detail": "동일 기간·USD·비교 가능 범위에서 신고액 차이가 20% 이상입니다.",
+            "comparison_basis": "same-period, USD, scope-comparable mirror statistics",
+        })
+    return sorted(signals, key=lambda item: (item["period"] or "", abs(item["change_rate"])), reverse=True)
+
+
 def assemble_market_board(korea: dict[str, Any], partners: list[dict[str, Any]], *, as_of: str) -> dict[str, Any]:
     korea_end = korea["period"]["end"][:4] + "-" + korea["period"]["end"][4:]
     korea_by_country: dict[str, float] = {}
@@ -315,12 +371,14 @@ def assemble_market_board(korea: dict[str, Any], partners: list[dict[str, Any]],
         "currency": item["currency"], "classification": item["classification"],
         "measure": "monthly-import", "points": item.get("monthly_series", []),
     } for item in partners if item.get("monthly_series"))
+    signals = build_market_signals(time_series, comparisons)
     return {
         "title": "양극재 최신 시장판", "as_of": as_of,
         "latest_periods": {"korea_customs": korea_end, **{item["country_code"]: item.get("period") for item in partners}},
         "historical_baseline_separated": True,
         "korea": korea, "partner_statistics": comparisons,
         "time_series": time_series,
+        "signals": signals,
         "aggregation_policy": "국가·출처별 최신 공개 월이 다르면 합산하지 않는다.",
     }
 

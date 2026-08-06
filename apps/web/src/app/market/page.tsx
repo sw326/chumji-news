@@ -34,6 +34,7 @@ export default async function MarketPage() {
   const board = await getCathodeMarketBoard();
   const korea = board.korea;
   const gate = board.review_gate;
+  const signals = board.signals ?? [];
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -69,6 +70,31 @@ export default async function MarketPage() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-lg border border-card-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">이상 신호</h2>
+            <p className="mt-1 text-xs leading-5 text-muted">원인 판정이 아닌 검토 후보입니다. 작은 기저값과 비교 불가능한 기간·통화·HS 범위는 제외합니다.</p>
+          </div>
+          <span className="rounded-full border border-card-border bg-background px-3 py-1 text-xs font-semibold text-muted">{signals.length}건</span>
+        </div>
+        {signals.length ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {signals.map((signal, index) => (
+              <article key={`${signal.type}-${signal.country_code}-${signal.period}-${index}`} className="rounded-lg border border-card-border bg-background p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <strong className="text-sm">{COUNTRY_LABELS[signal.country_code] ?? signal.country_code} · {signal.title}</strong>
+                  <span className="text-xs text-muted">{signal.period}</span>
+                </div>
+                <p className="mt-2 text-xl font-semibold tabular-nums">{percent(signal.change_rate)}</p>
+                <p className="mt-2 text-xs leading-5 text-muted">{signal.detail}</p>
+                <p className="mt-2 text-[11px] leading-4 text-muted">{signal.comparison_basis}</p>
+              </article>
+            ))}
+          </div>
+        ) : <p className="mt-4 text-sm text-muted">현재 임계값을 넘는 검토 신호가 없습니다.</p>}
       </section>
 
       <section className="rounded-lg border border-card-border bg-card p-4 shadow-sm">

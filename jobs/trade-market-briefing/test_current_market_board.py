@@ -2,7 +2,7 @@ import unittest
 from datetime import date
 
 from current_market_board import (
-    assemble_market_board, build_review_gate, collect_eu_cumulative, collect_korea_cumulative,
+    assemble_market_board, build_market_signals, build_review_gate, collect_eu_cumulative, collect_korea_cumulative,
     collect_us_cumulative, latest_published_month, shift_month,
 )
 
@@ -101,6 +101,29 @@ class CurrentMarketBoardTest(unittest.TestCase):
         row = board["partner_statistics"][0]
         self.assertFalse(row["mirror_comparable"])
         self.assertIsNone(row["mirror_gap_usd"])
+
+    def test_signal_ignores_small_base_and_noncomparable_mirror(self):
+        series = [{
+            "country_code": "KR", "currency": "USD",
+            "points": [{"period": "2026-01", "value": 100, "previous_value": 1, "growth_rate": 99}],
+        }]
+        comparisons = [{
+            "country_code": "HU", "period": "2026-05", "currency": "EUR", "value": 30_000_000,
+            "korea_reported_export_usd": 10_000_000, "mirror_comparable": False, "mirror_gap_usd": None,
+        }]
+        self.assertEqual([], build_market_signals(series, comparisons))
+
+    def test_signal_flags_material_yoy_change_and_comparable_mirror_gap(self):
+        series = [{
+            "country_code": "US", "currency": "USD",
+            "points": [{"period": "2026-06", "value": 30_000_000, "previous_value": 10_000_000, "growth_rate": 2}],
+        }]
+        comparisons = [{
+            "country_code": "US", "period": "2026-06", "currency": "USD", "value": 40_000_000,
+            "korea_reported_export_usd": 70_000_000, "mirror_comparable": True, "mirror_gap_usd": -30_000_000,
+        }]
+        signals = build_market_signals(series, comparisons)
+        self.assertEqual({"year-over-year-surge", "mirror-gap"}, {signal["type"] for signal in signals})
 
     def test_gate_preserves_broad_code_blocker_and_manual_china_step(self):
         board = {
