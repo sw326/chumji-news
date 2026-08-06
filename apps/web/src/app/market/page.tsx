@@ -48,7 +48,7 @@ function reexport(value?: string): string {
 }
 
 export default async function MarketPage() {
-  const board = await getCathodeMarketBoard();
+  const { board, origin } = await getCathodeMarketBoard();
   const korea = board.korea;
   const gate = board.review_gate;
   const signals = board.signals ?? [];
@@ -70,6 +70,11 @@ export default async function MarketPage() {
         </div>
         <MainTabs active="market" />
       </header>
+
+      <div className={`rounded-lg border px-4 py-3 text-sm ${origin === "supabase" ? "border-card-border bg-card text-muted" : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"}`} role="status">
+        <strong className="font-semibold">{origin === "supabase" ? "실시간 검증본" : "내장 검증본 사용 중"}</strong>
+        <span className="ml-2">{origin === "supabase" ? `Supabase 공개 스냅샷 · ${board.as_of}` : `원격 스냅샷을 읽지 못해 마지막 검증본을 표시합니다 · ${board.as_of}`}</span>
+      </div>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="한국 누계 수출" value={money(korea.totals.export_usd)} detail={`${period(korea.period.start)}–${period(korea.period.end)}`} />
