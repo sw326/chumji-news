@@ -38,6 +38,18 @@ class WikiToolTest(unittest.TestCase):
             _, errors = build(root, write=False)
             self.assertTrue(any("broken link" in error for error in errors))
 
+    def test_domain_index_stems_do_not_collide(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for domain, title in (("research", "연구 영역"), ("development", "개발 영역")):
+                (root / domain).mkdir()
+                (root / domain / "index.md").write_text(
+                    PAGE.format(page_id=f"domain-{domain}", page_type="index", title=title, aliases="[]", body=""),
+                    encoding="utf-8",
+                )
+            _, errors = build(root, write=False)
+            self.assertEqual(errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()

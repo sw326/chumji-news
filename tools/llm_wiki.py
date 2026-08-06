@@ -14,7 +14,10 @@ from urllib.parse import urlsplit, urlunsplit
 
 LINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]")
 REQUIRED = ("id", "type", "title", "status", "updated_at")
-AUTHORED_DIRS = ("sources", "entities", "concepts", "events", "questions", "hypotheses", "notes", "rules")
+AUTHORED_DIRS = (
+    "research", "development", "work", "personal", "operations",
+    "sources", "entities", "concepts", "events", "questions", "hypotheses", "notes", "rules",
+)
 
 
 def parse_scalar(value: str):
@@ -88,7 +91,9 @@ def build(root: Path, write: bool = True) -> tuple[dict, list[str]]:
             "updated_at": meta["updated_at"],
             "path": rel,
         }
-        keys = [page_id, str(meta["title"]), page["path"].stem]
+        keys = [page_id, str(meta["title"])]
+        if page["path"].stem != "index":
+            keys.append(page["path"].stem)
         page_aliases = meta.get("aliases", [])
         if isinstance(page_aliases, str):
             page_aliases = [page_aliases] if page_aliases else []

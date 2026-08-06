@@ -8,6 +8,21 @@
     "question-poland-import-decline-2026",
     "source-eurostat-comext"
   ],
+  "domain-development": [
+    "root-index"
+  ],
+  "domain-operations": [
+    "root-index"
+  ],
+  "domain-personal": [
+    "root-index"
+  ],
+  "domain-research": [
+    "root-index"
+  ],
+  "domain-work": [
+    "root-index"
+  ],
   "entity-country-poland": [
     "note-poland-import-baseline",
     "question-poland-import-decline-2026"
@@ -25,9 +40,11 @@
     "question-poland-import-decline-2026"
   ],
   "note-poland-import-baseline": [
+    "domain-research",
     "entity-country-poland"
   ],
   "question-poland-import-decline-2026": [
+    "domain-research",
     "entity-country-poland",
     "hypothesis-final-demand-slowdown",
     "hypothesis-local-production-substitution",

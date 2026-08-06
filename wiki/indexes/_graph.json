@@ -5,6 +5,14 @@
   "concept-hs-284190": [
     "concept-cathode-material"
   ],
+  "domain-development": [],
+  "domain-operations": [],
+  "domain-personal": [],
+  "domain-research": [
+    "note-poland-import-baseline",
+    "question-poland-import-decline-2026"
+  ],
+  "domain-work": [],
   "entity-country-poland": [
     "note-poland-import-baseline",
     "question-poland-import-decline-2026",
@@ -40,6 +48,11 @@
     "source-market-board-fixture"
   ],
   "root-index": [
+    "domain-development",
+    "domain-operations",
+    "domain-personal",
+    "domain-research",
+    "domain-work",
     "question-poland-import-decline-2026",
     "rule-ground-ladder",
     "rule-research-protocol"
