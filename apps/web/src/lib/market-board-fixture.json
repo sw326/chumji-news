@@ -1,0 +1,816 @@
+{
+  "title": "양극재 최신 시장판",
+  "as_of": "2026-08-06",
+  "latest_periods": {
+    "korea_customs": "2026-06",
+    "US": "2026-06",
+    "HU": "2026-05",
+    "PL": "2026-05",
+    "CN": "2026-06"
+  },
+  "historical_baseline_separated": true,
+  "korea": {
+    "period": {
+      "start": "202601",
+      "end": "202606",
+      "previous_start": "202501",
+      "previous_end": "202506"
+    },
+    "rows": [
+      {
+        "export_usd": 1306932,
+        "import_usd": 130770,
+        "export_kg": 106839,
+        "import_kg": 18974,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": 1176162
+      },
+      {
+        "export_usd": 4985,
+        "import_usd": 0,
+        "export_kg": 50,
+        "import_kg": 0,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909010",
+        "item_name": "코발트산 리튬",
+        "balance_usd": 4985
+      },
+      {
+        "export_usd": 312296149,
+        "import_usd": 14256214,
+        "export_kg": 12107935,
+        "import_kg": 2288718,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 298039935
+      },
+      {
+        "export_usd": 119099133,
+        "import_usd": 283068,
+        "export_kg": 4708820,
+        "import_kg": 10070,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 118816065
+      },
+      {
+        "export_usd": 2619381,
+        "import_usd": 67958,
+        "export_kg": 792997,
+        "import_kg": 248,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2842909000",
+        "item_name": "기타",
+        "balance_usd": 2551423
+      },
+      {
+        "export_usd": 93340968,
+        "import_usd": 96572644,
+        "export_kg": 11090494,
+        "import_kg": 10722241,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": -3231676
+      },
+      {
+        "export_usd": 6378354,
+        "import_usd": 422465904,
+        "export_kg": 1096685,
+        "import_kg": 31032198,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": -416087550
+      },
+      {
+        "export_usd": 726494,
+        "import_usd": 40813928,
+        "export_kg": 12010,
+        "import_kg": 818677,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909010",
+        "item_name": "코발트산 리튬",
+        "balance_usd": -40087434
+      },
+      {
+        "export_usd": 1065651450,
+        "import_usd": 924878248,
+        "export_kg": 44478309,
+        "import_kg": 39167275,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 140773202
+      },
+      {
+        "export_usd": 224083713,
+        "import_usd": 2434901,
+        "export_kg": 8636267,
+        "import_kg": 78006,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 221648812
+      },
+      {
+        "export_usd": 15473881,
+        "import_usd": 7505160,
+        "export_kg": 5786085,
+        "import_kg": 1549891,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2842909000",
+        "item_name": "기타",
+        "balance_usd": 7968721
+      },
+      {
+        "export_usd": 304710961,
+        "import_usd": 296668289,
+        "export_kg": 69798266,
+        "import_kg": 145824460,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 8042672
+      },
+      {
+        "export_usd": 246969362,
+        "import_usd": 0,
+        "export_kg": 10152427,
+        "import_kg": 0,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 246969362
+      },
+      {
+        "export_usd": 350753679,
+        "import_usd": 2294,
+        "export_kg": 13531486,
+        "import_kg": 45,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 350751385
+      },
+      {
+        "export_usd": 4903219,
+        "import_usd": 134392,
+        "export_kg": 267297,
+        "import_kg": 6114,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 4768827
+      },
+      {
+        "export_usd": 0,
+        "import_usd": 2178,
+        "export_kg": 0,
+        "import_kg": 32,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": -2178
+      },
+      {
+        "export_usd": 65714585,
+        "import_usd": 143381,
+        "export_kg": 2558507,
+        "import_kg": 2569,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 65571204
+      },
+      {
+        "export_usd": 10110343,
+        "import_usd": 729448,
+        "export_kg": 716063,
+        "import_kg": 565229,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 9380895
+      }
+    ],
+    "previous_rows": [
+      {
+        "export_usd": 11431,
+        "import_usd": 0,
+        "export_kg": 649,
+        "import_kg": 0,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": 11431
+      },
+      {
+        "export_usd": 80926,
+        "import_usd": 0,
+        "export_kg": 1100,
+        "import_kg": 0,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909010",
+        "item_name": "코발트산 리튬",
+        "balance_usd": 80926
+      },
+      {
+        "export_usd": 474310685,
+        "import_usd": 1535488,
+        "export_kg": 20341611,
+        "import_kg": 219814,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 472775197
+      },
+      {
+        "export_usd": 111053162,
+        "import_usd": 1008331,
+        "export_kg": 4177210,
+        "import_kg": 25746,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 110044831
+      },
+      {
+        "export_usd": 470303,
+        "import_usd": 38505,
+        "export_kg": 227645,
+        "import_kg": 830,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "2842909000",
+        "item_name": "기타",
+        "balance_usd": 431798
+      },
+      {
+        "export_usd": 237137606,
+        "import_usd": 83995291,
+        "export_kg": 23205912,
+        "import_kg": 12586173,
+        "country_code": "US",
+        "country_name": "미국",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 153142315
+      },
+      {
+        "export_usd": 8795348,
+        "import_usd": 378701015,
+        "export_kg": 845521,
+        "import_kg": 33433225,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": -369905667
+      },
+      {
+        "export_usd": 32211670,
+        "import_usd": 14816226,
+        "export_kg": 1015208,
+        "import_kg": 508528,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909010",
+        "item_name": "코발트산 리튬",
+        "balance_usd": 17395444
+      },
+      {
+        "export_usd": 607587220,
+        "import_usd": 626461482,
+        "export_kg": 23374380,
+        "import_kg": 26442738,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": -18874262
+      },
+      {
+        "export_usd": 155282497,
+        "import_usd": 150688,
+        "export_kg": 5982252,
+        "import_kg": 6489,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 155131809
+      },
+      {
+        "export_usd": 15088377,
+        "import_usd": 1941488,
+        "export_kg": 5566758,
+        "import_kg": 523520,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "2842909000",
+        "item_name": "기타",
+        "balance_usd": 13146889
+      },
+      {
+        "export_usd": 225193418,
+        "import_usd": 250917323,
+        "export_kg": 70899952,
+        "import_kg": 129712487,
+        "country_code": "CN",
+        "country_name": "중국",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": -25723905
+      },
+      {
+        "export_usd": 374672640,
+        "import_usd": 56,
+        "export_kg": 17467256,
+        "import_kg": 8,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 374672584
+      },
+      {
+        "export_usd": 379488811,
+        "import_usd": 0,
+        "export_kg": 14187863,
+        "import_kg": 0,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "2841909030",
+        "item_name": "니켈코발트알루미늄 산화물의 리튬염",
+        "balance_usd": 379488811
+      },
+      {
+        "export_usd": 2946334,
+        "import_usd": 1095034,
+        "export_kg": 304057,
+        "import_kg": 385671,
+        "country_code": "HU",
+        "country_name": "헝가리",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 1851300
+      },
+      {
+        "export_usd": 84721,
+        "import_usd": 0,
+        "export_kg": 4992,
+        "import_kg": 0,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "2825902050",
+        "item_name": "니켈 코발트 망간 수산화물",
+        "balance_usd": 84721
+      },
+      {
+        "export_usd": 296960353,
+        "import_usd": 4547858,
+        "export_kg": 12970094,
+        "import_kg": 742493,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "2841909020",
+        "item_name": "니켈코발트망간 산화물의 리튬염",
+        "balance_usd": 292412495
+      },
+      {
+        "export_usd": 8068587,
+        "import_usd": 368261,
+        "export_kg": 667232,
+        "import_kg": 101116,
+        "country_code": "PL",
+        "country_name": "폴란드",
+        "hs_code": "3824999090",
+        "item_name": "기타",
+        "balance_usd": 7700326
+      }
+    ],
+    "totals": {
+      "export_usd": 2824143589.0,
+      "previous_export_usd": 2929444089.0
+    },
+    "period_comparison": {
+      "current_total_usd": 2824143589.0,
+      "previous_total_usd": 2929444089.0,
+      "change_usd": -105300500.0,
+      "growth_rate": -0.035945557177691545,
+      "rows": [
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "2825902050"
+          },
+          "current_value_usd": 6378354.0,
+          "previous_value_usd": 8795348.0,
+          "change_usd": -2416994.0,
+          "growth_rate": -0.2748036803091817
+        },
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "2841909010"
+          },
+          "current_value_usd": 726494.0,
+          "previous_value_usd": 32211670.0,
+          "change_usd": -31485176.0,
+          "growth_rate": -0.9774462485180061
+        },
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "2841909020"
+          },
+          "current_value_usd": 1065651450.0,
+          "previous_value_usd": 607587220.0,
+          "change_usd": 458064230.0,
+          "growth_rate": 0.7539069534741036
+        },
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "2841909030"
+          },
+          "current_value_usd": 224083713.0,
+          "previous_value_usd": 155282497.0,
+          "change_usd": 68801216.0,
+          "growth_rate": 0.44307128832427267
+        },
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "2842909000"
+          },
+          "current_value_usd": 15473881.0,
+          "previous_value_usd": 15088377.0,
+          "change_usd": 385504.0,
+          "growth_rate": 0.025549732751242837
+        },
+        {
+          "identity": {
+            "country_code": "CN",
+            "hs_code": "3824999090"
+          },
+          "current_value_usd": 304710961.0,
+          "previous_value_usd": 225193418.0,
+          "change_usd": 79517543.0,
+          "growth_rate": 0.353107758238298
+        },
+        {
+          "identity": {
+            "country_code": "HU",
+            "hs_code": "2841909020"
+          },
+          "current_value_usd": 246969362.0,
+          "previous_value_usd": 374672640.0,
+          "change_usd": -127703278.0,
+          "growth_rate": -0.3408396140161182
+        },
+        {
+          "identity": {
+            "country_code": "HU",
+            "hs_code": "2841909030"
+          },
+          "current_value_usd": 350753679.0,
+          "previous_value_usd": 379488811.0,
+          "change_usd": -28735132.0,
+          "growth_rate": -0.07572063040351407
+        },
+        {
+          "identity": {
+            "country_code": "HU",
+            "hs_code": "3824999090"
+          },
+          "current_value_usd": 4903219.0,
+          "previous_value_usd": 2946334.0,
+          "change_usd": 1956885.0,
+          "growth_rate": 0.6641762271351448
+        },
+        {
+          "identity": {
+            "country_code": "PL",
+            "hs_code": "2825902050"
+          },
+          "current_value_usd": 0.0,
+          "previous_value_usd": 84721.0,
+          "change_usd": -84721.0,
+          "growth_rate": -1.0
+        },
+        {
+          "identity": {
+            "country_code": "PL",
+            "hs_code": "2841909020"
+          },
+          "current_value_usd": 65714585.0,
+          "previous_value_usd": 296960353.0,
+          "change_usd": -231245768.0,
+          "growth_rate": -0.7787092305887715
+        },
+        {
+          "identity": {
+            "country_code": "PL",
+            "hs_code": "3824999090"
+          },
+          "current_value_usd": 10110343.0,
+          "previous_value_usd": 8068587.0,
+          "change_usd": 2041756.0,
+          "growth_rate": 0.2530500073928681
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "2825902050"
+          },
+          "current_value_usd": 1306932.0,
+          "previous_value_usd": 11431.0,
+          "change_usd": 1295501.0,
+          "growth_rate": 113.33225439594086
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "2841909010"
+          },
+          "current_value_usd": 4985.0,
+          "previous_value_usd": 80926.0,
+          "change_usd": -75941.0,
+          "growth_rate": -0.9384005140498727
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "2841909020"
+          },
+          "current_value_usd": 312296149.0,
+          "previous_value_usd": 474310685.0,
+          "change_usd": -162014536.0,
+          "growth_rate": -0.3415789294310332
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "2841909030"
+          },
+          "current_value_usd": 119099133.0,
+          "previous_value_usd": 111053162.0,
+          "change_usd": 8045971.0,
+          "growth_rate": 0.07245152551351941
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "2842909000"
+          },
+          "current_value_usd": 2619381.0,
+          "previous_value_usd": 470303.0,
+          "change_usd": 2149078.0,
+          "growth_rate": 4.569560474842814
+        },
+        {
+          "identity": {
+            "country_code": "US",
+            "hs_code": "3824999090"
+          },
+          "current_value_usd": 93340968.0,
+          "previous_value_usd": 237137606.0,
+          "change_usd": -143796638.0,
+          "growth_rate": -0.6063847924651815
+        }
+      ],
+      "notice": "전년동기 증감은 금액 기준이며 가격·환율·제품 구성 변화와 물량 변화를 함께 포함한다."
+    },
+    "classification_precision": {
+      "dedicated_value_usd": 2392984836.0,
+      "broad_value_usd": 431158753.0,
+      "outside_audit_value_usd": 0.0,
+      "total_value_usd": 2824143589.0,
+      "dedicated_share": 0.8473311503425827,
+      "notice": "전용 품명 코드 금액은 비교적 식별력이 높지만 실제 물품 분류를 보증하지 않는다. 기타·광범위 코드 금액은 양극재 금액으로 단정할 수 없다."
+    },
+    "market_structure": {
+      "total_value_usd": 2824143589.0,
+      "country_count": 4,
+      "hhi": 4091.3411753056516,
+      "concentration": "high",
+      "top3_share": 0.9731511781853666,
+      "country_ranking": [
+        {
+          "country": "CN",
+          "value_usd": 1617024853.0,
+          "share": 0.57257175566366,
+          "unit_value_usd_per_kg": 12.457087096164507
+        },
+        {
+          "country": "HU",
+          "value_usd": 602626260.0,
+          "share": 0.2133837182879868,
+          "unit_value_usd_per_kg": 25.16057685603358
+        },
+        {
+          "country": "US",
+          "value_usd": 528667548.0,
+          "share": 0.1871957042337198,
+          "unit_value_usd_per_kg": 18.35196551132211
+        },
+        {
+          "country": "PL",
+          "value_usd": 75824928.0,
+          "share": 0.026848821814633307,
+          "unit_value_usd_per_kg": 23.155690060068956
+        }
+      ],
+      "caveats": [
+        "HHI와 점유율은 현재 선택한 국가 집합 안에서 계산된다.",
+        "금액/중량은 품질·제품구성 차이를 포함하므로 가격으로 단정하지 않는다."
+      ]
+    },
+    "errors": {},
+    "partial": false,
+    "source": {
+      "name": "관세청 품목별 국가별 수출입실적",
+      "quality_score": 95,
+      "quality_grade": "high",
+      "classification": "HSK10 2026",
+      "freshness": "latest-published-month",
+      "basis": "수출 FOB"
+    }
+  },
+  "partner_statistics": [
+    {
+      "country_code": "US",
+      "period": "2026-06",
+      "previous_period": "2025-06",
+      "value": 473379119.0,
+      "previous_value": 728322121.0,
+      "growth_rate": -0.3500415470698026,
+      "currency": "USD",
+      "classification": "HS6",
+      "data_status": "available",
+      "quality": {
+        "score": 80,
+        "maximum": 100,
+        "grade": "high",
+        "limitations": [
+          "한국 HSK10보다 넓은 HS6"
+        ]
+      },
+      "errors": {},
+      "source": "US Census International Trade API",
+      "korea_reported_export_usd": 528667548.0,
+      "period_alignment": "same-period",
+      "mirror_comparable": true,
+      "mirror_gap_usd": -55288429.0,
+      "comparison_notice": "동일 누계기간·USD 기준 비교 가능"
+    },
+    {
+      "country_code": "HU",
+      "period": "2026-05",
+      "previous_period": "2025-05",
+      "value": 446148660.0,
+      "previous_value": 450946704.0,
+      "growth_rate": -0.010639935844835469,
+      "world_export_value": 48364627.0,
+      "world_export_to_import_ratio": 0.10840473442193012,
+      "reexport_signal": "medium",
+      "currency": "EUR",
+      "classification": "HS6",
+      "data_status": "available",
+      "quality": {
+        "score": 75,
+        "maximum": 100,
+        "grade": "medium",
+        "limitations": [
+          "한국 HSK10보다 넓은 HS6",
+          "EUR이므로 한국 USD 신고액과 직접 차액 비교 불가"
+        ]
+      },
+      "errors": {},
+      "source": "Eurostat Comext",
+      "korea_reported_export_usd": 602626260.0,
+      "period_alignment": "different-period",
+      "mirror_comparable": false,
+      "mirror_gap_usd": null,
+      "comparison_notice": "기간·통화 또는 코드 범위가 달라 직접 차액 비교 불가"
+    },
+    {
+      "country_code": "PL",
+      "period": "2026-05",
+      "previous_period": "2025-05",
+      "value": 60203046.0,
+      "previous_value": 403759155.0,
+      "growth_rate": -0.8508936695193945,
+      "world_export_value": 128517777.0,
+      "world_export_to_import_ratio": 2.134738780492934,
+      "reexport_signal": "high",
+      "currency": "EUR",
+      "classification": "HS6",
+      "data_status": "available",
+      "quality": {
+        "score": 75,
+        "maximum": 100,
+        "grade": "medium",
+        "limitations": [
+          "한국 HSK10보다 넓은 HS6",
+          "EUR이므로 한국 USD 신고액과 직접 차액 비교 불가"
+        ]
+      },
+      "errors": {},
+      "source": "Eurostat Comext",
+      "korea_reported_export_usd": 75824928.0,
+      "period_alignment": "different-period",
+      "mirror_comparable": false,
+      "mirror_gap_usd": null,
+      "comparison_notice": "기간·통화 또는 코드 범위가 달라 직접 차액 비교 불가"
+    },
+    {
+      "country_code": "CN",
+      "period": "2026-06",
+      "previous_period": null,
+      "value": 41076363.0,
+      "previous_value": null,
+      "growth_rate": null,
+      "currency": "USD",
+      "classification": "HS8",
+      "data_status": "available",
+      "quality": {
+        "score": 65,
+        "maximum": 100,
+        "grade": "medium",
+        "limitations": [
+          "중국 HS8 28419000은 한국 양극재 HSK10보다 넓음",
+          "다른 광범위 HS8 후보는 이번 최신월 검증 범위에서 제외"
+        ]
+      },
+      "errors": {},
+      "source": "China GACC official interactive table",
+      "quantity_kg": 1512942.0,
+      "captured_at": "2026-08-06T08:49:28+09:00",
+      "scope_warning": "China HS8 28419000 is broader than the selected Korean cathode-material HSK10 codes; it must not be treated as cathode-material-only trade. Official interactive-table conditions were Import, USD, January to June 2026, partner 133.",
+      "scope_comparable": false,
+      "korea_reported_export_usd": 1617024853.0,
+      "period_alignment": "same-period",
+      "mirror_comparable": false,
+      "mirror_gap_usd": null,
+      "comparison_notice": "기간·통화 또는 코드 범위가 달라 직접 차액 비교 불가"
+    }
+  ],
+  "aggregation_policy": "국가·출처별 최신 공개 월이 다르면 합산하지 않는다.",
+  "latest_detection": {
+    "period": "202606",
+    "checked_periods": [
+      "202608",
+      "202607",
+      "202606"
+    ],
+    "evidence": {
+      "country": "US",
+      "hsk10": "2825902050"
+    },
+    "errors": {}
+  },
+  "review_gate": {
+    "status": "review-required",
+    "automated_sources_complete": true,
+    "china_manual_check": {
+      "status": "verified",
+      "target_period": "2026-06",
+      "instruction": "GACC 공식 화면에서 2026년 1~6월 누계를 수동 검증함"
+    },
+    "blockers": [],
+    "warnings": [
+      "기간 또는 통화가 다른 상대국은 거울통계 차액을 계산하지 않았습니다.",
+      "HS6 상대국 통계에는 한국 HSK10 선택 범위 밖 품목이 포함됩니다.",
+      "재수출 가능성은 세계 수출/한국산 수입 비율에 따른 탐색 신호이며 실제 재수출액이 아닙니다."
+    ]
+  }
+}

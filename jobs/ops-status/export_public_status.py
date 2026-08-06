@@ -14,6 +14,10 @@ import urllib.error
 import urllib.request
 
 SCHEMA_VERSION = "ops-public-status/v1"
+DEFAULT_MARKET_BOARD = pathlib.Path(
+    "/Users/ops/Library/Application Support/chumji-ops/"
+    "trade-market-briefing/output/cathode-current-market.json"
+)
 
 
 def plain_text(message: str) -> str:
@@ -204,6 +208,16 @@ def upload_snapshots(payload: dict, env_path: pathlib.Path) -> None:
             "updated_at": payload["generatedAt"],
         },
     ]
+    if payload.get("tradeMarket"):
+        rows.append(
+            {
+                "kind": "trade-market",
+                "schema_version": "trade-market-board/v1",
+                "payload": payload["tradeMarket"],
+                "generated_at": payload["generatedAt"],
+                "updated_at": payload["generatedAt"],
+            }
+        )
     request = urllib.request.Request(
         f"{base_url}/rest/v1/ops_public_snapshots?on_conflict=kind",
         data=json.dumps(rows, ensure_ascii=False).encode(),
@@ -228,6 +242,7 @@ def main() -> int:
     parser.add_argument("--history-db", type=pathlib.Path, required=True)
     parser.add_argument("--health-file", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
+    parser.add_argument("--market-board", type=pathlib.Path, default=DEFAULT_MARKET_BOARD)
     parser.add_argument("--supabase-env", type=pathlib.Path)
     parser.add_argument("--upload", action="store_true")
     args = parser.parse_args()
@@ -238,6 +253,8 @@ def main() -> int:
         "alerts": alerts_from_db(args.history_db),
         "operations": operations_from_health(args.health_file),
     }
+    if args.market_board.exists():
+        payload["tradeMarket"] = json.loads(args.market_board.read_text())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
     if args.upload:

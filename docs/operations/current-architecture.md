@@ -95,14 +95,15 @@ Mac mini, ops account
 
 - News and price pages read existing Supabase `news_posts` data with the anon
   client.
-- Alerts and operations pages read the redacted `ops_public_snapshots` rows.
+- Alerts, operations, and market pages read redacted `ops_public_snapshots` rows.
   Preview fixtures remain only as a fallback when the remote snapshot is
   unavailable.
 - The connected Supabase project is displayed as `chumji-finance`; its project
   ref is `sdshtmydiylvtqkbatmb`.
 - The preview project does not receive a Supabase service-role key.
-- The `ops` exporter holds its service-role key only in an ops-owned SecretRef
-  and upserts the two public rows `alerts` and `operations`.
+- The `ops` exporter holds its service-role key only in an ops-owned SecretRef.
+  It upserts `alerts` and `operations`; after migration 004 approval it may also
+  publish the validated `trade-market` row.
 - Shadow jobs do not write to Supabase or send Telegram messages.
 - The existing `chumji-news` production project remains authoritative until a
   separate web cutover.

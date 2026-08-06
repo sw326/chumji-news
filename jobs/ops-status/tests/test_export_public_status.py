@@ -49,6 +49,38 @@ class ExportPublicStatusTest(unittest.TestCase):
             )
             self.assertNotIn("# secret refs", values)
 
+    def test_upload_includes_trade_market_when_present(self):
+        payload = {
+            "schemaVersion": "ops-public-status/v1",
+            "generatedAt": "2026-08-06T00:00:00Z",
+            "alerts": [],
+            "operations": {},
+            "tradeMarket": {"title": "양극재 최신 시장판"},
+        }
+        rows = []
+
+        class Response:
+            status = 201
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+
+        with tempfile.TemporaryDirectory() as temporary:
+            env = Path(temporary) / "service.env"
+            env.write_text(
+                "NEXT_PUBLIC_SUPABASE_URL=https://example.test\n"
+                "SUPABASE_SERVICE_ROLE_KEY=placeholder\n"
+            )
+            original = MODULE.urllib.request.urlopen
+            try:
+                def capture(request, timeout):
+                    rows.extend(__import__("json").loads(request.data))
+                    return Response()
+                MODULE.urllib.request.urlopen = capture
+                MODULE.upload_snapshots(payload, env)
+            finally:
+                MODULE.urllib.request.urlopen = original
+        self.assertEqual(["alerts", "operations", "trade-market"], [row["kind"] for row in rows])
+
 
 if __name__ == "__main__":
     unittest.main()
