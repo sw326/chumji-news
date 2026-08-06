@@ -7,6 +7,22 @@ import MainTabs from "@/components/MainTabs";
 import { useScraps } from "@/components/ScrapProvider";
 import { CATEGORIES, CATEGORY_LABELS, Category, NewsScrap, NewsScrapDraft } from "@/lib/types";
 
+const OTP_COOLDOWN_KEY = "chumji-news:otp-cooldown-until";
+const OTP_COOLDOWN_SECONDS = 60;
+
+function authErrorMessage(error: string, action: "send" | "verify") {
+  const normalized = error.toLowerCase();
+  if (/(rate|limit|too many|over_email_send_rate_limit)/.test(normalized)) {
+    return "이메일 발송 한도에 걸렸습니다. 재요청을 멈추고, 이미 받은 최신 8자리 코드를 입력해주세요.";
+  }
+  if (action === "verify" && /(expired|invalid|token|otp)/.test(normalized)) {
+    return "인증코드가 잘못되었거나 만료됐습니다. 최신 8자리 코드를 확인해주세요.";
+  }
+  return action === "send"
+    ? "인증코드를 보내지 못했습니다. 잠시 후 다시 시도해주세요."
+    : "로그인하지 못했습니다. 이메일과 인증코드를 다시 확인해주세요.";
+}
+
 function toDraft(scrap: NewsScrap): NewsScrapDraft {
   return {
     article_key: scrap.article_key,
@@ -27,6 +43,7 @@ export default function ScrapsPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [token, setToken] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
@@ -34,10 +51,45 @@ export default function ScrapsPage() {
   const [deletedDraft, setDeletedDraft] = useState<NewsScrapDraft | null>(null);
   const [actionMessage, setActionMessage] = useState("");
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cooldownUntilRef = useRef(0);
 
   useEffect(() => () => {
     if (undoTimer.current) clearTimeout(undoTimer.current);
   }, []);
+
+  useEffect(() => {
+    function updateCooldown() {
+      try {
+        const storedUntil = Number(localStorage.getItem(OTP_COOLDOWN_KEY) || 0);
+        if (storedUntil > cooldownUntilRef.current) cooldownUntilRef.current = storedUntil;
+        const cooldownUntil = cooldownUntilRef.current;
+        const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+        setCooldown(remaining);
+        if (remaining === 0) {
+          cooldownUntilRef.current = 0;
+          localStorage.removeItem(OTP_COOLDOWN_KEY);
+        }
+      } catch {
+        const remaining = Math.max(0, Math.ceil((cooldownUntilRef.current - Date.now()) / 1000));
+        setCooldown(remaining);
+      }
+    }
+
+    updateCooldown();
+    const timer = window.setInterval(updateCooldown, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function startCooldown() {
+    const cooldownUntil = Date.now() + OTP_COOLDOWN_SECONDS * 1000;
+    cooldownUntilRef.current = cooldownUntil;
+    try {
+      localStorage.setItem(OTP_COOLDOWN_KEY, String(cooldownUntil));
+    } catch {
+      // Some in-app browsers may block storage; keep the in-memory timer.
+    }
+    setCooldown(OTP_COOLDOWN_SECONDS);
+  }
 
   const visibleScraps = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
@@ -92,20 +144,36 @@ export default function ScrapsPage() {
 
   async function handleSignIn(event: FormEvent) {
     event.preventDefault();
+    if (sending || cooldown > 0) return;
     setSending(true);
-    const error = await signIn(email);
-    setMessage(error
-      ? "이메일 발송 한도에 걸렸습니다. 새로 요청하지 말고, 이미 받은 최신 8자리 코드를 아래에 입력해주세요."
-      : "이메일로 받은 8자리 인증코드를 입력해주세요.");
-    setSending(false);
+    try {
+      const error = await signIn(email);
+      if (error) {
+        if (/(rate|limit|too many|over_email_send_rate_limit)/i.test(error)) startCooldown();
+        setMessage(authErrorMessage(error, "send"));
+      } else {
+        startCooldown();
+        setMessage("이메일로 받은 최신 8자리 인증코드를 입력해주세요.");
+      }
+    } catch {
+      setMessage("인증코드를 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function handleVerify(event: FormEvent) {
     event.preventDefault();
+    if (sending) return;
     setSending(true);
-    const error = await verifyOtp(email, token.trim());
-    setMessage(error ?? "로그인되었습니다.");
-    setSending(false);
+    try {
+      const error = await verifyOtp(email, token.trim());
+      setMessage(error ? authErrorMessage(error, "verify") : "로그인되었습니다.");
+    } catch {
+      setMessage("로그인하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -127,14 +195,15 @@ export default function ScrapsPage() {
             <form onSubmit={handleSignIn} className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="이메일 주소"
                 className="min-w-0 flex-1 rounded-lg border border-card-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
               />
-              <button disabled={sending} className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                {sending ? "전송 중" : "인증코드 받기"}
+              <button disabled={sending || cooldown > 0} className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {sending ? "전송 중" : cooldown > 0 ? `${cooldown}초 후 재전송` : "인증코드 받기"}
               </button>
             </form>
             <form onSubmit={handleVerify} className="mt-3 flex flex-col gap-2 sm:flex-row">
