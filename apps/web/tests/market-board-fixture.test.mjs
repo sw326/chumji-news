@@ -17,3 +17,20 @@ test("market fixture preserves source periods and review boundaries", () => {
     assert.ok(Array.isArray(row.quality.limitations));
   }
 });
+
+test("market fixture exposes monthly series without mixing currency or classification", () => {
+  assert.ok(Array.isArray(fixture.time_series));
+  assert.deepEqual(
+    fixture.time_series.map((series) => series.country_code),
+    ["KR", "US", "HU", "PL"],
+  );
+  for (const series of fixture.time_series) {
+    assert.ok(series.currency);
+    assert.ok(series.classification);
+    assert.ok(series.points.length >= 5);
+    for (const point of series.points) {
+      assert.match(point.period, /^\d{4}-\d{2}$/);
+      assert.equal(point.previous_period.slice(5), point.period.slice(5));
+    }
+  }
+});

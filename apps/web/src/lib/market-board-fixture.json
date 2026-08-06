@@ -609,6 +609,50 @@
       ],
       "notice": "전년동기 증감은 금액 기준이며 가격·환율·제품 구성 변화와 물량 변화를 함께 포함한다."
     },
+    "monthly_series": [
+      {
+        "period": "2026-01",
+        "value": 356156423.0,
+        "previous_period": "2025-01",
+        "previous_value": 399976428.0,
+        "growth_rate": -0.1095564686626983
+      },
+      {
+        "period": "2026-02",
+        "value": 427227376.0,
+        "previous_period": "2025-02",
+        "previous_value": 479198491.0,
+        "growth_rate": -0.10845425429355116
+      },
+      {
+        "period": "2026-03",
+        "value": 488926883.0,
+        "previous_period": "2025-03",
+        "previous_value": 569257330.0,
+        "growth_rate": -0.14111447102490537
+      },
+      {
+        "period": "2026-04",
+        "value": 526012969.0,
+        "previous_period": "2025-04",
+        "previous_value": 491932666.0,
+        "growth_rate": 0.06927838981930923
+      },
+      {
+        "period": "2026-05",
+        "value": 473711383.0,
+        "previous_period": "2025-05",
+        "previous_value": 477539218.0,
+        "growth_rate": -0.008015750027885682
+      },
+      {
+        "period": "2026-06",
+        "value": 552108555.0,
+        "previous_period": "2025-06",
+        "previous_value": 511539956.0,
+        "growth_rate": 0.07930680394397194
+      }
+    ],
     "classification_precision": {
       "dedicated_value_usd": 2392984836.0,
       "broad_value_usd": 431158753.0,
@@ -673,6 +717,50 @@
       "value": 473379119.0,
       "previous_value": 728322121.0,
       "growth_rate": -0.3500415470698026,
+      "monthly_series": [
+        {
+          "period": "2026-01",
+          "value": 92589626.0,
+          "previous_period": "2025-01",
+          "previous_value": 98102049.0,
+          "growth_rate": -0.05619070199033249
+        },
+        {
+          "period": "2026-02",
+          "value": 34490282.0,
+          "previous_period": "2025-02",
+          "previous_value": 75406794.0,
+          "growth_rate": -0.5426104178358253
+        },
+        {
+          "period": "2026-03",
+          "value": 70971086.0,
+          "previous_period": "2025-03",
+          "previous_value": 103158917.0,
+          "growth_rate": -0.3120218003064146
+        },
+        {
+          "period": "2026-04",
+          "value": 86303802.0,
+          "previous_period": "2025-04",
+          "previous_value": 205652586.0,
+          "growth_rate": -0.5803417614208848
+        },
+        {
+          "period": "2026-05",
+          "value": 92805039.0,
+          "previous_period": "2025-05",
+          "previous_value": 132581930.0,
+          "growth_rate": -0.3000174382738281
+        },
+        {
+          "period": "2026-06",
+          "value": 96219284.0,
+          "previous_period": "2025-06",
+          "previous_value": 113419845.0,
+          "growth_rate": -0.15165389266754858
+        }
+      ],
       "currency": "USD",
       "classification": "HS6",
       "data_status": "available",
@@ -699,6 +787,43 @@
       "value": 446148660.0,
       "previous_value": 450946704.0,
       "growth_rate": -0.010639935844835469,
+      "monthly_series": [
+        {
+          "period": "2026-01",
+          "value": 86741099.0,
+          "previous_period": "2025-01",
+          "previous_value": 84992001.0,
+          "growth_rate": 0.020579560187081514
+        },
+        {
+          "period": "2026-02",
+          "value": 88058141.0,
+          "previous_period": "2025-02",
+          "previous_value": 55595888.0,
+          "growth_rate": 0.5838966543712729
+        },
+        {
+          "period": "2026-03",
+          "value": 91556992.0,
+          "previous_period": "2025-03",
+          "previous_value": 65511201.0,
+          "growth_rate": 0.3975776753047162
+        },
+        {
+          "period": "2026-04",
+          "value": 85236347.0,
+          "previous_period": "2025-04",
+          "previous_value": 125455995.0,
+          "growth_rate": -0.32058769291973654
+        },
+        {
+          "period": "2026-05",
+          "value": 94556081.0,
+          "previous_period": "2025-05",
+          "previous_value": 119391619.0,
+          "growth_rate": -0.2080174321113779
+        }
+      ],
       "world_export_value": 48364627.0,
       "world_export_to_import_ratio": 0.10840473442193012,
       "reexport_signal": "medium",
@@ -729,6 +854,43 @@
       "value": 60203046.0,
       "previous_value": 403759155.0,
       "growth_rate": -0.8508936695193945,
+      "monthly_series": [
+        {
+          "period": "2026-01",
+          "value": 16764234.0,
+          "previous_period": "2025-01",
+          "previous_value": 127582123.0,
+          "growth_rate": -0.8686004464747776
+        },
+        {
+          "period": "2026-02",
+          "value": 17142898.0,
+          "previous_period": "2025-02",
+          "previous_value": 88730839.0,
+          "growth_rate": -0.8067988740645178
+        },
+        {
+          "period": "2026-03",
+          "value": 8798736.0,
+          "previous_period": "2025-03",
+          "previous_value": 72485019.0,
+          "growth_rate": -0.8786130414065284
+        },
+        {
+          "period": "2026-04",
+          "value": 10170906.0,
+          "previous_period": "2025-04",
+          "previous_value": 79137079.0,
+          "growth_rate": -0.8714773639800377
+        },
+        {
+          "period": "2026-05",
+          "value": 7326272.0,
+          "previous_period": "2025-05",
+          "previous_value": 35824095.0,
+          "growth_rate": -0.7954931729608243
+        }
+      ],
       "world_export_value": 128517777.0,
       "world_export_to_import_ratio": 2.134738780492934,
       "reexport_signal": "high",
@@ -782,6 +944,198 @@
       "mirror_comparable": false,
       "mirror_gap_usd": null,
       "comparison_notice": "기간·통화 또는 코드 범위가 달라 직접 차액 비교 불가"
+    }
+  ],
+  "time_series": [
+    {
+      "country_code": "KR",
+      "source": "관세청 품목별 국가별 수출입실적",
+      "currency": "USD",
+      "classification": "HSK10 2026",
+      "measure": "monthly-export",
+      "points": [
+        {
+          "period": "2026-01",
+          "value": 356156423.0,
+          "previous_period": "2025-01",
+          "previous_value": 399976428.0,
+          "growth_rate": -0.1095564686626983
+        },
+        {
+          "period": "2026-02",
+          "value": 427227376.0,
+          "previous_period": "2025-02",
+          "previous_value": 479198491.0,
+          "growth_rate": -0.10845425429355116
+        },
+        {
+          "period": "2026-03",
+          "value": 488926883.0,
+          "previous_period": "2025-03",
+          "previous_value": 569257330.0,
+          "growth_rate": -0.14111447102490537
+        },
+        {
+          "period": "2026-04",
+          "value": 526012969.0,
+          "previous_period": "2025-04",
+          "previous_value": 491932666.0,
+          "growth_rate": 0.06927838981930923
+        },
+        {
+          "period": "2026-05",
+          "value": 473711383.0,
+          "previous_period": "2025-05",
+          "previous_value": 477539218.0,
+          "growth_rate": -0.008015750027885682
+        },
+        {
+          "period": "2026-06",
+          "value": 552108555.0,
+          "previous_period": "2025-06",
+          "previous_value": 511539956.0,
+          "growth_rate": 0.07930680394397194
+        }
+      ]
+    },
+    {
+      "country_code": "US",
+      "source": "US Census International Trade API",
+      "currency": "USD",
+      "classification": "HS6",
+      "measure": "monthly-import",
+      "points": [
+        {
+          "period": "2026-01",
+          "value": 92589626.0,
+          "previous_period": "2025-01",
+          "previous_value": 98102049.0,
+          "growth_rate": -0.05619070199033249
+        },
+        {
+          "period": "2026-02",
+          "value": 34490282.0,
+          "previous_period": "2025-02",
+          "previous_value": 75406794.0,
+          "growth_rate": -0.5426104178358253
+        },
+        {
+          "period": "2026-03",
+          "value": 70971086.0,
+          "previous_period": "2025-03",
+          "previous_value": 103158917.0,
+          "growth_rate": -0.3120218003064146
+        },
+        {
+          "period": "2026-04",
+          "value": 86303802.0,
+          "previous_period": "2025-04",
+          "previous_value": 205652586.0,
+          "growth_rate": -0.5803417614208848
+        },
+        {
+          "period": "2026-05",
+          "value": 92805039.0,
+          "previous_period": "2025-05",
+          "previous_value": 132581930.0,
+          "growth_rate": -0.3000174382738281
+        },
+        {
+          "period": "2026-06",
+          "value": 96219284.0,
+          "previous_period": "2025-06",
+          "previous_value": 113419845.0,
+          "growth_rate": -0.15165389266754858
+        }
+      ]
+    },
+    {
+      "country_code": "HU",
+      "source": "Eurostat Comext",
+      "currency": "EUR",
+      "classification": "HS6",
+      "measure": "monthly-import",
+      "points": [
+        {
+          "period": "2026-01",
+          "value": 86741099.0,
+          "previous_period": "2025-01",
+          "previous_value": 84992001.0,
+          "growth_rate": 0.020579560187081514
+        },
+        {
+          "period": "2026-02",
+          "value": 88058141.0,
+          "previous_period": "2025-02",
+          "previous_value": 55595888.0,
+          "growth_rate": 0.5838966543712729
+        },
+        {
+          "period": "2026-03",
+          "value": 91556992.0,
+          "previous_period": "2025-03",
+          "previous_value": 65511201.0,
+          "growth_rate": 0.3975776753047162
+        },
+        {
+          "period": "2026-04",
+          "value": 85236347.0,
+          "previous_period": "2025-04",
+          "previous_value": 125455995.0,
+          "growth_rate": -0.32058769291973654
+        },
+        {
+          "period": "2026-05",
+          "value": 94556081.0,
+          "previous_period": "2025-05",
+          "previous_value": 119391619.0,
+          "growth_rate": -0.2080174321113779
+        }
+      ]
+    },
+    {
+      "country_code": "PL",
+      "source": "Eurostat Comext",
+      "currency": "EUR",
+      "classification": "HS6",
+      "measure": "monthly-import",
+      "points": [
+        {
+          "period": "2026-01",
+          "value": 16764234.0,
+          "previous_period": "2025-01",
+          "previous_value": 127582123.0,
+          "growth_rate": -0.8686004464747776
+        },
+        {
+          "period": "2026-02",
+          "value": 17142898.0,
+          "previous_period": "2025-02",
+          "previous_value": 88730839.0,
+          "growth_rate": -0.8067988740645178
+        },
+        {
+          "period": "2026-03",
+          "value": 8798736.0,
+          "previous_period": "2025-03",
+          "previous_value": 72485019.0,
+          "growth_rate": -0.8786130414065284
+        },
+        {
+          "period": "2026-04",
+          "value": 10170906.0,
+          "previous_period": "2025-04",
+          "previous_value": 79137079.0,
+          "growth_rate": -0.8714773639800377
+        },
+        {
+          "period": "2026-05",
+          "value": 7326272.0,
+          "previous_period": "2025-05",
+          "previous_value": 35824095.0,
+          "growth_rate": -0.7954931729608243
+        }
+      ]
     }
   ],
   "aggregation_policy": "국가·출처별 최신 공개 월이 다르면 합산하지 않는다.",
