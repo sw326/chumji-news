@@ -99,10 +99,14 @@ function parseBlock(lines: string[]): ParsedBlock {
   // Line 3+: [Source](url) or *source*
   const firstLine = lines[0]?.trim() ?? "";
 
+  // Emoji may include a variation selector (for example, "🛢️" is U+1F6E2
+  // followed by U+FE0F) or a ZWJ sequence. Keep the whole prefix together so
+  // those headlines do not fall back to a plain paragraph between cards.
+  const emojiPrefix = String.raw`(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:[\uFE0E\uFE0F])?(?:\u200D\p{Extended_Pictographic}(?:[\uFE0E\uFE0F])?)*)`;
   // Bold title: 🚀 **Title** (기존 방식)
-  const boldMatch = firstLine.match(/^([\p{Emoji}\u{1F1E0}-\u{1F1FF}🇺-🇿]*\s*)\*\*([^*]+)\*\*/u);
+  const boldMatch = firstLine.match(new RegExp(`^(${emojiPrefix}\\s*)?\\*\\*([^*]+)\\*\\*`, "u"));
   // Emoji-only title: 🚀 Title without bold (Haiku가 볼드 생략 시)
-  const emojiOnlyMatch = firstLine.match(/^([\p{Emoji}]\s+)(.+)/u);
+  const emojiOnlyMatch = firstLine.match(new RegExp(`^(${emojiPrefix}\\s+)(.+)`, "u"));
   // Block 내 링크 존재 여부 (article 식별 보조 신호)
   const hasLink = lines.some((l) => /^\[([^\]]+)\]\(([^)]+)\)/.test(l.trim()));
 
