@@ -36,9 +36,9 @@ Before pushing changes, validate:
 
 ## Shared Personal Wiki
 
-This repository contains the shared personal-agent vault at `wiki/`. For tasks involving reusable research, development, work, operations, or confirmed user preferences, use the `maintain-personal-wiki` skill without waiting for an explicit read/write request.
+The shared personal-agent vault is the separate private repository `sw326/chumji-wiki`, cloned on the Mac mini at `/Users/chumji/workspace/chumji-wiki`. For tasks involving reusable research, development, work, operations, or confirmed user preferences, use the `maintain-personal-wiki` skill without waiting for an explicit read/write request.
 
 - Read only the relevant indexes and linked pages before acting.
 - Treat Git, raw evidence, and `docs/operations/current-architecture.md` as authoritative; the wiki is a linked context layer.
 - Record durable findings, decisions, procedures, lessons, questions, or preferences in the correct domain. Do not record transient status or secrets.
-- After wiki writes, run `python3 tools/llm_wiki.py build` and `python3 tools/llm_wiki.py lint`.
+- Run wiki build, lint, and tests from the standalone vault root after wiki writes.

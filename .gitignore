@@ -41,8 +41,3 @@ id_ed25519
 secrets/
 
 .vercel
-
-# Obsidian local UI state (keep shared vault settings only)
-wiki/.obsidian/workspace*.json
-wiki/.obsidian/cache/
-wiki/.trash/
