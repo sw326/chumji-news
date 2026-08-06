@@ -34,3 +34,15 @@ test("market fixture exposes monthly series without mixing currency or classific
     }
   }
 });
+
+test("market signals remain review-only and respect comparison boundaries", () => {
+  assert.ok(Array.isArray(fixture.signals));
+  assert.ok(fixture.signals.length > 0);
+  for (const signal of fixture.signals) {
+    assert.equal(signal.severity, "review");
+    assert.ok(Math.abs(signal.change_rate) >= 0.5 || signal.type === "mirror-gap");
+    if (signal.type === "mirror-gap") {
+      assert.equal(signal.comparison_basis, "same-period, USD, scope-comparable mirror statistics");
+    }
+  }
+});

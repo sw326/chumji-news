@@ -1138,6 +1138,47 @@
       ]
     }
   ],
+  "signals": [
+    {
+      "type": "year-over-year-drop",
+      "severity": "review",
+      "country_code": "PL",
+      "period": "2026-05",
+      "currency": "EUR",
+      "value": 7326272.0,
+      "reference_value": 35824095.0,
+      "change_rate": -0.7954931729608243,
+      "title": "전년 동월 대비 급감",
+      "detail": "월간 금액이 전년 동월 대비 50% 이상 변동했습니다.",
+      "comparison_basis": "same-source, same-month, same-currency, same-classification"
+    },
+    {
+      "type": "year-over-year-drop",
+      "severity": "review",
+      "country_code": "US",
+      "period": "2026-04",
+      "currency": "USD",
+      "value": 86303802.0,
+      "reference_value": 205652586.0,
+      "change_rate": -0.5803417614208848,
+      "title": "전년 동월 대비 급감",
+      "detail": "월간 금액이 전년 동월 대비 50% 이상 변동했습니다.",
+      "comparison_basis": "same-source, same-month, same-currency, same-classification"
+    },
+    {
+      "type": "year-over-year-surge",
+      "severity": "review",
+      "country_code": "HU",
+      "period": "2026-02",
+      "currency": "EUR",
+      "value": 88058141.0,
+      "reference_value": 55595888.0,
+      "change_rate": 0.5838966543712729,
+      "title": "전년 동월 대비 급증",
+      "detail": "월간 금액이 전년 동월 대비 50% 이상 변동했습니다.",
+      "comparison_basis": "same-source, same-month, same-currency, same-classification"
+    }
+  ],
   "aggregation_policy": "국가·출처별 최신 공개 월이 다르면 합산하지 않는다.",
   "latest_detection": {
     "period": "202606",
