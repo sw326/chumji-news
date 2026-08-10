@@ -1,6 +1,18 @@
 # Alert Hub Cutover Runbook
 
-Status: template only. No cutover is approved by this document.
+Status: production cutover completed for revision `303eedf` on 2026-08-11. Any
+future cutover still requires a new explicit approval.
+
+## Deployment Record
+
+- Revision: `303eedf894257a151f3fe3d4edd794e0a8a841e7`.
+- Runtime: `/Users/ops/services/earthquake-alert`.
+- Launchd label: `com.chumji.earthquake-alert`.
+- Validation: EMSC WebSocket connected, the first USGS poll established a
+  no-replay baseline, and the next poll advanced after one minute without a
+  USGS error.
+- Rollback snapshot:
+  `/Users/ops/services/earthquake-alert.rollback-20260811-071825`.
 
 ## Approval Gate
 
@@ -13,7 +25,9 @@ Stop until a human records explicit approval naming:
 - Cutover window.
 - Rollback owner.
 
-Exact remaining approval gate: approval to replace the current `/Users/ops/services/earthquake-alert` runtime and load or restart `com.chumji.earthquake-alert` using approved production credentials.
+For the next deployment, require approval to replace the current
+`/Users/ops/services/earthquake-alert` runtime and load or restart
+`com.chumji.earthquake-alert` using approved production credentials.
 
 ## Pre-Cutover Validation
 

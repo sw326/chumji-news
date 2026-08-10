@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-08-06
+Status date: 2026-08-11
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -46,7 +46,7 @@ External sources
   +-- RSS / Reddit / Hacker News ------ news shadow jobs
   +-- Garak Market / KAMIS ------------ fresh-food shadow job
   +-- ACLED / ReliefWeb / OpenSky ----- global-intel shadow job
-  +-- KMA / JMA / GDACS / PTWC / SWPC - live alert hub
+  +-- EMSC / USGS / KMA / JMA / GDACS / PTWC / SWPC - live alert hub
   +-- HoYoLab -------------------------- live daily check-in
   |
   v
@@ -76,7 +76,7 @@ Mac mini, ops account
 
 | Component | Runtime owner | Scheduler | State | Publication |
 | --- | --- | --- | --- | --- |
-| Disaster alert hub | `ops` | always-on LaunchDaemon | production | Telegram |
+| Disaster alert hub | `ops` | always-on LaunchDaemon | production; EMSC WebSocket + USGS one-minute polling | Telegram |
 | HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | production; first scheduled run verified | HoYoLab account action |
 | Morning news shadow | `ops` | LaunchDaemon, 08:10 | shadow | local only |
 | IT news shadow | `ops` | LaunchDaemon, 09:10 | shadow | local only |
