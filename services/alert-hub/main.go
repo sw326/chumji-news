@@ -36,6 +36,7 @@ type Config struct {
 	TelegramTokenFile string        `json:"telegram_token_file"`
 	StateFile         string        `json:"state_file"`
 	HealthFile        string        `json:"health_file"`
+	USGS              USGSConfig    `json:"usgs"`
 	GDACS             GDACSConfig   `json:"gdacs"`
 	Tsunami           TsunamiConfig `json:"tsunami"`
 	SWPC              SWPCConfig    `json:"swpc"`
@@ -114,6 +115,7 @@ type Event struct {
 }
 
 type NormalizedEvent struct {
+	Source      string
 	Action      string
 	SourceID    string
 	Time        time.Time
@@ -126,11 +128,18 @@ type NormalizedEvent struct {
 	Tier        string
 	Urgent      bool
 	Fingerprint string
+	DetailURL   string
 }
 
 type State struct {
 	Seen               map[string]string          `json:"seen"`
 	Snapshots          map[string]EventSnapshot   `json:"snapshots,omitempty"`
+	USGSSeen           map[string]string          `json:"usgs_seen,omitempty"`
+	USGSSnapshots      map[string]EventSnapshot   `json:"usgs_snapshots,omitempty"`
+	USGSOrder          []string                   `json:"usgs_order,omitempty"`
+	USGSInitialized    bool                       `json:"usgs_initialized,omitempty"`
+	USGSLastModified   string                     `json:"usgs_last_modified,omitempty"`
+	Earthquakes        []EarthquakeRecord         `json:"earthquakes,omitempty"`
 	GDACS              map[string]GDACSSnapshot   `json:"gdacs,omitempty"`
 	GDACSInitialized   bool                       `json:"gdacs_initialized,omitempty"`
 	Tsunami            TsunamiSnapshot            `json:"tsunami,omitempty"`
@@ -157,12 +166,20 @@ type EventSnapshot struct {
 	OccurredAt string  `json:"occurred_at"`
 }
 
+type EarthquakeRecord struct {
+	Sources  map[string]string `json:"sources"`
+	Snapshot EventSnapshot     `json:"snapshot"`
+	Notified bool              `json:"notified"`
+}
+
 type Health struct {
 	Status            string    `json:"status"`
 	UpdatedAt         time.Time `json:"updated_at"`
 	ConnectedAt       time.Time `json:"connected_at,omitempty"`
 	LastMessageAt     time.Time `json:"last_message_at,omitempty"`
 	LastAlertAt       time.Time `json:"last_alert_at,omitempty"`
+	LastUSGSPollAt    time.Time `json:"last_usgs_poll_at,omitempty"`
+	LastUSGSError     string    `json:"last_usgs_error,omitempty"`
 	LastGDACSPollAt   time.Time `json:"last_gdacs_poll_at,omitempty"`
 	LastGDACSError    string    `json:"last_gdacs_error,omitempty"`
 	LastTsunamiPollAt time.Time `json:"last_tsunami_poll_at,omitempty"`
@@ -270,6 +287,9 @@ func loadConfig(path string) (Config, error) {
 		cfg.Filters.KoreaMinMagnitude <= 0 || cfg.Filters.RegionalMinMagnitude <= 0 ||
 		cfg.Filters.GlobalMinMagnitude <= 0 {
 		return cfg, errors.New("all filter radii and magnitude thresholds must be positive")
+	}
+	if cfg.USGS.Enabled && (cfg.USGS.URL == "" || cfg.USGS.IntervalMinutes <= 0) {
+		return cfg, errors.New("usgs.url and positive usgs.interval_minutes are required when USGS is enabled")
 	}
 	if cfg.GDACS.Enabled && (cfg.GDACS.URL == "" || cfg.GDACS.RSSFallbackURL == "" || cfg.GDACS.IntervalMinutes <= 0) {
 		return cfg, errors.New("gdacs.url, gdacs.rss_fallback_url, and positive gdacs.interval_minutes are required when GDACS is enabled")
@@ -401,6 +421,27 @@ func readLoop(ctx context.Context, conn *websocket.Conn, cfg Config, state *Stat
 
 	ticker := time.NewTicker(pingEvery)
 	defer ticker.Stop()
+	var usgsTicker *time.Ticker
+	var usgsTick <-chan time.Time
+	var usgsResults chan error
+	usgsInFlight := false
+	startUSGSPoll := func() {}
+	if cfg.USGS.Enabled {
+		usgsTicker = time.NewTicker(time.Duration(cfg.USGS.IntervalMinutes) * time.Minute)
+		defer usgsTicker.Stop()
+		usgsTick = usgsTicker.C
+		usgsResults = make(chan error, 1)
+		startUSGSPoll = func() {
+			if usgsInFlight {
+				return
+			}
+			usgsInFlight = true
+			go func() {
+				usgsResults <- pollUSGS(ctx, cfg, state, token, dryRun)
+			}()
+		}
+		startUSGSPoll()
+	}
 	var gdacsTicker *time.Ticker
 	var gdacsTick <-chan time.Time
 	var gdacsResults chan error
@@ -547,6 +588,19 @@ func readLoop(ctx context.Context, conn *websocket.Conn, cfg Config, state *Stat
 			if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); err != nil {
 				return err
 			}
+		case <-usgsTick:
+			startUSGSPoll()
+		case err := <-usgsResults:
+			usgsInFlight = false
+			if err != nil {
+				health.LastUSGSError = err.Error()
+				log.Printf("USGS poll failed: %v", err)
+			} else {
+				health.LastUSGSPollAt = time.Now()
+				health.LastUSGSError = ""
+			}
+			health.UpdatedAt = time.Now()
+			_ = writeJSONAtomic(cfg.HealthFile, *health, 0o600)
 		case <-gdacsTick:
 			startGDACSPoll()
 		case err := <-gdacsResults:
@@ -636,21 +690,14 @@ func processMessage(ctx context.Context, cfg Config, state *State, token string,
 	if event.Tier == "" {
 		return false, nil
 	}
-	if previous, ok := state.Seen[event.SourceID]; ok && previous == event.Fingerprint {
-		return false, nil
-	}
-	previous, hasPrevious := state.Snapshots[event.SourceID]
-	message := formatAlert(event, previous, hasPrevious)
-	if dryRun {
-		log.Printf("DRY RUN\n%s", message)
-	} else if err := sendTelegram(withAlertMeta(ctx, AlertMeta{
-		Source: "emsc", EventID: event.SourceID, Action: event.Action,
-		Severity: event.Tier, OccurredAt: event.Time,
-	}), token, cfg.TelegramChatID, message); err != nil {
+	alerted, changed, err := processEarthquakeLocked(ctx, cfg, state, token, dryRun, event)
+	if err != nil {
 		return false, err
 	}
-	remember(state, event)
-	return true, writeJSONAtomic(cfg.StateFile, state, 0o600)
+	if changed {
+		err = writeJSONAtomic(cfg.StateFile, state, 0o600)
+	}
+	return alerted, err
 }
 
 func normalize(raw []byte, filters FilterConfig) (NormalizedEvent, error) {
@@ -685,7 +732,7 @@ func normalize(raw []byte, filters FilterConfig) (NormalizedEvent, error) {
 	tier := classify(distance, mag, p.Region, filters)
 	fingerprint := fmt.Sprintf("%s|%.2f|%.4f|%.4f|%.1f|%s", envelope.Action, mag, lat, lon, depth, p.LastUpdate)
 	return NormalizedEvent{
-		Action: envelope.Action, SourceID: p.SourceID, Time: occurred,
+		Source: "emsc", Action: envelope.Action, SourceID: p.SourceID, Time: occurred,
 		Magnitude: mag, Latitude: lat, Longitude: lon, Depth: depth,
 		Region: strings.TrimSpace(p.Region), DistanceKM: distance, Tier: tier,
 		Urgent: mag >= filters.UrgentMinMagnitude, Fingerprint: fingerprint,
@@ -776,10 +823,13 @@ func formatAlert(event NormalizedEvent, previous EventSnapshot, hasPrevious bool
 			message += "\n\n<b>변경 사항</b>\n" + changes
 		}
 	}
-	return message + fmt.Sprintf(
-		"\n\n<a href=\"%s\">지도에서 보기</a>\n<code>EMSC %s</code>",
-		html.EscapeString(mapURL), html.EscapeString(event.SourceID),
-	)
+	message += fmt.Sprintf("\n\n<a href=\"%s\">지도에서 보기</a>", html.EscapeString(mapURL))
+	if event.DetailURL != "" {
+		message += fmt.Sprintf(" · <a href=\"%s\">%s에서 보기</a>",
+			html.EscapeString(event.DetailURL), html.EscapeString(earthquakeSourceLabel(event.Source)))
+	}
+	return message + fmt.Sprintf("\n<code>%s %s</code>",
+		html.EscapeString(earthquakeSourceLabel(event.Source)), html.EscapeString(event.SourceID))
 }
 
 func formatChanges(previous EventSnapshot, current NormalizedEvent) string {
@@ -840,6 +890,7 @@ func sendTelegram(ctx context.Context, token, chatID, text string) error {
 func loadState(path string) (*State, error) {
 	state := &State{
 		Seen: map[string]string{}, Snapshots: map[string]EventSnapshot{},
+		USGSSeen: map[string]string{}, USGSSnapshots: map[string]EventSnapshot{},
 		GDACS: map[string]GDACSSnapshot{}, SWPCSeen: map[string]bool{}, KMASeen: map[string]bool{},
 		Typhoons: map[string]TyphoonSnapshot{},
 	}
@@ -859,6 +910,12 @@ func loadState(path string) (*State, error) {
 	if state.Snapshots == nil {
 		state.Snapshots = map[string]EventSnapshot{}
 	}
+	if state.USGSSeen == nil {
+		state.USGSSeen = map[string]string{}
+	}
+	if state.USGSSnapshots == nil {
+		state.USGSSnapshots = map[string]EventSnapshot{}
+	}
 	if state.GDACS == nil {
 		state.GDACS = map[string]GDACSSnapshot{}
 	}
@@ -877,6 +934,21 @@ func loadState(path string) (*State, error) {
 		}
 		if snapshot, ok := snapshotFromFingerprint(fingerprint); ok {
 			state.Snapshots[id] = snapshot
+		}
+	}
+	if len(state.Earthquakes) == 0 {
+		for id, snapshot := range state.Snapshots {
+			if snapshot.OccurredAt == "" {
+				continue
+			}
+			state.Earthquakes = append(state.Earthquakes, EarthquakeRecord{
+				Sources: map[string]string{"emsc": id}, Snapshot: snapshot, Notified: true,
+			})
+		}
+	}
+	for i := range state.Earthquakes {
+		if state.Earthquakes[i].Sources == nil {
+			state.Earthquakes[i].Sources = map[string]string{}
 		}
 	}
 	return state, nil
@@ -905,10 +977,7 @@ func remember(state *State, event NormalizedEvent) {
 		state.Order = append(state.Order, event.SourceID)
 	}
 	state.Seen[event.SourceID] = event.Fingerprint
-	state.Snapshots[event.SourceID] = EventSnapshot{
-		Magnitude: event.Magnitude, Latitude: event.Latitude, Longitude: event.Longitude,
-		Depth: event.Depth, Region: event.Region, OccurredAt: event.Time.Format(time.RFC3339Nano),
-	}
+	state.Snapshots[event.SourceID] = snapshotFromEvent(event)
 	for len(state.Order) > maxSeenEvents {
 		oldest := state.Order[0]
 		state.Order = state.Order[1:]
