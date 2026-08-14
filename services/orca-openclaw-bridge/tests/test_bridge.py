@@ -15,7 +15,7 @@ sys.modules[SPEC.name] = bridge
 SPEC.loader.exec_module(bridge)
 
 
-def make_config(root: Path, allowed_types=("worker_done",)):
+def make_config(root: Path, allowed_types=("worker_done",), watched_runs=()):
     return bridge.BridgeConfig(
         source=bridge.SourceConfig(
             ssh_target="user@company",
@@ -30,6 +30,7 @@ def make_config(root: Path, allowed_types=("worker_done",)):
             session_key="agent:main:test",
         ),
         state_path=root / "state.json",
+        watched_runs=watched_runs,
         allowed_types=allowed_types,
     )
 
@@ -63,6 +64,35 @@ def delivery(event_type="worker_done", body="done"):
     }
 
 
+def source_peek(event_type="worker_done", body="done"):
+    return {
+        "ok": True,
+        "result": {
+            "messages": [
+                {
+                    "id": "msg_source_1",
+                    "run_id": "run_source",
+                    "type": event_type,
+                    "priority": "normal",
+                    "subject": "source finished",
+                    "body": body,
+                    "thread_id": None,
+                    "created_at": "2026-08-14T00:00:00Z",
+                    "payload": {
+                        "taskId": "task_source",
+                        "dispatchId": "ctx_source",
+                        "outcome": "succeeded",
+                        "filesModified": ["company/private.py"],
+                    },
+                }
+            ],
+            "count": 1,
+            "timedOut": False,
+            "runId": "run_source",
+        },
+    }
+
+
 class BridgeTests(unittest.TestCase):
     def test_builds_wait_command_without_shell(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -72,6 +102,43 @@ class BridgeTests(unittest.TestCase):
         self.assertIn("--wait", command)
         self.assertEqual(command[-1], "--json")
         self.assertNotIn("sh", command[:1])
+
+    def test_builds_non_consuming_source_wait_with_dynamic_handle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            watched = bridge.WatchedRunConfig(run_id="run_source")
+            config = make_config(Path(tmp), watched_runs=(watched,))
+            command = bridge.build_source_wait_command(
+                config, watched, "term_current_coordinator"
+            )
+        self.assertIn("--peek", command)
+        self.assertIn("--wait", command)
+        self.assertIn("run_source", command)
+        self.assertIn("term_current_coordinator", command)
+        self.assertNotIn("--ack", command)
+
+    def test_resolves_current_coordinator_handle_from_run_show(self):
+        response = {
+            "ok": True,
+            "result": {
+                "run": {
+                    "id": "run_source",
+                    "coordinator_handle": "term_current",
+                }
+            },
+        }
+        self.assertEqual(
+            bridge.resolve_coordinator_handle(response, "run_source"),
+            "term_current",
+        )
+
+    def test_source_projection_omits_file_list_and_adds_correlation(self):
+        message = source_peek()["result"]["messages"][0]
+        projected = bridge.prepare_source_message(message, "run_source")
+        payload = projected["payload"]
+        self.assertEqual(payload["sourceRunId"], "run_source")
+        self.assertEqual(payload["sourceMessageId"], "msg_source_1")
+        self.assertEqual(payload["taskId"], "task_source")
+        self.assertNotIn("filesModified", payload)
 
     def test_sanitizes_secrets_and_projects_payload(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -151,15 +218,15 @@ class BridgeTests(unittest.TestCase):
                     "msg_bridge", "승인; $(touch /tmp/never)", config, state
                 )
 
+            response_status = state.event_entry("msg_bridge")["response_status"]
+
         command_text = " ".join(captured["command"])
         self.assertNotIn("touch", command_text)
         self.assertNotIn("승인", command_text)
         request = json.loads(captured["stdin"])
         self.assertEqual(request["body"], "승인; $(touch /tmp/never)")
         self.assertEqual(request["source_run_id"], "run_source")
-        self.assertEqual(
-            state.event_entry("msg_bridge")["response_status"], "sent"
-        )
+        self.assertEqual(response_status, "sent")
 
     def test_response_requires_source_run_correlation(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -207,14 +274,15 @@ class BridgeTests(unittest.TestCase):
             stale_daemon.mark_delivery_acked("delivery_after_response")
 
             reloaded = bridge.StateStore(state_path)
+            response_status = reloaded.event_entry("msg_question")[
+                "response_status"
+            ]
+            delivery_status = reloaded.data["deliveries"][
+                "delivery_after_response"
+            ]["status"]
 
-        self.assertEqual(
-            reloaded.event_entry("msg_question")["response_status"], "sent"
-        )
-        self.assertEqual(
-            reloaded.data["deliveries"]["delivery_after_response"]["status"],
-            "acked",
-        )
+        self.assertEqual(response_status, "sent")
+        self.assertEqual(delivery_status, "acked")
 
     def test_response_file_accepts_resolved_tmp_alias(self):
         with tempfile.NamedTemporaryFile(
@@ -262,6 +330,51 @@ class BridgeTests(unittest.TestCase):
             self.assertEqual(len(commands), 2)
             self.assertEqual(commands[0][1], "agent")
             self.assertIn("--ack", commands[1])
+
+    def test_source_peek_delivers_once_without_ack(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            watched = bridge.WatchedRunConfig(run_id="run_source")
+            config = make_config(Path(tmp), watched_runs=(watched,))
+            state = bridge.StateStore(config.state_path)
+            commands = []
+
+            def runner(command):
+                commands.append(list(command))
+                return {"status": "ok"}
+
+            first = bridge.process_source_peek(
+                source_peek(), watched, config, state, runner
+            )
+            second = bridge.process_source_peek(
+                source_peek(), watched, config, state, runner
+            )
+
+        self.assertEqual(first, 1)
+        self.assertEqual(second, 0)
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0][1], "agent")
+        self.assertNotIn("--ack", commands[0])
+
+    def test_source_question_is_returnable_to_authoritative_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            watched = bridge.WatchedRunConfig(run_id="run_source")
+            config = make_config(
+                Path(tmp), allowed_types=("question",), watched_runs=(watched,)
+            )
+            state = bridge.StateStore(config.state_path)
+
+            bridge.process_source_peek(
+                source_peek(event_type="question"),
+                watched,
+                config,
+                state,
+                lambda _command: {"status": "ok"},
+            )
+            correlation = state.event_entry("msg_source_1")["correlation"]
+
+        self.assertEqual(correlation["sourceRunId"], "run_source")
+        self.assertEqual(correlation["sourceMessageId"], "msg_source_1")
+        self.assertEqual(correlation["questionId"], "msg_source_1")
 
     def test_openclaw_failure_is_not_acked_and_becomes_ambiguous(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -349,6 +462,35 @@ class BridgeTests(unittest.TestCase):
                             "session_key": "agent:main:test",
                         },
                         "state_path": str(Path(tmp) / "state.json"),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(bridge.BridgeError):
+                bridge.load_config(path)
+
+    def test_config_rejects_duplicate_watched_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "source": {
+                            "ssh_target": "user@host",
+                            "wsl_distro": "Ubuntu",
+                            "orca_command": "/orca",
+                            "observer_terminal": "term_1",
+                        },
+                        "openclaw": {
+                            "command": "openclaw",
+                            "agent": "main",
+                            "session_key": "agent:main:test",
+                        },
+                        "state_path": str(Path(tmp) / "state.json"),
+                        "watched_runs": [
+                            {"run_id": "run_same"},
+                            {"run_id": "run_same"},
+                        ],
                     }
                 ),
                 encoding="utf-8",

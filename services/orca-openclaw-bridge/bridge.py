@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,12 @@ DEFAULT_ALLOWED_TYPES = (
     "question",
     "decision_gate",
     "status",
+)
+SOURCE_WATCH_TYPES = (
+    "worker_done",
+    "escalation",
+    "question",
+    "decision_gate",
 )
 SECRET_PATTERNS = (
     re.compile(
@@ -66,10 +73,18 @@ class OpenClawConfig:
 
 
 @dataclass(frozen=True)
+class WatchedRunConfig:
+    run_id: str
+    wait_timeout_ms: int = 60_000
+    repeat_delay_seconds: float = 60.0
+
+
+@dataclass(frozen=True)
 class BridgeConfig:
     source: SourceConfig
     openclaw: OpenClawConfig
     state_path: Path
+    watched_runs: tuple[WatchedRunConfig, ...] = ()
     allowed_types: tuple[str, ...] = DEFAULT_ALLOWED_TYPES
     reconnect_delay_seconds: float = 5.0
     max_subject_chars: int = 256
@@ -123,12 +138,33 @@ def load_config(path: Path) -> BridgeConfig:
     if openclaw.deliver and not (openclaw.reply_channel and openclaw.reply_to):
         raise BridgeError("deliver=true requires reply_channel and reply_to")
 
+    watched_raw = raw.get("watched_runs", [])
+    if not isinstance(watched_raw, list):
+        raise BridgeError("watched_runs must be a list")
+    watched_runs: list[WatchedRunConfig] = []
+    seen_run_ids: set[str] = set()
+    for index, item in enumerate(watched_raw):
+        if not isinstance(item, dict):
+            raise BridgeError(f"watched_runs[{index}] must be an object")
+        run_id = _require_text(item.get("run_id"), f"watched_runs[{index}].run_id")
+        if run_id in seen_run_ids:
+            raise BridgeError(f"duplicate watched run {run_id}")
+        seen_run_ids.add(run_id)
+        watched_runs.append(
+            WatchedRunConfig(
+                run_id=run_id,
+                wait_timeout_ms=int(item.get("wait_timeout_ms", 60_000)),
+                repeat_delay_seconds=float(item.get("repeat_delay_seconds", 60.0)),
+            )
+        )
+
     return BridgeConfig(
         source=source,
         openclaw=openclaw,
         state_path=Path(
             _require_text(raw.get("state_path"), "state_path")
         ).expanduser(),
+        watched_runs=tuple(watched_runs),
         allowed_types=allowed,
         reconnect_delay_seconds=float(raw.get("reconnect_delay_seconds", 5.0)),
         max_subject_chars=int(raw.get("max_subject_chars", 256)),
@@ -192,11 +228,24 @@ class StateStore:
             finally:
                 fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
 
+    def _refresh(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        lock_path = self.path.with_name(self.path.name + ".lock")
+        with lock_path.open("a+b") as lock_handle:
+            os.fchmod(lock_handle.fileno(), 0o600)
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_SH)
+            try:
+                self.data = self._load()
+            finally:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+
     def event_status(self, event_id: str) -> str | None:
+        self._refresh()
         entry = self.data["events"].get(event_id)
         return entry.get("status") if isinstance(entry, dict) else None
 
     def event_entry(self, event_id: str) -> dict[str, Any] | None:
+        self._refresh()
         entry = self.data["events"].get(event_id)
         return entry if isinstance(entry, dict) else None
 
@@ -241,6 +290,7 @@ class StateStore:
         self._update(mutate)
 
     def pending_responses(self) -> list[dict[str, Any]]:
+        self._refresh()
         pending: list[dict[str, Any]] = []
         for event_id, entry in self.data["events"].items():
             if not isinstance(entry, dict):
@@ -302,6 +352,48 @@ def build_ack_command(config: BridgeConfig, delivery_id: str) -> list[str]:
         config.source.observer_terminal,
         "--ack",
         delivery_id,
+        "--json",
+    ]
+
+
+def build_run_show_command(config: BridgeConfig, watched: WatchedRunConfig) -> list[str]:
+    return build_remote_prefix(config.source) + [
+        "orchestration",
+        "run-show",
+        "--id",
+        watched.run_id,
+        "--json",
+    ]
+
+
+def resolve_coordinator_handle(response: dict[str, Any], run_id: str) -> str:
+    if response.get("ok") is not True:
+        raise BridgeError(f"run-show failed for {run_id}")
+    result = response.get("result")
+    run = result.get("run") if isinstance(result, dict) else None
+    if not isinstance(run, dict) or run.get("id") != run_id:
+        raise BridgeError(f"run-show returned the wrong Run for {run_id}")
+    return _require_text(run.get("coordinator_handle"), f"{run_id}.coordinator_handle")
+
+
+def build_source_wait_command(
+    config: BridgeConfig,
+    watched: WatchedRunConfig,
+    coordinator_handle: str,
+) -> list[str]:
+    return build_remote_prefix(config.source) + [
+        "orchestration",
+        "check",
+        "--run",
+        watched.run_id,
+        "--terminal",
+        coordinator_handle,
+        "--peek",
+        "--wait",
+        "--types",
+        ",".join(SOURCE_WATCH_TYPES),
+        "--timeout-ms",
+        str(watched.wait_timeout_ms),
         "--json",
     ]
 
@@ -394,6 +486,38 @@ def event_correlation(message: dict[str, Any]) -> dict[str, str]:
     if isinstance(thread_id, str) and thread_id:
         correlation["observerThreadId"] = sanitize_text(thread_id, 500)
     return correlation
+
+
+def prepare_source_message(message: dict[str, Any], run_id: str) -> dict[str, Any]:
+    """Project an authoritative Run event into the bridge's safe lifecycle shape."""
+
+    event_id = _require_text(message.get("id"), "message.id")
+    event_type = _require_text(message.get("type"), "message.type")
+    payload = normalize_payload(message.get("payload")) or {}
+    projected: dict[str, Any] = {
+        "sourceRunId": run_id,
+        "sourceMessageId": event_id,
+    }
+    for key in ("taskId", "dispatchId", "outcome", "phase", "gateId"):
+        value = payload.get(key)
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            projected[key] = value
+    if event_type == "question":
+        projected["questionId"] = event_id
+    if event_type == "decision_gate" and "gateId" not in projected:
+        projected["gateId"] = event_id
+
+    return {
+        "id": event_id,
+        "run_id": run_id,
+        "type": event_type,
+        "priority": message.get("priority"),
+        "subject": message.get("subject"),
+        "body": message.get("body"),
+        "thread_id": message.get("thread_id"),
+        "created_at": message.get("created_at"),
+        "payload": projected,
+    }
 
 
 def effective_event_type(message: dict[str, Any]) -> str:
@@ -541,6 +665,61 @@ def process_delivery(
     return delivery_id
 
 
+def process_source_peek(
+    response: dict[str, Any],
+    watched: WatchedRunConfig,
+    config: BridgeConfig,
+    state: StateStore,
+    runner: CommandRunner = run_json_command,
+) -> int:
+    """Deliver unread lifecycle summaries without consuming the source Run."""
+
+    if response.get("ok") is not True:
+        raise BridgeError(f"source check returned ok=false for {watched.run_id}")
+    result = response.get("result")
+    if not isinstance(result, dict):
+        raise BridgeError(f"source check omitted result for {watched.run_id}")
+    if result.get("timedOut") or result.get("count") == 0:
+        return 0
+    messages = result.get("messages")
+    if not isinstance(messages, list):
+        raise BridgeError(f"source check omitted messages for {watched.run_id}")
+
+    delivered = 0
+    for raw_message in messages:
+        if not isinstance(raw_message, dict):
+            raise BridgeError("source check contains a non-object message")
+        event_type = _require_text(raw_message.get("type"), "message.type")
+        if event_type not in SOURCE_WATCH_TYPES:
+            continue
+        message = prepare_source_message(raw_message, watched.run_id)
+        event_id = _require_text(message.get("id"), "message.id")
+        status = state.event_status(event_id)
+        if status in {"delivered", "skipped"}:
+            continue
+        if status in {"inflight", "unknown"}:
+            raise BridgeError(
+                f"event {event_id} has ambiguous prior status {status}; refusing replay"
+            )
+
+        correlation = event_correlation(message)
+        state.mark_event(event_id, "inflight", event_type, correlation)
+        synthetic_delivery_id = f"source-peek:{watched.run_id}:{event_id}"
+        try:
+            openclaw_response = runner(
+                build_openclaw_command(message, synthetic_delivery_id, config)
+            )
+        except Exception:
+            state.mark_event(event_id, "unknown", event_type, correlation)
+            raise
+        if openclaw_response.get("status") != "ok":
+            state.mark_event(event_id, "unknown", event_type, correlation)
+            raise BridgeError(f"OpenClaw rejected event {event_id}")
+        state.mark_event(event_id, "delivered", event_type, correlation)
+        delivered += 1
+    return delivered
+
+
 REMOTE_RESPONSE_SCRIPT = r'''import json, subprocess, sys
 data = json.load(sys.stdin)
 required = ("orca_command", "observer_terminal", "source_run_id", "event_id", "body")
@@ -655,6 +834,15 @@ def emit_log(event: str, **fields: Any) -> None:
 
 
 def run_bridge(config: BridgeConfig, once: bool, dry_run: bool) -> int:
+    if not once and not dry_run:
+        for watched in config.watched_runs:
+            thread = threading.Thread(
+                target=run_source_watcher,
+                args=(config, watched),
+                name=f"source-watch-{watched.run_id}",
+                daemon=True,
+            )
+            thread.start()
     state = StateStore(config.state_path)
     while True:
         try:
@@ -667,6 +855,34 @@ def run_bridge(config: BridgeConfig, once: bool, dry_run: bool) -> int:
             emit_log("bridge_error", error=str(exc))
             if once:
                 return 1
+            time.sleep(config.reconnect_delay_seconds)
+
+
+def run_source_watcher(config: BridgeConfig, watched: WatchedRunConfig) -> None:
+    state = StateStore(config.state_path)
+    while True:
+        try:
+            run_response = run_json_command(build_run_show_command(config, watched))
+            coordinator_handle = resolve_coordinator_handle(
+                run_response, watched.run_id
+            )
+            response = run_json_command(
+                build_source_wait_command(config, watched, coordinator_handle)
+            )
+            delivered = process_source_peek(response, watched, config, state)
+            result = response.get("result")
+            count = result.get("count", 0) if isinstance(result, dict) else 0
+            emit_log(
+                "source_checkpoint",
+                run_id=watched.run_id,
+                coordinator_handle=coordinator_handle,
+                observed=count,
+                delivered=delivered,
+            )
+            if count and delivered == 0:
+                time.sleep(watched.repeat_delay_seconds)
+        except BridgeError as exc:
+            emit_log("source_watch_error", run_id=watched.run_id, error=str(exc))
             time.sleep(config.reconnect_delay_seconds)
 
 

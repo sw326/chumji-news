@@ -18,6 +18,13 @@
     "reply_to": null
   },
   "state_path": "/Users/REPLACE_ME/Library/Application Support/orca-openclaw-bridge/state.json",
+  "watched_runs": [
+    {
+      "run_id": "run_REPLACE_ME",
+      "wait_timeout_ms": 60000,
+      "repeat_delay_seconds": 60
+    }
+  ],
   "allowed_types": [
     "worker_done",
     "escalation",
