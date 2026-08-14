@@ -4,7 +4,7 @@ Status: production cutover validated on 2026-08-14.
 
 Observed deployment:
 
-- release commit: `fb951ba` (initial production commit `43231c4`,
+- release commit: `8149215` (initial production commit `43231c4`,
   source-equivalent prototype commit `19321ad`);
 - LaunchAgent: `com.chumji.orca-openclaw-bridge`;
 - company observer Run: `run_1a897b1b8eb5`;
@@ -118,6 +118,11 @@ allowlisted structured payload fields.
 7. macOS `/tmp` resolves to `/private/tmp`; release `fb951ba` validates against
    the resolved approved directory so response files remain constrained to the
    intended temporary directory on macOS.
+8. Release `8149215` serializes cross-process state updates with an advisory
+   lock and reload-before-mutate transaction. A stale long-running bridge can
+   no longer overwrite a response status written by the response CLI; the
+   regression suite passes 16/16 and the verified E2E event has no pending
+   correlation.
 
 ## Remaining operational checks
 

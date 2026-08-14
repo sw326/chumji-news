@@ -35,6 +35,11 @@ Run; the source coordinator remains the only actor allowed to reply to the
 worker or resolve its gate. The observer never impersonates a project
 coordinator.
 
+The long-running receiver and response CLI share one state journal. Every
+mutation is serialized with an advisory lock and reloads the latest journal
+before writing, preventing a stale process from reverting delivery or response
+state.
+
 ## Local validation
 
 ```bash
