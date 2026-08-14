@@ -1,6 +1,16 @@
 # Orca → OpenClaw bridge design
 
-Status: prototype validated on 2026-08-14; permanent installation not approved.
+Status: production cutover validated on 2026-08-14.
+
+Observed deployment:
+
+- release commit: `43231c4` (source-equivalent prototype commit `19321ad`);
+- LaunchAgent: `com.chumji.orca-openclaw-bridge`;
+- company observer Run: `run_1a897b1b8eb5`;
+- observer terminal: `term_81ce6937-4132-4dab-88ae-a1e7f4523fa4`;
+- transport: renewable 60-second SSH `check --wait`;
+- OpenClaw session: dedicated `agent:main:orca-bridge`, delivered to the owner
+  Telegram DM.
 
 ## Objective
 
@@ -39,6 +49,12 @@ Direct Orca federation remains the preferred future transport, but the saved
 Mac environment references a prior company runtime identity and did not produce
 a live response during this probe. The SSH long-wait transport is therefore the
 validated fallback and does not require exposing the loopback OpenClaw Gateway.
+
+The initial permanent observer `run_921920e99f30` used a 900-second wait. A
+forced client restart proved that Orca retains a disconnected actionable waiter
+until its deadline, delaying replacement. It was superseded before normal use
+by the 60-second renewable observer above. The earlier Run is retained only as
+cutover evidence and must not receive new copies.
 
 ## Delivery semantics
 
@@ -85,17 +101,23 @@ The company coordinator must emit a sanitized summary. The bridge additionally
 redacts common credential assignments, bounds text sizes, and projects only
 allowlisted structured payload fields.
 
-## Remaining cutover gates
+## Verified cutover gates
 
-Before permanent service installation:
+1. Sanitized company status reached the owner Telegram DM exactly once.
+2. OpenClaw success preceded Orca Delivery ACK.
+3. A copied question retained source correlation and a test owner response
+   returned to the source Run without coordinator impersonation.
+4. Forced SSH-child termination recovered automatically within the renewable
+   waiter deadline.
+5. Forced LaunchAgent process termination produced a new process and restored
+   the long-wait connection without restarting the OpenClaw Gateway.
 
-1. Decide the long-term service owner and release path.
-2. Create a permanent observer Run and document recovery after Orca restart.
-3. Validate a real `worker_done`, `question`, and `decision_gate` copy.
-4. Verify the Telegram-to-coordinator response path with a real company
-   coordinator and confirm that it performs the authoritative reply/gate action.
-5. Validate network loss, Mac reboot, company reboot, duplicate Delivery, and
-   ambiguous OpenClaw-result recovery.
-6. Review the disabled LaunchAgent template, install only a reviewed release,
-   and update `current-architecture.md` after observed live verification.
-7. Remove the legacy polling loop only after bridge health is proven.
+## Remaining operational checks
+
+1. Validate a real project `worker_done`, `question`, and `decision_gate` copy.
+2. Confirm a project coordinator consumes returned owner control mail and
+   performs the authoritative reply/gate action.
+3. Validate full Mac and company reboots at a maintenance window; do not reboot
+   while project workers or production operations are active.
+4. Refresh direct Orca federation identity and compare it with the validated
+   SSH fallback before any transport cutover.

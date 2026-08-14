@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-08-11
+Status date: 2026-08-14
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -62,6 +62,7 @@ Mac mini, ops account
   +-- /Users/ops/services/earthquake-alert
   +-- /Users/ops/services/hoyolab-auto
   +-- Investment Assistant runtime
+  +-- Orca -> OpenClaw bridge (chumji user LaunchAgent)
   |
   +-- LaunchDaemons ------ deterministic services and shadow jobs
   +-- OpenClaw cron ------ agent-assisted publication and personal briefings
@@ -90,6 +91,7 @@ Mac mini, ops account
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
+| Orca → OpenClaw bridge | `chumji` | always-on user LaunchAgent | production; company observer Run + renewable SSH `check --wait` + local journal/ACK | sanitized milestones and decision requests to owner Telegram DM |
 
 ## Web and Data Boundaries
 
@@ -131,6 +133,11 @@ Mac mini, ops account
   `/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing`
 - Job logs: `/Users/ops/Library/Logs/chumji-ops`
 - Secret files: `/Users/ops/.config/chumji-ops/secrets`
+- Orca bridge release: `/Users/chumji/.openclaw/services/orca-openclaw-bridge/current`
+- Orca bridge config: `/Users/chumji/.config/orca-openclaw-bridge/config.json`
+- Orca bridge state:
+  `/Users/chumji/Library/Application Support/orca-openclaw-bridge/state.json`
+- Orca bridge logs: `/Users/chumji/Library/Logs/orca-openclaw-bridge*.log`
 - Alert configuration: `/Users/ops/.config/earthquake-alert`
 - HoYoLab configuration:
   `/Users/ops/services/hoyolab-auto/config.json5` with mode `0600`
@@ -151,6 +158,12 @@ context, or direct chat delivery. The target design is:
 
 > Collection, ranking, storage, and publication mechanics are code; model-based
 > interpretation is optional and event-driven.
+
+The Orca bridge is a user LaunchAgent because it integrates the owner-only
+OpenClaw Gateway and Telegram DM. It leaves the Gateway loopback-only and opens
+only outbound SSH to the company computer. Company coordinators retain worker
+lifecycle ownership; the bridge consumes a dedicated observer Run and returns
+owner answers as control mail to the authoritative source Run.
 
 ## `claude-workspace` Assessment
 
@@ -194,3 +207,6 @@ Archive it only after a final reference scan and an approved cleanup.
 3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
 4. Archive the obsolete `ops` workspace after the rollback retention period.
+5. Replace the validated renewable SSH long-wait with direct Orca federation
+   only after the saved company runtime identity is refreshed and a full
+   control-mail round trip passes.
