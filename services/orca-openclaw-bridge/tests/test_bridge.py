@@ -191,6 +191,31 @@ class BridgeTests(unittest.TestCase):
 
         self.assertEqual([item["event_id"] for item in pending], ["msg_question"])
 
+    def test_stale_process_cannot_overwrite_response_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state_path = Path(tmp) / "state.json"
+            responder = bridge.StateStore(state_path)
+            responder.mark_event(
+                "msg_question",
+                "delivered",
+                "question",
+                {"sourceRunId": "run_source"},
+            )
+            stale_daemon = bridge.StateStore(state_path)
+
+            responder.mark_response("msg_question", "sent")
+            stale_daemon.mark_delivery_acked("delivery_after_response")
+
+            reloaded = bridge.StateStore(state_path)
+
+        self.assertEqual(
+            reloaded.event_entry("msg_question")["response_status"], "sent"
+        )
+        self.assertEqual(
+            reloaded.data["deliveries"]["delivery_after_response"]["status"],
+            "acked",
+        )
+
     def test_response_file_accepts_resolved_tmp_alias(self):
         with tempfile.NamedTemporaryFile(
             mode="w",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import fcntl
 import json
 import os
 import re
@@ -155,7 +156,7 @@ class StateStore:
         data.setdefault("deliveries", {})
         return data
 
-    def _save(self) -> None:
+    def _save_unlocked(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         payload = json.dumps(
             self.data, ensure_ascii=False, indent=2, sort_keys=True
@@ -177,6 +178,20 @@ class StateStore:
             if os.path.exists(tmp_name):
                 os.unlink(tmp_name)
 
+    def _update(self, mutate: Callable[[dict[str, Any]], None]) -> None:
+        """Reload and mutate state under a cross-process advisory lock."""
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        lock_path = self.path.with_name(self.path.name + ".lock")
+        with lock_path.open("a+b") as lock_handle:
+            os.fchmod(lock_handle.fileno(), 0o600)
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+            try:
+                self.data = self._load()
+                mutate(self.data)
+                self._save_unlocked()
+            finally:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+
     def event_status(self, event_id: str) -> str | None:
         entry = self.data["events"].get(event_id)
         return entry.get("status") if isinstance(entry, dict) else None
@@ -192,32 +207,38 @@ class StateStore:
         event_type: str,
         correlation: dict[str, str] | None = None,
     ) -> None:
-        entry = self.data["events"].setdefault(event_id, {})
-        entry.update(
-            {
-                "status": status,
-                "type": event_type,
-                "updated_at": int(time.time()),
-            }
-        )
-        if correlation:
-            entry["correlation"] = correlation
-        self._save()
+        def mutate(data: dict[str, Any]) -> None:
+            entry = data["events"].setdefault(event_id, {})
+            entry.update(
+                {
+                    "status": status,
+                    "type": event_type,
+                    "updated_at": int(time.time()),
+                }
+            )
+            if correlation:
+                entry["correlation"] = correlation
+
+        self._update(mutate)
 
     def mark_response(self, event_id: str, status: str) -> None:
-        entry = self.data["events"].get(event_id)
-        if not isinstance(entry, dict):
-            raise BridgeError(f"unknown bridge event {event_id}")
-        entry["response_status"] = status
-        entry["response_updated_at"] = int(time.time())
-        self._save()
+        def mutate(data: dict[str, Any]) -> None:
+            entry = data["events"].get(event_id)
+            if not isinstance(entry, dict):
+                raise BridgeError(f"unknown bridge event {event_id}")
+            entry["response_status"] = status
+            entry["response_updated_at"] = int(time.time())
+
+        self._update(mutate)
 
     def mark_delivery_acked(self, delivery_id: str) -> None:
-        self.data["deliveries"][delivery_id] = {
-            "status": "acked",
-            "updated_at": int(time.time()),
-        }
-        self._save()
+        def mutate(data: dict[str, Any]) -> None:
+            data["deliveries"][delivery_id] = {
+                "status": "acked",
+                "updated_at": int(time.time()),
+            }
+
+        self._update(mutate)
 
     def pending_responses(self) -> list[dict[str, Any]]:
         pending: list[dict[str, Any]] = []
