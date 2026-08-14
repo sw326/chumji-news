@@ -1,0 +1,31 @@
+{
+  "source": {
+    "ssh_target": "REPLACE_ME@company-host",
+    "wsl_distro": "Ubuntu",
+    "orca_command": "/home/REPLACE_ME/.local/bin/orca-ide",
+    "observer_terminal": "term_REPLACE_ME",
+    "wait_timeout_ms": 900000,
+    "connect_timeout_seconds": 8
+  },
+  "openclaw": {
+    "command": "/opt/homebrew/bin/openclaw",
+    "agent": "main",
+    "session_key": "agent:main:telegram:direct:REPLACE_ME",
+    "thinking": "minimal",
+    "timeout_seconds": 600,
+    "deliver": false,
+    "reply_channel": null,
+    "reply_to": null
+  },
+  "state_path": "/Users/REPLACE_ME/Library/Application Support/orca-openclaw-bridge/state.json",
+  "allowed_types": [
+    "worker_done",
+    "escalation",
+    "question",
+    "decision_gate",
+    "status"
+  ],
+  "reconnect_delay_seconds": 5,
+  "max_subject_chars": 256,
+  "max_body_chars": 4000
+}
