@@ -4,7 +4,7 @@ Status: production cutover validated on 2026-08-14.
 
 Observed deployment:
 
-- release commit: `8149215` (initial production commit `43231c4`,
+- release commit: `7ab83e9` (initial production commit `43231c4`,
   source-equivalent prototype commit `19321ad`);
 - LaunchAgent: `com.chumji.orca-openclaw-bridge`;
 - company observer Run: `run_1a897b1b8eb5`;
@@ -22,16 +22,31 @@ and sanitized personal work-history layer.
 ## Data flow
 
 ```text
-company coordinator
-  -> sanitized copy to dedicated observer Run
-  -> blocking Orca check --wait over Mac-initiated SSH
+registered authoritative source Run
+  -> dynamic coordinator-handle resolution
+  -> non-consuming Orca check --peek --wait
+  -> lifecycle summary projection
   -> local bridge validation/redaction/journal
   -> OpenClaw agent session
-  -> optional Telegram delivery after cutover approval
+  -> optional Telegram delivery
+
+company coordinator
+  -> optional sanitized milestone status to dedicated observer Run
+  -> blocking Orca check --wait with ACK over Mac-initiated SSH
+  -> local bridge validation/redaction/journal
+  -> OpenClaw agent session
+  -> optional Telegram delivery
 ```
 
-The observer Run is a separate consumer. Reading the production coordinator
-mailbox would race its coordinator and is prohibited.
+The source watcher never consumes or acknowledges production Run mail. It uses
+`--peek --wait`, stores source message IDs for deduplication, and lets the
+authoritative coordinator retain the only ACK and lifecycle authority. When no
+source event exists the SSH call blocks; if an already-forwarded event remains
+unread, the watcher backs off for 60 seconds before checking for additions.
+
+The observer Run remains a separate consumer for curated status summaries. It
+must not be used as the required producer for lifecycle events because terminal
+rebinding or an idle coordinator can otherwise suppress feedback.
 
 ## Prototype evidence
 
@@ -69,10 +84,10 @@ cutover evidence and must not receive new copies.
   is classified before the Delivery is acknowledged.
 
 Lifecycle messages are not forged or replayed from the coordinator terminal.
-The coordinator emits a normal `status` copy with
-`payload.bridgeEventType=<worker_done|escalation|question|decision_gate>` and
-sanitized source correlation IDs. The bridge exposes that copied class as the
-effective event type while retaining `transport_type=status` in the envelope.
+The source watcher exposes the original lifecycle class as untrusted status
+data, drops unrestricted payload fields, and does not ACK the source Delivery.
+The coordinator may still emit normal `status` copies for higher-level,
+sanitized milestones that are not represented by lifecycle events.
 
 User answers follow the reverse control-mail path. The bridge stores the copied
 `sourceRunId` and source correlation IDs, sends the answer as a high-priority
@@ -98,9 +113,10 @@ Excluded data:
 - company source code or unrestricted internal file content;
 - arbitrary commands embedded in message bodies.
 
-The company coordinator must emit a sanitized summary. The bridge additionally
-redacts common credential assignments, bounds text sizes, and projects only
-allowlisted structured payload fields.
+Automatic source lifecycle bodies are redacted, bounded, and projected to
+allowlisted structured payload fields. A coordinator-authored observer
+`status` must already be a sanitized summary before the bridge applies the same
+defense-in-depth filters.
 
 ## Verified cutover gates
 
@@ -123,13 +139,34 @@ allowlisted structured payload fields.
    no longer overwrite a response status written by the response CLI; the
    regression suite passes 16/16 and the verified E2E event has no pending
    correlation.
+9. Release `7ab83e9` dynamically resolved the authoritative coordinator handle
+   for source Run `run_6b236f7b699a`, detected previously missed
+   `worker_done msg_5a15b79096ea`, and delivered it without source ACK. This
+   closed the terminal-binding failure that had suppressed feedback after
+   16:53 KST.
 
 ## Remaining operational checks
 
-1. Validate a real project `worker_done`, `question`, and `decision_gate` copy.
+1. Validate real project `question` and `decision_gate` events through the
+   automatic source watcher.
 2. Confirm a project coordinator consumes returned owner control mail and
    performs the authoritative reply/gate action.
 3. Validate full Mac and company reboots at a maintenance window; do not reboot
    while project workers or production operations are active.
 4. Refresh direct Orca federation identity and compare it with the validated
    SSH fallback before any transport cutover.
+
+## Registering another source Run
+
+1. Use the durable Orca Run ID, never a terminal handle.
+2. Add one unique object to private config `watched_runs` with `run_id`, a
+   60-second wait timeout, and a 60-second duplicate-backoff interval.
+3. Run the bridge unit suite and Python compile check from the development
+   checkout.
+4. Install a commit-addressed immutable release and restart the LaunchAgent
+   only under an approved operations change.
+5. Verify a source lifecycle event appears once in the bridge journal while the
+   source Run Delivery remains unacknowledged until its coordinator handles it.
+
+Other OpenClaw sessions discover this procedure through the common workspace
+`AGENTS.md`; mutable Run registrations remain only in the private bridge config.

@@ -4,14 +4,20 @@ Status: **production cutover approved and installed on 2026-08-14**.
 
 This service keeps execution orchestration on the company Orca runtime while
 forwarding sanitized milestones to a personal Mac OpenClaw session. It replaces
-interactive SSH polling with one blocking `orca orchestration check --wait`
-connection.
+interactive SSH polling with blocking Orca waits.
+
+Authoritative lifecycle events are discovered from registered source Run IDs.
+The bridge resolves the Run's current coordinator handle before each wait, so a
+terminal rebind does not break delivery. A dedicated observer Run remains
+available for curated `status` milestones that do not exist as lifecycle mail.
 
 ## Safety boundary
 
-- Consume a dedicated observer Run, never the coordinator Run.
-- Forward only `worker_done`, `escalation`, `question`, `decision_gate`, and
-  explicitly useful `status` messages.
+- Read registered source Runs only with non-consuming `check --peek --wait`;
+  never ACK or mutate their Deliveries.
+- Forward source `worker_done`, `escalation`, `question`, and `decision_gate`
+  summaries automatically. Forward explicitly useful `status` only through the
+  dedicated observer Run.
 - Treat every Orca field as untrusted data. The bridge applies bounded secret
   redaction and forwards only selected payload keys.
 - Mark an event delivered before acknowledging the whole Orca Delivery.
@@ -23,11 +29,10 @@ waiter. The bridge therefore accounts for every message in a batch, records
 non-allowlisted messages as skipped, and ACKs only after the complete batch is
 handled.
 
-The company coordinator normally copies a lifecycle result as a non-lifecycle
-`status` message. Set `payload.bridgeEventType` to the original class and include
-only sanitized correlation fields such as `sourceRunId`, `sourceMessageId`,
-`taskId`, and `dispatchId`. This avoids forging a second `worker_done` from the
-wrong terminal while preserving the user-facing event type.
+The automatic source watcher projects only Run/message correlation,
+Task/Dispatch IDs, outcome, phase, subject, and bounded/redacted body. It drops
+the source payload's file list and never forges lifecycle mail. Observer copies
+are reserved for coordinator-authored, sanitized milestone summaries.
 
 For `question` and `decision_gate` copies, `sourceRunId` is mandatory. A user
 response is returned as a high-priority `status` control message to that source
@@ -62,6 +67,12 @@ Use `--dry-run --once` to validate and format one replayed Delivery without
 calling OpenClaw or acknowledging Orca. Do not point the prototype at a live
 Telegram session until the observer Run, redaction, replay, and failure tests
 have passed.
+
+To make a company Run visible to every OpenClaw session, add its durable Run ID
+to private config `watched_runs`, validate the config and tests, then restart
+the LaunchAgent under an approved operations change. Do not store or target a
+coordinator terminal handle: the bridge resolves the current handle from the
+Run at runtime.
 
 Return a user response by passing UTF-8 text as base64. The response is carried
 to the company side over SSH stdin and is never interpolated into a remote

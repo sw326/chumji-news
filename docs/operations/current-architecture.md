@@ -91,7 +91,7 @@ Mac mini, ops account
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
-| Orca → OpenClaw bridge | `chumji` | always-on user LaunchAgent | production; company observer Run + renewable SSH `check --wait` + local journal/ACK | sanitized milestones and decision requests to owner Telegram DM |
+| Orca → OpenClaw bridge | `chumji` | always-on user LaunchAgent | production; registered source Run `--peek --wait` watchers + curated observer Run + local journal | sanitized lifecycle summaries, milestones, and decision requests to owner Telegram DM |
 
 ## Web and Data Boundaries
 
@@ -161,9 +161,12 @@ context, or direct chat delivery. The target design is:
 
 The Orca bridge is a user LaunchAgent because it integrates the owner-only
 OpenClaw Gateway and Telegram DM. It leaves the Gateway loopback-only and opens
-only outbound SSH to the company computer. Company coordinators retain worker
-lifecycle ownership; the bridge consumes a dedicated observer Run and returns
-owner answers as control mail to the authoritative source Run.
+only outbound SSH to the company computer. Registered authoritative source Runs
+are watched with non-consuming `check --peek --wait`; current coordinator
+handles are resolved dynamically from Run IDs, and source Deliveries are never
+ACKed by the bridge. A dedicated observer Run carries only curated status
+milestones. Owner answers return as control mail to the authoritative source
+Run, whose coordinator retains reply and gate authority.
 
 ## `claude-workspace` Assessment
 
