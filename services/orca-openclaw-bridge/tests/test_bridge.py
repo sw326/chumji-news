@@ -191,6 +191,28 @@ class BridgeTests(unittest.TestCase):
 
         self.assertEqual([item["event_id"] for item in pending], ["msg_question"])
 
+    def test_response_file_accepts_resolved_tmp_alias(self):
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir="/tmp",
+            prefix="orca-openclaw-bridge-response-",
+            delete=False,
+        ) as handle:
+            handle.write("approved")
+            response_path = Path(handle.name)
+        try:
+            self.assertEqual(bridge.read_response_file(response_path), "approved")
+        finally:
+            response_path.unlink(missing_ok=True)
+
+    def test_response_file_rejects_non_tmp_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            response_path = Path(tmp) / "orca-openclaw-bridge-response-test"
+            response_path.write_text("approved", encoding="utf-8")
+            with self.assertRaises(bridge.BridgeError):
+                bridge.read_response_file(response_path)
+
     def test_delivers_then_acks(self):
         with tempfile.TemporaryDirectory() as tmp:
             config = make_config(Path(tmp))

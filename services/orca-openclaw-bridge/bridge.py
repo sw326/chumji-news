@@ -672,6 +672,17 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def read_response_file(path: Path) -> str:
+    response_path = path.resolve()
+    approved_tmp = Path("/tmp").resolve()
+    if (
+        response_path.parent != approved_tmp
+        or not response_path.name.startswith("orca-openclaw-bridge-response-")
+    ):
+        raise BridgeError("response file must use the approved /tmp prefix")
+    return response_path.read_text(encoding="utf-8")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     try:
@@ -703,15 +714,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         try:
             if args.response_file:
-                response_path = args.response_file.resolve()
-                if (
-                    response_path.parent != Path("/tmp")
-                    or not response_path.name.startswith(
-                        "orca-openclaw-bridge-response-"
-                    )
-                ):
-                    raise BridgeError("response file must use the approved /tmp prefix")
-                response = response_path.read_text(encoding="utf-8")
+                response = read_response_file(args.response_file)
             else:
                 response = base64.b64decode(
                     args.response_base64, validate=True
