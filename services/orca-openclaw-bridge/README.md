@@ -1,6 +1,6 @@
 # Orca → OpenClaw event bridge
 
-Status: **prototype only; not installed or scheduled**.
+Status: **production cutover approved and installed on 2026-08-14**.
 
 This service keeps execution orchestration on the company Orca runtime while
 forwarding sanitized milestones to a personal Mac OpenClaw session. It replaces
@@ -75,8 +75,10 @@ An agent can avoid shell quoting entirely by writing the answer to
 `/tmp/orca-openclaw-bridge-response-<event-id>.txt` and using
 `--response-file` instead of `--response-base64`.
 
-## Deployment gate
+## Deployment status
 
-The disabled LaunchAgent template is documentation only. Installing or loading
-it, creating a permanent observer Run, targeting the owner Telegram session, or
-retiring the old polling path requires explicit cutover approval.
+Production cutover was explicitly approved on 2026-08-14. The disabled
+LaunchAgent template remains documentation only; the live install is managed
+from the release and configuration paths recorded in the operations SOT.
+Further service, transport, session-target, or polling-path changes require a
+new explicit approval.

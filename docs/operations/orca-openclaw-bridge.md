@@ -4,7 +4,8 @@ Status: production cutover validated on 2026-08-14.
 
 Observed deployment:
 
-- release commit: `43231c4` (source-equivalent prototype commit `19321ad`);
+- release commit: `fb951ba` (initial production commit `43231c4`,
+  source-equivalent prototype commit `19321ad`);
 - LaunchAgent: `com.chumji.orca-openclaw-bridge`;
 - company observer Run: `run_1a897b1b8eb5`;
 - observer terminal: `term_81ce6937-4132-4dab-88ae-a1e7f4523fa4`;
@@ -111,6 +112,12 @@ allowlisted structured payload fields.
    waiter deadline.
 5. Forced LaunchAgent process termination produced a new process and restored
    the long-wait connection without restarting the OpenClaw Gateway.
+6. A real owner Telegram response to bridge event `msg_b32226615737` returned
+   to isolated source Run `run_8ba58b52e673` as `msg_7d5b3c7ba422`, preserving
+   source message and question correlation and clearing the pending response.
+7. macOS `/tmp` resolves to `/private/tmp`; release `fb951ba` validates against
+   the resolved approved directory so response files remain constrained to the
+   intended temporary directory on macOS.
 
 ## Remaining operational checks
 
