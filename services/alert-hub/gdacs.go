@@ -284,10 +284,6 @@ func gdacsTransition(previous GDACSSnapshot, exists bool, current GDACSSnapshot)
 	if currentActionable && gdacsRank(current.Level) > gdacsRank(previous.Level) {
 		return "escalated"
 	}
-	if currentActionable && previous.EpisodeID != current.EpisodeID &&
-		(previous.Severity != current.Severity || previous.SeverityText != current.SeverityText) {
-		return "updated"
-	}
 	return ""
 }
 

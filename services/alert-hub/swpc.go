@@ -114,6 +114,10 @@ func processSWPC(ctx context.Context, cfg Config, state *State, token string, dr
 			rememberSWPC(state, event.ID)
 			continue
 		}
+		if event.Action == "updated" {
+			rememberSWPC(state, event.ID)
+			continue
+		}
 		message := formatSWPCAlert(event)
 		if dryRun {
 			fmt.Printf("SWPC DRY RUN\n%s\n", message)

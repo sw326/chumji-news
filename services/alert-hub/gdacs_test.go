@@ -25,6 +25,13 @@ func TestGDACSTransitions(t *testing.T) {
 	if got := gdacsTransition(orange, true, orange); got != "" {
 		t.Fatalf("duplicate transition=%q", got)
 	}
+	updated := orange
+	updated.EpisodeID = "2"
+	updated.Severity = 123
+	updated.SeverityText = "revised impact estimate"
+	if got := gdacsTransition(orange, true, updated); got != "" {
+		t.Fatalf("routine update transition=%q", got)
+	}
 }
 
 func TestNormalizeGDACSExcludesEarthquake(t *testing.T) {

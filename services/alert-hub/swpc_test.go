@@ -53,6 +53,18 @@ func TestNormalizeSWPCActions(t *testing.T) {
 	}
 }
 
+func TestNormalizeSWPCUnclassifiedMessageIsRoutineUpdate(t *testing.T) {
+	product := swpcProduct{
+		ProductID: "test", IssueDatetime: "2026-07-04 05:10:10.740",
+		Message: "Space Weather Message Code: TEST\nSerial Number: 9\n" +
+			"Corrected timing details\nNOAA Scale: G3 - Strong",
+	}
+	event, ok := normalizeSWPC(product)
+	if !ok || event.Action != "updated" {
+		t.Fatalf("routine update action=%q ok=%v", event.Action, ok)
+	}
+}
+
 func TestNormalizeSWPCCancelWithInlineScale(t *testing.T) {
 	product := swpcProduct{
 		ProductID: "K07W", IssueDatetime: "2026-07-05 00:27:14.067",

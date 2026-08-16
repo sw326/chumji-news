@@ -30,6 +30,8 @@ The shadow source combines two deterministic earthquake paths:
 
 The first actionable source creates the alert. A later report is associated with the same earthquake only when its origin time is within 30 seconds, epicenter is within 100 km, and magnitude differs by no more than 1.5. Cross-source reports that do not materially change magnitude, urgency tier, depth, or epicenter are recorded without sending a duplicate Telegram alert. Startup establishes a USGS baseline without replaying historical events.
 
+Routine source revisions are stored for deduplication but do not send Telegram messages. Earthquake revisions notify only when they cross the urgent-magnitude threshold, move into a more Korea-relevant tier, or increase magnitude by at least 0.5. PTWC and GDACS notify new, escalated, and resolved events while suppressing same-level bulletin updates; unclassified NOAA SWPC updates are also suppressed. This keeps the live channel focused on first reports and materially more urgent changes.
+
 ## Isolated Validation
 
 Run from `services/alert-hub`:

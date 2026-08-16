@@ -109,6 +109,32 @@ func TestCrossSourceMaterialChangeAlerts(t *testing.T) {
 	}
 }
 
+func TestSameSourceRoutineUpdateIsStoredWithoutAlert(t *testing.T) {
+	state := testEarthquakeState()
+	cfg := Config{Filters: testFilters}
+	occurred := time.Date(2026, 8, 10, 12, 34, 27, 0, time.UTC)
+	initial := NormalizedEvent{
+		Source: "emsc", Action: "create", SourceID: "emsc-test", Time: occurred,
+		Magnitude: 6.4, Latitude: 35.0, Longitude: 140.0, Depth: 20,
+		Region: "HONSHU, JAPAN", Tier: "동아시아", Fingerprint: "emsc-v1",
+	}
+	if alerted, _, err := processEarthquakeLocked(context.Background(), cfg, state, "", true, initial); err != nil || !alerted {
+		t.Fatalf("initial alert alerted=%v err=%v", alerted, err)
+	}
+	update := initial
+	update.Action = "update"
+	update.Magnitude = 6.6
+	update.Depth = 25
+	update.Fingerprint = "emsc-v2"
+	alerted, changed, err := processEarthquakeLocked(context.Background(), cfg, state, "", true, update)
+	if err != nil || alerted || !changed {
+		t.Fatalf("routine update alerted=%v changed=%v err=%v", alerted, changed, err)
+	}
+	if state.Seen[update.SourceID] != update.Fingerprint || state.Snapshots[update.SourceID].Magnitude != 6.6 {
+		t.Fatalf("routine update was not stored: seen=%q snapshot=%+v", state.Seen[update.SourceID], state.Snapshots[update.SourceID])
+	}
+}
+
 func TestAssociatedSourceDoesNotRegressCanonicalAlert(t *testing.T) {
 	state := testEarthquakeState()
 	cfg := Config{Filters: testFilters}
@@ -123,7 +149,7 @@ func TestAssociatedSourceDoesNotRegressCanonicalAlert(t *testing.T) {
 	}
 	emsc := NormalizedEvent{
 		Source: "emsc", Action: "update", SourceID: "emsc-test", Time: occurred.Add(time.Second),
-		Magnitude: 7.4, Latitude: 4.8765, Longitude: -76.2129, Depth: 110,
+		Magnitude: 7.8, Latitude: 4.8765, Longitude: -76.2129, Depth: 110,
 		Region: "COLOMBIA", Tier: "세계", Urgent: true, Fingerprint: "emsc-v1",
 	}
 	if alerted, _, err := processEarthquakeLocked(context.Background(), cfg, state, "", true, emsc); err != nil || !alerted {
@@ -134,7 +160,7 @@ func TestAssociatedSourceDoesNotRegressCanonicalAlert(t *testing.T) {
 	if alerted, _, err := processEarthquakeLocked(context.Background(), cfg, state, "", true, usgs); err != nil || alerted {
 		t.Fatalf("stale USGS revision alerted=%v err=%v", alerted, err)
 	}
-	if state.Earthquakes[0].Snapshot.Magnitude != 7.4 {
+	if state.Earthquakes[0].Snapshot.Magnitude != 7.8 {
 		t.Fatalf("canonical snapshot regressed: %+v", state.Earthquakes[0].Snapshot)
 	}
 }
