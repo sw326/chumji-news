@@ -1,18 +1,25 @@
 # Alert Hub Cutover Runbook
 
-Status: production cutover completed for revision `303eedf` on 2026-08-11. Any
+Status: production cutover completed for revision `39819a8` on 2026-08-16. Any
 future cutover still requires a new explicit approval.
 
 ## Deployment Record
 
-- Revision: `303eedf894257a151f3fe3d4edd794e0a8a841e7`.
+- Revision: `39819a898c6c65e67295730bb08ebf525322884f`.
 - Runtime: `/Users/ops/services/earthquake-alert`.
 - Launchd label: `com.chumji.earthquake-alert`.
-- Validation: EMSC WebSocket connected, the first USGS poll established a
-  no-replay baseline, and the next poll advanced after one minute without a
-  USGS error.
+- Change: routine earthquake, PTWC, GDACS, and unclassified SWPC revisions are
+  stored without Telegram delivery; new, escalated, and resolved events remain
+  actionable.
+- Binary SHA-256:
+  `98144e5d60ad10e0b0a49e3fd17bc62355b3150ddd7941af5d986beaf0dd92c9`.
+- Validation: LaunchDaemon returned to `running` as `ops` with exit code 0;
+  EMSC connected and received a post-restart message; USGS polls advanced at
+  22:15, 22:16, and 22:17 KST; all source error fields were empty.
 - Rollback snapshot:
-  `/Users/ops/services/earthquake-alert.rollback-20260811-071825`.
+  `/Users/ops/services/earthquake-alert.rollback-20260816-221600` with prior
+  binary SHA-256
+  `9bfdcf0f84963490da8fbee1b692a714c39a9ce2fda1a1355d62912f61e6d24a`.
 
 ## Approval Gate
 
