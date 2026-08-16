@@ -214,6 +214,14 @@ func processEarthquakeLocked(ctx context.Context, cfg Config, state *State, toke
 		rememberEarthquakeRecord(state, event, false, false)
 		return false, true, nil
 	}
+	if strings.EqualFold(event.Action, "update") && hasPrevious {
+		if !earthquakeEscalated(previous, event, cfg.Filters) {
+			rememberSourceEvent(state, event)
+			rememberEarthquakeRecord(state, event, false, false)
+			return false, true, nil
+		}
+		event.Action = "escalated"
+	}
 
 	message := formatAlert(event, previous, hasPrevious)
 	if dryRun {
@@ -327,6 +335,30 @@ func crossSourceMaterialChange(previous EventSnapshot, current NormalizedEvent, 
 func snapshotTier(snapshot EventSnapshot, filters FilterConfig) string {
 	distance := haversineKM(filters.KoreaCenterLat, filters.KoreaCenterLon, snapshot.Latitude, snapshot.Longitude)
 	return classify(distance, snapshot.Magnitude, snapshot.Region, filters)
+}
+
+func earthquakeEscalated(previous EventSnapshot, current NormalizedEvent, filters FilterConfig) bool {
+	previousUrgent := previous.Magnitude >= filters.UrgentMinMagnitude
+	if !previousUrgent && current.Urgent {
+		return true
+	}
+	if earthquakeTierRank(current.Tier) > earthquakeTierRank(snapshotTier(previous, filters)) {
+		return true
+	}
+	return current.Magnitude-previous.Magnitude >= 0.5
+}
+
+func earthquakeTierRank(tier string) int {
+	switch tier {
+	case "한국 주변":
+		return 3
+	case "동아시아":
+		return 2
+	case "세계":
+		return 1
+	default:
+		return 0
+	}
 }
 
 func rememberEarthquakeRecord(state *State, event NormalizedEvent, updateSnapshot, markNotified bool) {

@@ -800,7 +800,9 @@ func formatAlert(event NormalizedEvent, previous EventSnapshot, hasPrevious bool
 	if event.Urgent {
 		prefix = "🚨 긴급 지진"
 	}
-	action := map[string]string{"create": "🆕 신규", "update": "🔄 수정", "delete": "❌ 취소"}[strings.ToLower(event.Action)]
+	action := map[string]string{
+		"create": "🆕 신규", "update": "🔄 수정", "escalated": "⬆️ 상향", "delete": "❌ 취소",
+	}[strings.ToLower(event.Action)]
 	if action == "" {
 		action = "ℹ️ " + event.Action
 	}
@@ -818,7 +820,7 @@ func formatAlert(event NormalizedEvent, previous EventSnapshot, hasPrevious bool
 		kst.Format("2006-01-02 15:04:05 KST"), event.Depth, event.DistanceKM,
 		html.EscapeString(event.Tier),
 	)
-	if strings.EqualFold(event.Action, "update") && hasPrevious {
+	if (strings.EqualFold(event.Action, "update") || strings.EqualFold(event.Action, "escalated")) && hasPrevious {
 		if changes := formatChanges(previous, event); changes != "" {
 			message += "\n\n<b>변경 사항</b>\n" + changes
 		}
