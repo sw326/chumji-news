@@ -98,6 +98,27 @@ func TestFormatUpdateChanges(t *testing.T) {
 	}
 }
 
+func TestEarthquakeEscalationPolicy(t *testing.T) {
+	previous := EventSnapshot{
+		Magnitude: 6.4, Latitude: 35.0, Longitude: 140.0, Region: "HONSHU, JAPAN",
+	}
+	routine := NormalizedEvent{Magnitude: 6.6, Latitude: 35.0, Longitude: 140.0, Tier: "동아시아"}
+	if earthquakeEscalated(previous, routine, testFilters) {
+		t.Fatal("routine magnitude revision should be suppressed")
+	}
+	urgent := routine
+	urgent.Magnitude = 7.0
+	urgent.Urgent = true
+	if !earthquakeEscalated(previous, urgent, testFilters) {
+		t.Fatal("urgent threshold crossing should notify")
+	}
+	closer := routine
+	closer.Tier = "한국 주변"
+	if !earthquakeEscalated(previous, closer, testFilters) {
+		t.Fatal("more Korea-relevant tier should notify")
+	}
+}
+
 func TestSnapshotFromFingerprint(t *testing.T) {
 	snapshot, ok := snapshotFromFingerprint("update|6.80|32.6741|130.7504|10.0|2026-07-28T08:46:01Z")
 	if !ok || snapshot.Magnitude != 6.8 || snapshot.Depth != 10 {

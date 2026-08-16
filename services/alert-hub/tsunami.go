@@ -169,9 +169,6 @@ func tsunamiTransition(previous, current TsunamiSnapshot) string {
 	if currentActionable && tsunamiRank(current.Level) > tsunamiRank(previous.Level) {
 		return "escalated"
 	}
-	if currentActionable {
-		return "updated"
-	}
 	return ""
 }
 

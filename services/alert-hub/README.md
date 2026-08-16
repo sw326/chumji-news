@@ -21,6 +21,17 @@ No file in this directory is loaded by launchd, installed into a live path, or w
 - Do not copy files from this directory into `/Users/ops/services/earthquake-alert` or `/Users/ops/.config/earthquake-alert` without cutover approval.
 - Do not run a second live consumer against the EMSC websocket or Telegram delivery path.
 
+## Earthquake source redundancy
+
+The shadow source combines two deterministic earthquake paths:
+
+- EMSC near-real-time WebSocket messages remain the push source.
+- The official USGS `M4.5+ past hour` GeoJSON summary is conditionally polled once per minute, matching the feed's published update cadence.
+
+The first actionable source creates the alert. A later report is associated with the same earthquake only when its origin time is within 30 seconds, epicenter is within 100 km, and magnitude differs by no more than 1.5. Cross-source reports that do not materially change magnitude, urgency tier, depth, or epicenter are recorded without sending a duplicate Telegram alert. Startup establishes a USGS baseline without replaying historical events.
+
+Routine source revisions are stored for deduplication but do not send Telegram messages. Earthquake revisions notify only when they cross the urgent-magnitude threshold, move into a more Korea-relevant tier, or increase magnitude by at least 0.5. PTWC and GDACS notify new, escalated, and resolved events while suppressing same-level bulletin updates; unclassified NOAA SWPC updates are also suppressed. This keeps the live channel focused on first reports and materially more urgent changes.
+
 ## Isolated Validation
 
 Run from `services/alert-hub`:

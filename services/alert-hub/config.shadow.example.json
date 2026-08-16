@@ -4,6 +4,11 @@
   "telegram_token_file": "SECRETREF:alert-hub.telegram-token",
   "state_file": "/tmp/chumji-alert-hub-shadow/state.json",
   "health_file": "/tmp/chumji-alert-hub-shadow/health.json",
+  "usgs": {
+    "enabled": true,
+    "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_hour.geojson",
+    "interval_minutes": 1
+  },
   "gdacs": {
     "enabled": true,
     "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC%3BFL%3BVO%3BWF%3BDR&alertlevel=red%3Borange&pageSize=100&pageNumber=1&caller=chumji-alert-hub-shadow",

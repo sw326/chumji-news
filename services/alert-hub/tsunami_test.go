@@ -50,8 +50,8 @@ func TestTsunamiTransitions(t *testing.T) {
 	}
 	update := warning
 	update.BulletinNumber = 3
-	if got := tsunamiTransition(warning, update); got != "updated" {
-		t.Fatalf("updated transition=%q", got)
+	if got := tsunamiTransition(warning, update); got != "" {
+		t.Fatalf("routine update transition=%q", got)
 	}
 	final := update
 	final.BulletinNumber = 4
