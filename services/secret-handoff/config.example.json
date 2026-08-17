@@ -1,0 +1,16 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 8789
+  },
+  "publicBaseUrl": "https://secret-input.example.invalid",
+  "secureCookie": true,
+  "trustProxy": true,
+  "dbPath": "/Users/ops/Library/Application Support/secret-handoff/vault.sqlite3",
+  "controlTokenEnv": "SECRET_HANDOFF_CONTROL_TOKEN",
+  "masterKey": {
+    "provider": "keychain",
+    "service": "com.chumji.secret-handoff.master-key",
+    "account": "ops"
+  }
+}
