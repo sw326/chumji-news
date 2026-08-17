@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 import { SecretVault } from '../src/vault.mjs';
 import { createSecretHandoffServer } from '../src/server.mjs';
@@ -42,7 +46,7 @@ async function create(spec) {
   return JSON.parse(text);
 }
 
-async function submitForm(created, values) {
+async function submitForm(created, values, ownerCode = null) {
   const entry = new URL(created.entryUrl);
   const first = await request(`${entry.pathname}${entry.search}`);
   assert.equal(first.response.status, 303);
@@ -52,7 +56,7 @@ async function submitForm(created, values) {
   assert.equal(page.response.status, 200);
   assert.ok(!page.text.includes(entry.searchParams.get('token')));
   const csrf = /name="_csrf" value="([^"]+)"/.exec(page.text)[1];
-  const body = new URLSearchParams({ _csrf: csrf, ...values });
+  const body = new URLSearchParams({ _csrf: csrf, ...(ownerCode ? { _owner_code: ownerCode } : {}), ...values });
   const submitted = await request('/enter', {
     method: 'POST', headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' }, body,
   });
@@ -82,6 +86,7 @@ test('single API key is accepted and only a SecretRef is exposed over status API
   assert.ok(!status.text.includes('super-secret'));
   const parsed = JSON.parse(status.text);
   assert.equal(parsed.status, 'completed');
+  assert.equal(parsed.controlCard.state, 'completed');
   assert.equal(parsed.credentialRefs.api_key.source, 'exec');
   assert.deepEqual(vault.resolveRefs([parsed.credentialRefs.api_key.id]), {
     [parsed.credentialRefs.api_key.id]: 'super-secret',
@@ -205,4 +210,97 @@ test('form submissions are rate-limited without logging submitted values', async
   });
   assert.equal(limited.response.status, 429);
   assert.ok(!limited.text.includes('never-log-final'));
+});
+
+test('Telegram owner challenge is delivered out-of-band and required by the form', async () => {
+  await new Promise((resolve) => server.close(resolve));
+  let delivered;
+  server = createSecretHandoffServer({
+    vault,
+    publicBaseUrl: 'http://127.0.0.1',
+    controlToken: 'test-control-token',
+    secureCookie: false,
+    deliverOwnerChallenge: async (challenge) => { delivered = challenge; },
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${server.address().port}`;
+  const created = await create({
+    ...baseSpec,
+    ownerVerification: 'telegram_dm_code',
+    schema: { fields: [{ name: 'key', label: 'Key', kind: 'secret' }] },
+  });
+  assert.equal(created.ownerVerification, 'telegram_dm_code');
+  assert.equal(created.ownerCode, undefined);
+  assert.equal(delivered.ownerId, baseSpec.ownerId);
+  assert.match(delivered.code, /^\d{8}$/);
+  assert.equal(created.controlCard.state, 'needs_auth');
+  assert.equal(created.controlCard.actions[0].kind, 'url');
+  const entry = new URL(created.entryUrl);
+  const first = await request(`${entry.pathname}${entry.search}`);
+  const cookie = first.response.headers.get('set-cookie').split(';')[0];
+  const page = await request('/enter', { headers: { Cookie: cookie } });
+  const csrf = /name="_csrf" value="([^"]+)"/.exec(page.text)[1];
+  const wrongOwnerCode = delivered.code === '00000000' ? '11111111' : '00000000';
+  const wrong = await request('/enter', {
+    method: 'POST',
+    headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ _csrf: csrf, _owner_code: wrongOwnerCode, key: 'never-store-this' }),
+  });
+  assert.equal(wrong.response.status, 400);
+  assert.ok(!wrong.text.includes('never-store-this'));
+  assert.equal(vault.requestStatus(created.requestId).status, 'opened');
+  const accepted = await request('/enter', {
+    method: 'POST',
+    headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ _csrf: csrf, _owner_code: delivered.code, key: 'owner-bound-secret' }),
+  });
+  assert.equal(accepted.response.status, 200);
+  const status = vault.requestStatus(created.requestId);
+  assert.equal(status.status, 'completed');
+});
+
+test('resolver CLI implements the OpenClaw exec SecretRef JSON protocol', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'secret-handoff-test-'));
+  try {
+    const dbPath = path.join(tempDir, 'vault.sqlite3');
+    const keyPath = path.join(tempDir, 'master-key');
+    const configPath = path.join(tempDir, 'config.json');
+    const masterKey = Buffer.alloc(32, 11);
+    fs.writeFileSync(keyPath, masterKey.toString('base64'), { mode: 0o600 });
+    fs.writeFileSync(configPath, JSON.stringify({
+      dbPath,
+      masterKey: { provider: 'file', path: keyPath },
+    }), { mode: 0o600 });
+    const persistent = new SecretVault({ dbPath, masterKey });
+    const created = persistent.createRequest({
+      ...baseSpec,
+      schema: { fields: [
+        { name: 'username', label: '아이디', kind: 'username' },
+        { name: 'password', label: '비밀번호', kind: 'password' },
+      ] },
+    });
+    const { session } = persistent.exchangeToken(created.token);
+    persistent.complete(session, persistent.csrfForSession(session), { username: 'exec-user', password: 'exec-password' });
+    const refs = persistent.requestStatus(created.id).credentialRefs;
+    persistent.close();
+    const ids = [refs.username.id, refs.password.id];
+    const result = spawnSync(process.execPath, [
+      path.resolve('src/main.mjs'), 'resolve', '--config', configPath,
+    ], {
+      cwd: path.resolve('.'),
+      encoding: 'utf8',
+      input: JSON.stringify({ protocolVersion: 1, provider: 'secret-handoff', ids }),
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, '');
+    assert.deepEqual(JSON.parse(result.stdout), {
+      protocolVersion: 1,
+      values: {
+        [refs.username.id]: 'exec-user',
+        [refs.password.id]: 'exec-password',
+      },
+    });
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });

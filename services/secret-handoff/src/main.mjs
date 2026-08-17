@@ -45,6 +45,29 @@ async function readStdin() {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+function createTelegramChallengeDeliverer(spec) {
+  if (!spec) return null;
+  const token = process.env[spec.botTokenEnv];
+  if (!token) throw new Error(`missing Telegram bot token environment variable: ${spec.botTokenEnv}`);
+  return async ({ ownerId, requestId, purpose, expiresAt, code }) => {
+    const match = /^telegram:(\d+)$/.exec(ownerId);
+    if (!match) throw new Error('invalid Telegram ownerId');
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: match[1],
+        text: `[Secret Handoff]\n요청: ${purpose}\n확인 코드: ${code}\n요청 ID: ${requestId}\n만료: ${new Date(expiresAt).toISOString()}\n\n이 코드는 자격정보가 아니며 보안 입력 폼에서만 사용하세요.`,
+        disable_web_page_preview: true,
+      }),
+      signal: AbortSignal.timeout(spec.timeoutMs ?? 5000),
+    });
+    if (!response.ok) throw new Error('Telegram challenge delivery failed');
+    const result = await response.json();
+    if (!result.ok) throw new Error('Telegram challenge delivery rejected');
+  };
+}
+
 const command = process.argv[2];
 const config = loadConfig();
 process.umask(0o077);
@@ -59,6 +82,7 @@ if (command === 'serve') {
     controlToken,
     secureCookie: config.secureCookie !== false,
     trustProxy: config.trustProxy === true,
+    deliverOwnerChallenge: createTelegramChallengeDeliverer(config.telegramChallenge),
   });
   server.listen(config.listen.port, config.listen.host, () => {
     process.stderr.write(`secret-handoff listening on ${config.listen.host}:${config.listen.port}\n`);

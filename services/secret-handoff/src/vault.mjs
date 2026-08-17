@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 const FIELD_KINDS = new Set(['secret', 'token', 'username', 'password', 'text']);
 const RETENTIONS = new Set(['persistent', 'session', 'one_time']);
+const OWNER_VERIFICATIONS = new Set(['link_only', 'telegram_dm_code']);
 const NAME_RE = /^[a-z][a-z0-9_]{0,47}$/;
 
 function b64url(bytes = 24) {
@@ -117,6 +118,8 @@ export class SecretVault {
         allowed_domains TEXT NOT NULL,
         schema_json TEXT NOT NULL,
         retention TEXT NOT NULL,
+        owner_verification TEXT NOT NULL,
+        owner_challenge_hash TEXT,
         expires_at INTEGER NOT NULL,
         secret_expires_at INTEGER,
         exchanged_at INTEGER,
@@ -159,6 +162,11 @@ export class SecretVault {
     const schema = normalizeSchema(spec.schema);
     const retention = spec.retention ?? 'persistent';
     if (!RETENTIONS.has(retention)) throw new Error('invalid retention');
+    const ownerVerification = spec.ownerVerification ?? 'link_only';
+    if (!OWNER_VERIFICATIONS.has(ownerVerification)) throw new Error('invalid ownerVerification');
+    if (ownerVerification === 'telegram_dm_code' && !String(spec.ownerId ?? '').startsWith('telegram:')) {
+      throw new Error('telegram_dm_code requires a telegram ownerId');
+    }
     const ttlSeconds = Number.isInteger(spec.ttlSeconds) ? spec.ttlSeconds : 900;
     if (ttlSeconds < 60 || ttlSeconds > 3600) throw new Error('ttlSeconds must be between 60 and 3600');
     const secretTtlSeconds = spec.secretTtlSeconds;
@@ -172,16 +180,18 @@ export class SecretVault {
       ? spec.allowedDomains.map((domain) => assertString(domain, 'allowedDomain', 253)) : [];
     const id = `req_${b64url(15)}`;
     const token = b64url(32);
+    const ownerCode = ownerVerification === 'telegram_dm_code'
+      ? String(crypto.randomInt(0, 100_000_000)).padStart(8, '0') : null;
     const now = this.now();
     this.db.prepare(`INSERT INTO handoff_requests(
       id,token_hash,owner_id,requester_agent,purpose,allowed_domains,schema_json,retention,
-      expires_at,secret_expires_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).run(
+      owner_verification,owner_challenge_hash,expires_at,secret_expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       id, sha256(token), ownerId, requesterAgent, purpose, safeJson(allowedDomains), safeJson(schema),
-      retention, now + ttlSeconds * 1000,
+      retention, ownerVerification, ownerCode ? this.ownerChallengeHash(ownerCode) : null, now + ttlSeconds * 1000,
       Number.isInteger(secretTtlSeconds) ? now + secretTtlSeconds * 1000 : null,
     );
     this.audit('request_created', { requestId: id });
-    return { id, token, expiresAt: now + ttlSeconds * 1000 };
+    return { id, token, ownerCode, ownerVerification, expiresAt: now + ttlSeconds * 1000 };
   }
 
   exchangeToken(token) {
@@ -208,6 +218,10 @@ export class SecretVault {
     return crypto.createHmac('sha256', this.csrfKey).update(`csrf:${session}`).digest('base64url');
   }
 
+  ownerChallengeHash(code) {
+    return crypto.createHmac('sha256', this.csrfKey).update(`owner:${code}`).digest('hex');
+  }
+
   requestForSession(session) {
     const row = this.db.prepare('SELECT * FROM handoff_requests WHERE session_hash=?').get(sha256(session));
     if (!row || row.completed_at || row.cancelled_at || row.expires_at <= this.now()) {
@@ -225,11 +239,12 @@ export class SecretVault {
       allowedDomains: JSON.parse(row.allowed_domains),
       schema: JSON.parse(row.schema_json),
       retention: row.retention,
+      ownerVerification: row.owner_verification,
       expiresAt: row.expires_at,
     };
   }
 
-  complete(session, csrf, values) {
+  complete(session, csrf, values, ownerCode = null) {
     const expectedCsrf = this.csrfForSession(session);
     const provided = Buffer.from(String(csrf ?? ''));
     const expected = Buffer.from(expectedCsrf);
@@ -240,6 +255,14 @@ export class SecretVault {
       const row = this.db.prepare('SELECT * FROM handoff_requests WHERE session_hash=?').get(sha256(session));
       if (!row || row.completed_at || row.cancelled_at || row.expires_at <= now) {
         throw new Error('invalid or expired handoff session');
+      }
+      if (row.owner_verification === 'telegram_dm_code') {
+        const suppliedHash = this.ownerChallengeHash(String(ownerCode ?? ''));
+        const supplied = Buffer.from(suppliedHash);
+        const expectedOwner = Buffer.from(String(row.owner_challenge_hash ?? ''));
+        if (supplied.length !== expectedOwner.length || !crypto.timingSafeEqual(supplied, expectedOwner)) {
+          throw new Error('invalid owner verification code');
+        }
       }
       const schema = JSON.parse(row.schema_json);
       const normalized = validateValues(schema, values);
@@ -284,7 +307,24 @@ export class SecretVault {
         };
       }
     }
-    return { id: row.id, status, credentialRefs: refs };
+    const cardState = status === 'completed' ? 'completed'
+      : ['cancelled', 'expired'].includes(status) ? 'failed' : 'needs_auth';
+    return {
+      id: row.id,
+      status,
+      credentialRefs: refs,
+      controlCard: {
+        state: cardState,
+        title: status === 'completed' ? '보안 입력 완료'
+          : status === 'opened' ? '보안 입력 진행 중'
+            : status === 'pending' ? '보안 입력 대기' : '보안 입력 종료',
+        purpose: row.purpose,
+        requesterAgent: row.requester_agent,
+        actions: status === 'pending' || status === 'opened'
+          ? [{ id: 'cancel_secret_handoff', label: '취소', kind: 'callback', requestId: row.id }]
+          : [],
+      },
+    };
   }
 
   cancelRequest(id) {

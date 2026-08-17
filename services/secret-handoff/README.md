@@ -11,6 +11,8 @@ Generic remote secret-entry broker for OpenClaw workflows. This directory is sou
 5. The status API returns field-level exec `SecretRef` metadata, never cleartext.
 6. The local resolver supplies only explicitly requested fields to the runtime. There is no HTTP reveal endpoint.
 
+For owner-bound requests, set `ownerVerification` to `telegram_dm_code`. The service sends an eight-digit challenge directly to the owner DM through the configured Telegram bot. The request API and group task card never receive that code.
+
 Supported schemas include a single key, username/password, and up to ten mixed fields. Every field is encrypted regardless of its display kind.
 
 ```json
@@ -20,6 +22,7 @@ Supported schemas include a single key, username/password, and up to ten mixed f
   "purpose": "API credentials",
   "allowedDomains": ["api.example.com"],
   "retention": "persistent",
+  "ownerVerification": "telegram_dm_code",
   "ttlSeconds": 900,
   "schema": {
     "fields": [
@@ -43,6 +46,8 @@ The API must remain behind loopback or a private service boundary. It uses a bea
 
 The only public routes are `GET /enter?token=...`, `GET /enter`, and `POST /enter`.
 
+The create response includes a channel-neutral `controlCard` projection with a URL action for `보안 입력` and a callback descriptor for cancellation. Telegram remains a display/input adapter; the broker request remains the status source of truth.
+
 ## Resolver
 
 The resolver implements the OpenClaw exec SecretRef JSON protocol on stdin/stdout.
@@ -59,12 +64,15 @@ Input:
 
 One-time credentials must request all required fields in the same resolver call because the credential is consumed as a bundle.
 
+`openclaw.provider.example.json5` shows the provider shape for the current split-user architecture. Because the Gateway runs as `chumji` while the vault is owned by `ops`, deployment needs a narrowly scoped, exact-argv sudoers rule for only this resolver invocation. Do not grant generic `node`, shell, database, or service-account access. SecretRef reduces configuration and model exposure; it is not an OS process-isolation boundary.
+
 ## Runtime security
 
 - Master key: macOS Keychain by default; a strict `0600` external key file is supported for isolated deployments.
 - Control token and master key are never stored in this repository.
 - Request tokens are stored only as SHA-256 hashes and become unusable after the first exchange.
 - Form sessions use an HttpOnly cookie and HMAC-bound CSRF token.
+- Optional owner verification is delivered out-of-band to the owner Telegram DM and is HMAC-protected in storage.
 - Token exchanges and form submissions are rate-limited in memory; a trusted reverse proxy may supply the client address only when `trustProxy` is enabled.
 - Responses use `no-store`, no-referrer, CSP, frame denial, and MIME sniffing protection.
 - Audit rows contain event type, opaque IDs, result, and time only.

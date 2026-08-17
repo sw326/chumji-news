@@ -60,7 +60,9 @@ function formPage(request, error = '') {
     return `<div class="field"><label for="${escapeHtml(field.name)}">${escapeHtml(field.label)}</label><input id="${escapeHtml(field.name)}" name="${escapeHtml(field.name)}" type="${type}" autocomplete="${escapeHtml(autocomplete)}" minlength="${field.minLength}" maxlength="${field.maxLength}" ${field.required ? 'required' : ''}>${field.help ? `<small>${escapeHtml(field.help)}</small>` : ''}</div>`;
   }).join('');
   const scope = request.allowedDomains.length ? request.allowedDomains.map(escapeHtml).join(', ') : '요청된 작업에만 사용';
-  return `<main class="card"><h1>보안 정보 입력</h1><div class="meta">용도: ${escapeHtml(request.purpose)}<br>요청 Agent: ${escapeHtml(request.requesterAgent)}<br>허용 대상: ${scope}</div><div class="warn">입력값은 채팅과 Agent 응답에 표시되지 않습니다. 제출 후에는 참조 ID만 반환됩니다.</div>${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}<form method="post" action="/enter"><input type="hidden" name="_csrf" value="${escapeHtml(request.csrf)}">${fields}<button type="submit">안전하게 저장</button></form></main>`;
+  const ownerChallenge = request.ownerVerification === 'telegram_dm_code'
+    ? '<div class="field"><label for="_owner_code">Telegram DM 확인 코드</label><input id="_owner_code" name="_owner_code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="8" maxlength="8" required><small>Owner 개인 DM으로 전송된 8자리 코드를 입력하세요.</small></div>' : '';
+  return `<main class="card"><h1>보안 정보 입력</h1><div class="meta">용도: ${escapeHtml(request.purpose)}<br>요청 Agent: ${escapeHtml(request.requesterAgent)}<br>허용 대상: ${scope}</div><div class="warn">입력값은 채팅과 Agent 응답에 표시되지 않습니다. 제출 후에는 참조 ID만 반환됩니다.</div>${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}<form method="post" action="/enter"><input type="hidden" name="_csrf" value="${escapeHtml(request.csrf)}">${ownerChallenge}${fields}<button type="submit">안전하게 저장</button></form></main>`;
 }
 
 function successPage() {
@@ -93,7 +95,7 @@ function createRateLimiter({ limit, windowMs, now = () => Date.now() }) {
   };
 }
 
-export function createSecretHandoffServer({ vault, publicBaseUrl, controlToken, secureCookie = true, trustProxy = false }) {
+export function createSecretHandoffServer({ vault, publicBaseUrl, controlToken, secureCookie = true, trustProxy = false, deliverOwnerChallenge = null }) {
   const base = new URL(publicBaseUrl);
   if (secureCookie && base.protocol !== 'https:') throw new Error('publicBaseUrl must use HTTPS when secureCookie is enabled');
   const cookieName = secureCookie ? '__Host-secret_handoff' : 'secret_handoff_dev';
@@ -109,10 +111,41 @@ export function createSecretHandoffServer({ vault, publicBaseUrl, controlToken, 
         if (!bearerMatches(req, controlToken)) return sendJson(res, 401, { error: 'unauthorized' });
         const spec = JSON.parse(await readBody(req));
         const created = vault.createRequest(spec);
+        if (created.ownerVerification === 'telegram_dm_code') {
+          if (typeof deliverOwnerChallenge !== 'function') {
+            vault.cancelRequest(created.id);
+            throw new Error('owner challenge delivery is unavailable');
+          }
+          try {
+            await deliverOwnerChallenge({
+              ownerId: spec.ownerId,
+              requestId: created.id,
+              purpose: spec.purpose,
+              expiresAt: created.expiresAt,
+              code: created.ownerCode,
+            });
+          } catch (error) {
+            vault.cancelRequest(created.id);
+            throw new Error('owner challenge delivery failed');
+          }
+        }
+        const entryUrl = new URL(`/enter?token=${encodeURIComponent(created.token)}`, base).toString();
         return sendJson(res, 201, {
           requestId: created.id,
-          entryUrl: new URL(`/enter?token=${encodeURIComponent(created.token)}`, base).toString(),
+          entryUrl,
           expiresAt: new Date(created.expiresAt).toISOString(),
+          ownerVerification: created.ownerVerification,
+          controlCard: {
+            state: 'needs_auth',
+            title: '보안 입력 필요',
+            purpose: spec.purpose,
+            requesterAgent: spec.requesterAgent,
+            allowedDomains: spec.allowedDomains ?? [],
+            actions: [
+              { id: 'open_secret_form', label: '보안 입력', kind: 'url', url: entryUrl },
+              { id: 'cancel_secret_handoff', label: '취소', kind: 'callback', requestId: created.id },
+            ],
+          },
         });
       }
       const statusMatch = /^\/api\/v1\/requests\/([^/]+)\/status$/.exec(url.pathname);
@@ -155,7 +188,7 @@ export function createSecretHandoffServer({ vault, publicBaseUrl, controlToken, 
         const values = {};
         for (const field of request.schema.fields) if (params.has(field.name)) values[field.name] = params.get(field.name);
         try {
-          vault.complete(session, params.get('_csrf'), values);
+          vault.complete(session, params.get('_csrf'), values, params.get('_owner_code'));
         } catch (error) {
           return sendHtml(res, 400, formPage(request, error.message));
         }

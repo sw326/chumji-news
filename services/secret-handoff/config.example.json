@@ -8,6 +8,10 @@
   "trustProxy": true,
   "dbPath": "/Users/ops/Library/Application Support/secret-handoff/vault.sqlite3",
   "controlTokenEnv": "SECRET_HANDOFF_CONTROL_TOKEN",
+  "telegramChallenge": {
+    "botTokenEnv": "SECRET_HANDOFF_TELEGRAM_BOT_TOKEN",
+    "timeoutMs": 5000
+  },
   "masterKey": {
     "provider": "keychain",
     "service": "com.chumji.secret-handoff.master-key",
