@@ -1,0 +1,25 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 8789
+  },
+  "publicBaseUrl": "https://secret-input.example.invalid",
+  "secureCookie": true,
+  "trustProxy": true,
+  "dbPath": "/Users/ops/Library/Application Support/secret-handoff/vault.sqlite3",
+  "controlToken": {
+    "provider": "file",
+    "path": "/Users/ops/Library/Application Support/secret-handoff/control-token"
+  },
+  "telegramChallenge": {
+    "botToken": {
+      "provider": "file",
+      "path": "/Users/ops/Library/Application Support/secret-handoff/telegram-bot-token"
+    },
+    "timeoutMs": 5000
+  },
+  "masterKey": {
+    "provider": "file",
+    "path": "/Users/ops/Library/Application Support/secret-handoff/master-key"
+  }
+}

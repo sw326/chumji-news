@@ -24,6 +24,7 @@ and scheduler map.
 
 - `apps/web/` - integrated news, prices, alerts, and operations web UI.
 - `services/alert-hub/` - Go source for the live disaster alert service.
+- `services/secret-handoff/` - inactive generic remote secret-entry broker source and tests; no public ingress or live service is installed.
 - `jobs/news/` - AI-less morning, IT, and trend briefing jobs.
 - `jobs/fresh-food/` - Garak Market and KAMIS price collection jobs.
 - `jobs/global-intel/` - ACLED, ReliefWeb, and OpenSky collection jobs; GDELT is opt-in.
