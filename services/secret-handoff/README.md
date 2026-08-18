@@ -1,6 +1,6 @@
 # Secret Handoff
 
-Generic remote secret-entry broker for OpenClaw workflows. This directory is source and tests only; it is not deployed and does not create public ingress by itself.
+Generic remote secret-entry broker for OpenClaw workflows. This directory is the source and test SOT; live deployment state and rollback procedures are recorded in `docs/operations/current-architecture.md` and `docs/operations/secret-handoff.md`.
 
 ## Contract
 
@@ -37,7 +37,7 @@ Field kinds are `secret`, `token`, `username`, `password`, and `text`. Retention
 
 ## Internal API
 
-The API must remain behind loopback or a private service boundary. It uses a bearer token loaded from the environment named by `controlTokenEnv`.
+The API must remain behind loopback or a private service boundary. It uses a bearer token loaded from the configured strict file or environment input.
 
 - `POST /api/v1/requests`
 - `GET /api/v1/requests/:id/status`
@@ -79,7 +79,7 @@ One-time credentials must request all required fields in the same resolver call 
 - Audit rows contain event type, opaque IDs, result, and time only.
 - No request body or secret value should be logged by the service or reverse proxy.
 
-Public HTTPS exposure, reverse-proxy path allowlisting, owner authentication, and service lifecycle configuration require a separate reviewed deployment change. The reverse proxy must expose only `/enter`, never `/api/v1/*`. Before that cutover, keep `secureCookie: true` and bind the app to loopback.
+The reverse proxy must expose only `/enter`, never `/api/v1/*`. Keep `secureCookie: true` and bind the app to loopback. Any ingress, owner-authentication, or lifecycle change remains a separately reviewed operations change even when the service is already deployed.
 
 The reviewed macOS manifest is `deploy/macos/com.chumji.secret-handoff.plist`. Install a commit-addressed release and keep mutable configuration, the encrypted vault, and all secret inputs under `/Users/ops/Library/Application Support/secret-handoff`. See `docs/operations/secret-handoff.md` for the cutover and rollback checks.
 
