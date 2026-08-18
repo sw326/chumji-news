@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-08-11
+Status date: 2026-08-18
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -61,6 +61,7 @@ Mac mini, ops account
   |
   +-- /Users/ops/services/earthquake-alert
   +-- /Users/ops/services/hoyolab-auto
+  +-- /Users/ops/services/secret-handoff
   +-- Investment Assistant runtime
   |
   +-- LaunchDaemons ------ deterministic services and shadow jobs
@@ -90,6 +91,7 @@ Mac mini, ops account
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
+| Secret Handoff | `ops` | always-on LaunchDaemon | production pilot; owner-verified remote credential intake | Tailscale Funnel `/enter` only |
 
 ## Web and Data Boundaries
 
@@ -111,6 +113,10 @@ Mac mini, ops account
 - The `chumji-ops-preview` project remains a validation surface and has the
   same public Supabase URL and anon-key variable names. Neither web project
   receives a Supabase service-role key.
+- Secret Handoff shares the existing Tailscale HTTPS origin but only the
+  `/enter` path proxies to its loopback listener. Request creation, status,
+  cancellation, revocation, and SecretRef resolution are not publicly routed.
+  Owner-bound forms require a separately delivered Telegram DM challenge.
 
 ### Web rollback reference
 
@@ -131,6 +137,11 @@ Mac mini, ops account
   `/Users/ops/Library/Application Support/chumji-ops/trade-market-briefing`
 - Job logs: `/Users/ops/Library/Logs/chumji-ops`
 - Secret files: `/Users/ops/.config/chumji-ops/secrets`
+- Secret Handoff releases: `/Users/ops/services/secret-handoff/releases`; the
+  active `current` symlink points to reviewed release `6cb6aff`.
+- Secret Handoff mutable state and strict secret inputs:
+  `/Users/ops/Library/Application Support/secret-handoff`
+- Secret Handoff logs: `/Users/ops/Library/Logs/secret-handoff`
 - Alert configuration: `/Users/ops/.config/earthquake-alert`
 - HoYoLab configuration:
   `/Users/ops/services/hoyolab-auto/config.json5` with mode `0600`

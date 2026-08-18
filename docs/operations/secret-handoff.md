@@ -34,11 +34,16 @@ SecretRef without reading it into an agent response.
 
 1. Run `npm test` from the candidate release.
 2. Validate the plist with `plutil -lint` and the private config with `jq -e`.
-3. Confirm port `8789` is unused and the current Tailscale Serve configuration is
-   saved before mutation.
+3. Confirm port `8789` is unused and save `tailscale serve status --json` before
+   mutation. The installed legacy node configuration is not exported by the
+   newer service-oriented `serve get-config --all` command.
 4. Install the LaunchDaemon and verify it is running as `ops` and listening only
    on loopback.
-5. Add the exact `/enter` path handler without changing the existing root proxy.
+5. Add the exact `/enter` path handler with backend target
+   `http://127.0.0.1:8789/enter`; a target without the trailing `/enter` strips
+   the prefix and returns the wrong route. Re-enable Funnel on port 443 after a
+   `serve` mutation and verify both the existing root handler and `/enter` plus
+   `AllowFunnel` in `tailscale serve status --json`.
 6. Verify external `/enter` returns the no-session error with security headers;
    verify external `/api/v1/requests` still reaches the existing root service or
    returns a non-broker response.
@@ -49,7 +54,10 @@ SecretRef without reading it into an agent response.
 
 ## Rollback
 
-1. Remove only the `/enter` Tailscale handler, restoring the saved configuration.
+1. Remove only the `/enter` Tailscale handler with the installed client's
+   path-scoped form and compare against the saved status snapshot. Never use a
+   port-wide `serve --https=443 off`, which also removes the Investment
+   Assistant root handler.
 2. Boot out `com.chumji.secret-handoff` and remove its installed plist.
 3. Restore the prior `current` symlink if this was an upgrade.
 4. Keep the encrypted database and key material for diagnosis unless explicit
