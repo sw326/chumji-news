@@ -69,6 +69,7 @@ One-time credentials must request all required fields in the same resolver call 
 ## Runtime security
 
 - Master key: macOS Keychain by default; a strict `0600` external key file is supported for isolated deployments.
+- The control token and Telegram challenge bot token may also be loaded from strict service-user-owned `0600` files. Environment-variable inputs remain supported for development compatibility.
 - Control token and master key are never stored in this repository.
 - Request tokens are stored only as SHA-256 hashes and become unusable after the first exchange.
 - Form sessions use an HttpOnly cookie and HMAC-bound CSRF token.
@@ -79,6 +80,8 @@ One-time credentials must request all required fields in the same resolver call 
 - No request body or secret value should be logged by the service or reverse proxy.
 
 Public HTTPS exposure, reverse-proxy path allowlisting, owner authentication, and service lifecycle configuration require a separate reviewed deployment change. The reverse proxy must expose only `/enter`, never `/api/v1/*`. Before that cutover, keep `secureCookie: true` and bind the app to loopback.
+
+The reviewed macOS manifest is `deploy/macos/com.chumji.secret-handoff.plist`. Install a commit-addressed release and keep mutable configuration, the encrypted vault, and all secret inputs under `/Users/ops/Library/Application Support/secret-handoff`. See `docs/operations/secret-handoff.md` for the cutover and rollback checks.
 
 ## Test
 
