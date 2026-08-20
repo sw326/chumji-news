@@ -94,6 +94,31 @@ def source_peek(event_type="worker_done", body="done"):
 
 
 class BridgeTests(unittest.TestCase):
+    def test_run_json_command_accepts_utf8_stdout_and_non_utf8_stderr(self):
+        completed = mock.Mock(
+            returncode=0,
+            stdout='{"ok":true,"result":{"subject":"완료"}}'.encode(),
+            stderr=b"\xf0\xbb transport warning",
+        )
+        with mock.patch.object(bridge.subprocess, "run", return_value=completed) as run:
+            result = bridge.run_json_command(["ssh", "company"], "승인")
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["result"]["subject"], "완료")
+        self.assertEqual(run.call_args.kwargs["input"], "승인".encode())
+
+    def test_run_json_command_rejects_non_utf8_stdout_as_bridge_error(self):
+        completed = mock.Mock(returncode=0, stdout=b"\xf0\xbb", stderr=b"")
+        with mock.patch.object(bridge.subprocess, "run", return_value=completed):
+            with self.assertRaisesRegex(bridge.BridgeError, "non-UTF-8 output"):
+                bridge.run_json_command(["ssh", "company"])
+
+    def test_run_json_command_sanitizes_non_utf8_failure_diagnostic(self):
+        completed = mock.Mock(returncode=255, stdout=b"", stderr=b"\xf0\xbb failed")
+        with mock.patch.object(bridge.subprocess, "run", return_value=completed):
+            with self.assertRaisesRegex(bridge.BridgeError, "exit 255"):
+                bridge.run_json_command(["ssh", "company"])
+
     def test_builds_wait_command_without_shell(self):
         with tempfile.TemporaryDirectory() as tmp:
             config = make_config(Path(tmp))

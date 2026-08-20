@@ -412,19 +412,25 @@ def _parse_json_output(stdout: str, label: str) -> dict[str, Any]:
 def run_json_command(
     command: Sequence[str], stdin_text: str | None = None
 ) -> dict[str, Any]:
-    completed = subprocess.run(
-        list(command),
-        check=False,
-        capture_output=True,
-        text=True,
-        input=stdin_text,
-    )
+    try:
+        completed = subprocess.run(
+            list(command),
+            check=False,
+            capture_output=True,
+            input=stdin_text.encode("utf-8") if stdin_text is not None else None,
+        )
+    except OSError as exc:
+        raise BridgeError(f"failed to execute {command[0]}") from exc
     if completed.returncode != 0:
-        stderr = completed.stderr.strip()[-1_000:]
+        stderr = completed.stderr.decode("utf-8", errors="replace").strip()[-1_000:]
         raise BridgeError(
             f"command failed with exit {completed.returncode}: {stderr or 'no stderr'}"
         )
-    return _parse_json_output(completed.stdout, command[0])
+    try:
+        stdout = completed.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise BridgeError(f"{command[0]} returned non-UTF-8 output") from exc
+    return _parse_json_output(stdout, command[0])
 
 
 def sanitize_text(value: Any, limit: int) -> str:
