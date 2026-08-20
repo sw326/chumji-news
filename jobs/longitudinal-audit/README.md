@@ -9,10 +9,11 @@ synthesis are separate stages.
 The collector does not perform semantic candidate extraction. Each checksum-
 identified batch gets a fresh blind extraction session that cannot read prior
 hypotheses. Claim-neutral evidence events are appended to an owner-only ledger.
-After three completed extraction batches, a separate fresh synthesis session
-assembles candidates from the ledger, produces descriptive evidence counts, and
-only then reconciles wiki review hypotheses. Session logs remain the raw source
-of truth. Runtime state, ledger, and temporary packets live under
+The initial configuration asks for a separate fresh synthesis after three
+completed extraction batches. This is an operational sampling cadence, not an
+evidence threshold or a requirement to produce a hypothesis. The synthesis
+model may leave observations ungrouped or return no finding. Session logs remain
+the raw source of truth. Runtime state, ledger, and temporary packets live under
 `~/Library/Application Support/chumji-longitudinal-audit`.
 
 The default batch target is 30,000 normalized characters with a 45,000-character
@@ -27,4 +28,5 @@ python3 jobs/longitudinal-audit/audit_job.py run
 Only a completed extraction with matching manifest and packet checksums plus a
 validated ledger append advances the extraction checkpoint. Synthesis has its
 own checkpoint and cannot cause transcript recollection. Routine results are not
-delivered to Telegram.
+delivered to Telegram. Semantic selection, evidence sufficiency, and hypothesis
+scope remain model judgments; the job does not add scoring or meaning validators.
