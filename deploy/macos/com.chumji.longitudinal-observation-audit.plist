@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.chumji.longitudinal-observation-audit</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3</string>
+    <string>__RELEASE_DIR__/jobs/longitudinal-audit/audit_job.py</string>
+    <string>run</string>
+    <string>--openclaw-bin</string><string>/opt/homebrew/bin/openclaw</string>
+  </array>
+  <key>StartInterval</key><integer>21600</integer>
+  <key>StandardOutPath</key><string>/Users/chumji/Library/Logs/chumji-longitudinal-audit.log</string>
+  <key>StandardErrorPath</key><string>/Users/chumji/Library/Logs/chumji-longitudinal-audit.error.log</string>
+  <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

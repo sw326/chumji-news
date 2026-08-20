@@ -63,6 +63,7 @@ Mac mini, ops account
   +-- /Users/ops/services/hoyolab-auto
   +-- /Users/ops/services/secret-handoff
   +-- Investment Assistant runtime
+  +-- Longitudinal observation audit (chumji user LaunchAgent)
   |
   +-- LaunchDaemons ------ deterministic services and shadow jobs
   +-- OpenClaw cron ------ agent-assisted publication and personal briefings
@@ -92,6 +93,7 @@ Mac mini, ops account
 | Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
 | Secret Handoff | `ops` | always-on LaunchDaemon | production pilot; owner-verified remote credential intake | Tailscale Funnel `/enter` only |
+| Longitudinal observation audit | `chumji` | user LaunchAgent, every 6 hours | deterministic transcript batch gate; dedicated Wiki Lab audit only when full | personal wiki `review` when warranted; routine checks silent |
 
 ## Web and Data Boundaries
 
@@ -142,6 +144,10 @@ Mac mini, ops account
 - Secret Handoff mutable state and strict secret inputs:
   `/Users/ops/Library/Application Support/secret-handoff`
 - Secret Handoff logs: `/Users/ops/Library/Logs/secret-handoff`
+- Longitudinal audit state:
+  `/Users/chumji/Library/Application Support/chumji-longitudinal-audit`
+- Longitudinal audit logs:
+  `/Users/chumji/Library/Logs/chumji-longitudinal-audit*.log`
 - Alert configuration: `/Users/ops/.config/earthquake-alert`
 - HoYoLab configuration:
   `/Users/ops/services/hoyolab-auto/config.json5` with mode `0600`
