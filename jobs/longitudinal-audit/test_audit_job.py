@@ -66,6 +66,34 @@ class AuditJobTests(unittest.TestCase):
             self.assertEqual(errors, [])
             self.assertEqual([turn.user_text for turn in turns], ["완료 턴"])
 
+    def test_ledger_is_append_only_and_deduplicated(self):
+        packet = {"turns": [{"agent": "main", "session_id": "s", "message_id": "m"}]}
+        extraction = {"stage": "extraction", "manifest_id": "batch-a", "packet_checksum": "sum",
+                      "status": "completed", "events": [{
+                          "source": {"agent": "main", "session_id": "s", "message_id": "m"},
+                          "timestamp": "2026-08-20T00:00:00Z", "context": "기술 작업",
+                          "observation": "사용자가 제안의 근거를 먼저 확인했다.",
+                          "evidence_kind": "observed_choice", "origin": "user_originated",
+                          "alternatives": ["현재 과업의 위험도가 높았다"], "uncertainty": "한 맥락",
+                          "sensitive_excluded": False}]}
+        with tempfile.TemporaryDirectory() as raw:
+            ledger = Path(raw) / "events.jsonl"
+            self.assertEqual(audit_job.append_ledger(ledger, "batch-a", "sum", extraction, packet), 1)
+            self.assertEqual(audit_job.append_ledger(ledger, "batch-a", "sum", extraction, packet), 0)
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+            self.assertEqual(len(rows), 1)
+            self.assertNotIn("candidate", rows[0])
+
+    def test_ledger_rejects_source_outside_packet(self):
+        packet = {"turns": [{"agent": "main", "session_id": "s", "message_id": "m"}]}
+        extraction = {"stage": "extraction", "manifest_id": "batch-a", "packet_checksum": "sum",
+                      "status": "completed", "events": [{
+                          "source": {"agent": "main", "session_id": "other", "message_id": "m"},
+                          "observation": "관찰", "evidence_kind": "ambiguity"}]}
+        with tempfile.TemporaryDirectory() as raw:
+            with self.assertRaises(ValueError):
+                audit_job.append_ledger(Path(raw) / "events.jsonl", "batch-a", "sum", extraction, packet)
+
 
 if __name__ == "__main__":
     unittest.main()

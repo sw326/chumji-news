@@ -93,7 +93,7 @@ Mac mini, ops account
 | Integrated web | Vercel | Git deployment | production | `chumji-news.vercel.app`; preview retained for validation |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
 | Secret Handoff | `ops` | always-on LaunchDaemon | production pilot; owner-verified remote credential intake | Tailscale Funnel `/enter` only |
-| Longitudinal observation audit | `chumji` | user LaunchAgent, every 6 hours | deterministic transcript batch gate; dedicated Wiki Lab audit only when full | personal wiki `review` when warranted; routine checks silent |
+| Longitudinal observation audit | `chumji` | user LaunchAgent, every 6 hours | deterministic transcript gate → fresh blind extraction → private append-only ledger → separate synthesis every 3 batches | personal wiki `review` only from ledger-first synthesis; routine checks silent |
 
 ## Web and Data Boundaries
 

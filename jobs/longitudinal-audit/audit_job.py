@@ -21,6 +21,8 @@ AGENTS = ("main", "wiki-lab", "fin", "dev", "notification", "playground")
 TRANSCRIPT_RE = re.compile(r"^[0-9a-f-]+\.jsonl(?:\.(?:reset|deleted)\.\d{4}-\d{2}-\d{2}T[^/]+Z)?$")
 DEFAULT_THRESHOLD_CHARS = 30_000
 DEFAULT_MAX_CHARS = 45_000
+SYNTHESIS_BATCH_INTERVAL = 3
+EXTRACTION_SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -178,6 +180,72 @@ def checksum(payload: Any) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def append_ledger(path: Path, manifest_id: str, packet_checksum: str,
+                  extraction: dict[str, Any], packet: dict[str, Any]) -> int:
+    """Validate and append claim-neutral events, deduplicated by stable id."""
+    if extraction.get("stage") != "extraction" or extraction.get("manifest_id") != manifest_id:
+        raise ValueError("invalid extraction identity")
+    if extraction.get("packet_checksum") != packet_checksum or extraction.get("status") != "completed":
+        raise ValueError("invalid extraction result")
+    events = extraction.get("events")
+    if not isinstance(events, list):
+        raise ValueError("events must be a list")
+    turns = {(str(t["agent"]), str(t["session_id"]), str(t["message_id"]))
+             for t in packet["turns"]}
+    existing: dict[str, dict[str, Any]] = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            row = json.loads(line)
+            existing[str(row["event_id"])] = row
+    appended = 0
+    for raw in events:
+        if not isinstance(raw, dict):
+            raise ValueError("event must be an object")
+        pointer = raw.get("source")
+        if not isinstance(pointer, dict):
+            raise ValueError("event source missing")
+        source_key = (str(pointer.get("agent", "")), str(pointer.get("session_id", "")),
+                      str(pointer.get("message_id", "")))
+        if source_key not in turns:
+            raise ValueError("event source outside packet")
+        observation = str(raw.get("observation", "")).strip()
+        if not observation or len(observation) > 600:
+            raise ValueError("invalid bounded observation")
+        evidence_kind = str(raw.get("evidence_kind", ""))
+        if evidence_kind not in {"explicit_statement", "observed_choice", "correction",
+                                 "counterexample", "ambiguity"}:
+            raise ValueError("invalid evidence kind")
+        canonical = {"manifest_id": manifest_id, "source": pointer,
+                     "observation": observation, "evidence_kind": evidence_kind}
+        event_id = "event-" + checksum(canonical)[:24]
+        row = {"schema_version": EXTRACTION_SCHEMA_VERSION, "event_id": event_id,
+               "manifest_id": manifest_id, "packet_checksum": packet_checksum,
+               "source": pointer, "timestamp": str(raw.get("timestamp", "")),
+               "context": str(raw.get("context", ""))[:400], "observation": observation,
+               "evidence_kind": evidence_kind,
+               "origin": str(raw.get("origin", "unclear")),
+               "alternatives": [str(x)[:300] for x in raw.get("alternatives", []) if isinstance(x, str)][:4],
+               "uncertainty": str(raw.get("uncertainty", ""))[:400],
+               "sensitive_excluded": bool(raw.get("sensitive_excluded", False)),
+               "supersedes": raw.get("supersedes")}
+        if event_id not in existing:
+            existing[event_id] = row
+            appended += 1
+    payload = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
+                      for row in existing.values())
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd, temporary = tempfile.mkstemp(prefix=".events.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    return appended
+
+
 def status_payload(args: argparse.Namespace, state: dict[str, Any]) -> tuple[dict[str, Any], list[Turn]]:
     raw = state.get("cursor", ["", ""])
     cursor = (str(raw[0]), str(raw[1]))
@@ -197,8 +265,9 @@ def run_audit(args: argparse.Namespace) -> int:
         except BlockingIOError:
             print('{"status":"locked"}')
             return 0
-        state_path = args.state_dir / "state.json"
-        state = load_json(state_path, {"version": 1, "cursor": ["", ""]})
+        state_path = args.state_dir / "state-v2.json"
+        state = load_json(state_path, {"version": 2, "cursor": ["", ""],
+                                      "completed_extractions_since_synthesis": 0})
         status, batch = status_payload(args, state)
         if status["schema_errors"]:
             print(json.dumps({"status": "rejected", **status}, ensure_ascii=False))
@@ -216,7 +285,7 @@ def run_audit(args: argparse.Namespace) -> int:
         run_dir = args.state_dir / "runs" / manifest_id
         run_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         packet_path, manifest_path = run_dir / "packet.json", run_dir / "manifest.json"
-        result_path, prompt_path = run_dir / "result.json", run_dir / "prompt.md"
+        result_path, prompt_path = run_dir / "extraction-result.json", run_dir / "extraction-prompt.md"
         result_path.unlink(missing_ok=True)
         atomic_json(packet_path, packet)
         atomic_json(manifest_path, {"version": 1, "manifest_id": manifest_id, "created_at": created_at,
@@ -226,21 +295,24 @@ def run_audit(args: argparse.Namespace) -> int:
                     "source_files": sorted({f"{item.agent}/{item.session_file}" for item in batch}),
                     "active_and_archives": True, "schema_errors": []})
         prompt_path.write_text(
-            f"Use the longitudinal-observation-audit skill for this dedicated retrospective run.\n\n"
+            f"Use the longitudinal-observation-audit skill Stage A blind extraction only.\n\n"
             f"Manifest: {manifest_path}\nPacket: {packet_path}\nRequired result: {result_path}\n\n"
-            f"Do not deliver routine results to Telegram. Follow maintain-personal-wiki for durable edits. "
-            f"This batch identity is stable across retries: inspect existing canonical review first, and if a prior "
-            f"partial run already reflected a finding, reconcile it and complete without duplicating the knowledge. "
-            f"Before ending, write result JSON with manifest_id={manifest_id!r}, packet_checksum={packet_checksum!r}, "
-            f"audit_status completed/rejected/failed, processed_end_cursor={list(batch[-1].order)!r}, "
-            "finding_counts, wiki_paths_changed, and commit_identity. A completed no-finding result is valid.\n",
+            "Do not read the personal wiki, existing hypotheses, prior audit results, profiles, or prior extraction "
+            "sessions. Do not edit or commit the wiki. Extract only claim-neutral evidence events from this packet. "
+            "Each event must contain source {agent, session_id, message_id}, timestamp, bounded context, observation "
+            "(max 600 chars), evidence_kind (explicit_statement, observed_choice, correction, counterexample, or "
+            "ambiguity), origin (user_originated, assistant_proposed_then_accepted, or unclear), alternatives, "
+            "uncertainty, and sensitive_excluded. Zero events is valid. Do not assign traits, candidates, scores, "
+            f"or verdicts. Write JSON with stage='extraction', manifest_id={manifest_id!r}, "
+            f"packet_checksum={packet_checksum!r}, status='completed', events=[...], and coverage.\n",
             encoding="utf-8")
         os.chmod(prompt_path, 0o600)
         if args.prepare_only:
             print(json.dumps({"status": "prepared", "manifest": str(manifest_path)}, ensure_ascii=False))
             return 0
+        attempt_id = checksum({"manifest_id": manifest_id, "created_at": created_at})[:10]
         command = [args.openclaw_bin, "agent", "--agent", "wiki-lab", "--session-key",
-                   "agent:wiki-lab:longitudinal-audit", "--message-file", str(prompt_path),
+                   f"agent:wiki-lab:longitudinal-extract:{manifest_id}:{attempt_id}", "--message-file", str(prompt_path),
                    "--thinking", "high", "--timeout", str(args.agent_timeout), "--json"]
         completed = subprocess.run(command, text=True, capture_output=True, timeout=args.agent_timeout + 60)
         if completed.returncode != 0 or not result_path.exists():
@@ -249,20 +321,64 @@ def run_audit(args: argparse.Namespace) -> int:
             print(json.dumps({"status": "agent_failed", "returncode": completed.returncode}))
             return 3
         result = load_json(result_path, {})
-        valid = (result.get("audit_status") == "completed" and result.get("manifest_id") == manifest_id
-                 and result.get("packet_checksum") == packet_checksum
-                 and result.get("processed_end_cursor") == list(batch[-1].order))
-        if not valid:
+        try:
+            appended = append_ledger(args.state_dir / "ledger" / "events.jsonl", manifest_id,
+                                     packet_checksum, result, packet)
+        except (ValueError, KeyError, json.JSONDecodeError):
             packet_path.unlink(missing_ok=True)
             prompt_path.unlink(missing_ok=True)
-            print('{"status":"invalid_result"}')
+            print('{"status":"invalid_extraction"}')
             return 4
-        state.update({"version": 1, "cursor": list(batch[-1].order), "last_completed_manifest": manifest_id,
-                      "last_completed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
+        state.update({"version": 2, "cursor": list(batch[-1].order), "last_completed_manifest": manifest_id,
+                      "last_completed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                      "completed_extractions_since_synthesis":
+                          int(state.get("completed_extractions_since_synthesis", 0)) + 1})
         atomic_json(state_path, state)
         packet_path.unlink(missing_ok=True)
         prompt_path.unlink(missing_ok=True)
-        print(json.dumps({"status": "completed", "manifest_id": manifest_id}))
+        synthesis = "not_due"
+        if int(state["completed_extractions_since_synthesis"]) >= args.synthesis_batch_interval:
+            ledger_checksum = checksum((args.state_dir / "ledger" / "events.jsonl").read_text(encoding="utf-8"))
+            synthesis_id = "synthesis-" + checksum({"cursor": state["cursor"],
+                                                     "ledger": ledger_checksum})[:20]
+            synthesis_dir = args.state_dir / "syntheses" / synthesis_id
+            synthesis_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+            synthesis_result = synthesis_dir / "result.json"
+            synthesis_prompt = synthesis_dir / "prompt.md"
+            synthesis_prompt.write_text(
+                "Use the longitudinal-observation-audit skill Stage B independent synthesis.\n\n"
+                f"Private observation ledger: {args.state_dir / 'ledger' / 'events.jsonl'}\n"
+                f"Required result: {synthesis_result}\nSynthesis id: {synthesis_id}\n\n"
+                "Start by assembling candidates solely from ledger events. Compute descriptive support, contradiction, "
+                "ambiguity, distinct-context, distinct-date, direct-statement, inferred-behavior, user-originated, and "
+                "assistant-proposed counts. Only then inspect existing personal review pages for reconciliation. Include "
+                "counterevidence, sampling bias, alternatives, and coverage. Counts are not probabilities. Behavioral "
+                "hypotheses remain review. Follow maintain-personal-wiki for any justified edit and validation. Write "
+                "result JSON with stage='synthesis', synthesis_id, status='completed', ledger_checksum, evidence_counts, "
+                "wiki_paths_changed, and commit_identity. A no-finding result is valid. Do not message Telegram.\n",
+                encoding="utf-8")
+            os.chmod(synthesis_prompt, 0o600)
+            synthesis_command = [args.openclaw_bin, "agent", "--agent", "wiki-lab", "--session-key",
+                                 f"agent:wiki-lab:longitudinal-synthesis:{synthesis_id}:{attempt_id}", "--message-file",
+                                 str(synthesis_prompt), "--thinking", "high", "--timeout", str(args.agent_timeout), "--json"]
+            synthesis_run = subprocess.run(synthesis_command, text=True, capture_output=True,
+                                           timeout=args.agent_timeout + 60)
+            if synthesis_run.returncode == 0 and synthesis_result.exists():
+                synthesis_payload = load_json(synthesis_result, {})
+                if (synthesis_payload.get("stage") == "synthesis" and
+                        synthesis_payload.get("synthesis_id") == synthesis_id and
+                        synthesis_payload.get("ledger_checksum") == ledger_checksum and
+                        synthesis_payload.get("status") == "completed"):
+                    state["completed_extractions_since_synthesis"] = 0
+                    state["last_completed_synthesis"] = synthesis_id
+                    atomic_json(state_path, state)
+                    synthesis = "completed"
+                else:
+                    synthesis = "invalid"
+            else:
+                synthesis = "failed"
+        print(json.dumps({"status": "completed", "manifest_id": manifest_id,
+                          "events_appended": appended, "synthesis": synthesis}))
         return 0
 
 
@@ -275,9 +391,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS)
     parser.add_argument("--openclaw-bin", default="openclaw")
     parser.add_argument("--agent-timeout", type=int, default=1800)
+    parser.add_argument("--synthesis-batch-interval", type=int, default=SYNTHESIS_BATCH_INTERVAL)
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()
-    if args.threshold_chars <= 0 or args.max_chars < args.threshold_chars:
+    if args.threshold_chars <= 0 or args.max_chars < args.threshold_chars or args.synthesis_batch_interval <= 0:
         parser.error("max chars must be >= positive threshold chars")
     return args
 
@@ -286,7 +403,7 @@ def main() -> int:
     args = parse_args()
     if args.mode == "run":
         return run_audit(args)
-    state = load_json(args.state_dir / "state.json", {"version": 1, "cursor": ["", ""]})
+    state = load_json(args.state_dir / "state-v2.json", {"version": 2, "cursor": ["", ""]})
     status, _ = status_payload(args, state)
     print(json.dumps(status, ensure_ascii=False, indent=2))
     return 2 if status["schema_errors"] else 0
