@@ -214,7 +214,7 @@ def run_audit(args: argparse.Namespace) -> int:
         packet = {"version": 1, "manifest_id": manifest_id, "turns": [item.as_dict() for item in batch]}
         packet_checksum = checksum(packet)
         run_dir = args.state_dir / "runs" / manifest_id
-        run_dir.mkdir(parents=True, mode=0o700)
+        run_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         packet_path, manifest_path = run_dir / "packet.json", run_dir / "manifest.json"
         result_path, prompt_path = run_dir / "result.json", run_dir / "prompt.md"
         result_path.unlink(missing_ok=True)
