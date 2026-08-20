@@ -4,8 +4,8 @@ Status: production cutover validated on 2026-08-14.
 
 Observed deployment:
 
-- release commit: `7ab83e9` (initial production commit `43231c4`,
-  source-equivalent prototype commit `19321ad`);
+- release commit: `9853067` (previous production commit `7ab83e9`, initial
+  production commit `43231c4`, source-equivalent prototype commit `19321ad`);
 - LaunchAgent: `com.chumji.orca-openclaw-bridge`;
 - company observer Run: `run_1a897b1b8eb5`;
 - observer terminal: `term_81ce6937-4132-4dab-88ae-a1e7f4523fa4`;
@@ -144,6 +144,14 @@ defense-in-depth filters.
    `worker_done msg_5a15b79096ea`, and delivered it without source ACK. This
    closed the terminal-binding failure that had suppressed feedback after
    16:53 KST.
+10. Release `9853067` captures SSH/Windows subprocess streams as bytes, decodes
+    successful JSON stdout strictly as UTF-8, and renders non-UTF-8 failure
+    diagnostics with replacement characters. A malformed transport diagnostic
+    now becomes a retryable `source_watch_error` instead of terminating the
+    watcher thread. The 25-test suite and compile check passed; after restart,
+    the watcher delivered previously missed Issue 28 `worker_done`
+    `msg_c56f728df70e` exactly once while leaving its source Delivery for the
+    authoritative coordinator.
 
 ## Remaining operational checks
 
