@@ -159,6 +159,12 @@ context, or direct chat delivery. The target design is:
 > Collection, ranking, storage, and publication mechanics are code; model-based
 > interpretation is optional and event-driven.
 
+The weekly skill-health audit follows the same boundary. Its deterministic
+collector in `jobs/skill-health/` streams recent active-session indexes and
+transcripts, then emits only bounded candidate metadata and session references.
+The OpenClaw cron performs model judgment on those references; it must not
+repeat broad transcript or tool-error enumeration when the collector succeeds.
+
 The Orca bridge is a user LaunchAgent because it integrates the owner-only
 OpenClaw Gateway and Telegram DM. It leaves the Gateway loopback-only and opens
 only outbound SSH to the company computer. Registered authoritative source Runs
