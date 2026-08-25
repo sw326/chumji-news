@@ -82,7 +82,7 @@ Mac mini, ops account
 | Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
 | Cathode market pipeline | `ops` | LaunchDaemon, Monday 10:20 | runtime state requires cutover re-verification | local artifact and Supabase path; UI remains preview-only |
 | Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
-| Legacy morning/IT/trend news | OpenClaw | OpenClaw cron | production | Supabase, Vercel, Telegram path |
+| Morning/IT/trend news | OpenClaw | OpenClaw cron | cut over to consolidated runtime; first scheduled runs pending | Supabase, Vercel, Telegram path |
 | Legacy fresh-food snapshot | OpenClaw | OpenClaw cron, 09:20 | production | Supabase, Vercel, Telegram path |
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
@@ -133,6 +133,10 @@ Mac mini, ops account
   `/Users/ops/services/chumji-news-releases/<commit>`
 - Promoted consolidated runtime link:
   `/Users/ops/services/chumji-news-current`
+- OpenClaw-owned news releases:
+  `/Users/chumji/.openclaw/services/chumji-news-releases/<commit>`
+- OpenClaw news runtime link:
+  `/Users/chumji/.openclaw/services/chumji-news-current`
 - Fresh-food shadow LaunchDaemon: migrated to the promoted consolidated
   runtime on 2026-08-25; the first approved cutover run completed with all
   four expected items and no errors
@@ -220,9 +224,9 @@ Archive it only after a final reference scan and an approved cleanup.
 
 ## Known Gaps
 
-1. Cut over the three production news cron commands to the reviewed
-   commit-addressed `chumji-news` runtime wrapper and retain the prior commands
-   as rollback references until scheduled runs succeed.
+1. Verify the first scheduled morning, IT, and trend runs from consolidated
+   release `6901ab3`; retain the prior commands as rollback references until
+   all three complete successfully.
 2. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
 3. Archive the obsolete `ops` workspace after the rollback retention period.
@@ -230,8 +234,14 @@ Archive it only after a final reference scan and an approved cleanup.
    only after the saved company runtime identity is refreshed and a full
    control-mail round trip passes.
 
-The first gap is code-complete: collectors, byte-frozen prompt contracts,
-text-only GPT summarization, idempotent Supabase/Telegram publication, and an
-explicit publish wrapper are preserved under `operations/producers/news`.
-The installed OpenClaw cron still runs the source checkout until the approved
-runtime cutover is applied and verified.
+The first gap is cut over pending scheduled verification. The three OpenClaw
+cron commands now invoke `run_profile.sh <profile> --publish` through the
+OpenClaw-owned promoted runtime link. A release-path dry run generated a valid
+morning briefing without publication. The previous rollback commands are:
+
+- `/Users/chumji/workspace/claude-workspace/scripts/cron/morning-news.sh`
+- `/Users/chumji/workspace/claude-workspace/scripts/cron/it-tech.sh`
+- `/Users/chumji/workspace/claude-workspace/scripts/cron/trend.sh`
+
+Do not remove these files until one scheduled run of every profile has stored
+the expected post and delivered at most one Telegram message.
