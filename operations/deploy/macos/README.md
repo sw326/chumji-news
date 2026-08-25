@@ -1,8 +1,8 @@
 # macOS Deployment Notes
 
 This directory contains the reviewed manifest source for `chumji-ops` jobs and
-selected standalone services. Files ending in `.plist` correspond to installed
-production or shadow LaunchDaemons; `.example` files remain inactive examples.
+selected standalone services. Files ending in `.plist` correspond to retained
+production LaunchDaemon templates; `.example` files remain inactive examples.
 
 Do not copy, load, unload, or replace files in `~/Library/LaunchAgents`,
 `/Library/LaunchAgents`, `/Library/LaunchDaemons`, cron, or any live service
@@ -21,6 +21,7 @@ The Investment Assistant keeps its own LaunchDaemon template in its project
 repository. The disaster alert hub retains a disabled template because its
 production replacement and restart require a separate approval gate.
 
-`com.chumji.ops-trade-market-briefing.plist` runs the validated cathode market
-board refresh weekly. It reuses only the ops-owned data.go.kr SecretRef and
-publishes local artifacts; GACC remains a manual verification step.
+The consumerless global-intel shadow, public-status exporter, and cathode
+market scheduler were retired on 2026-08-25. Their installed plist files are
+kept only in the ops-owned retired runtime directory for rollback; active
+templates are intentionally absent here.

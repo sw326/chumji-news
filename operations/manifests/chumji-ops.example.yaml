@@ -24,12 +24,3 @@ services:
     logStream: alert-hub
     secrets:
       - alert-hub.webhook
-jobs:
-  freshFood:
-    path: jobs/fresh-food
-    cadence: example-only
-    healthMarker: fresh-food.last_success
-  globalIntel:
-    path: jobs/global-intel
-    cadence: example-only
-    healthMarker: global-intel.last_success
