@@ -57,8 +57,10 @@ must not expand the public application's tabs.
 The fresh-food source fix was merged as `cb35ce9` and staged as a
 commit-addressed release. A manual run as the `ops` user on 2026-08-25 covered
 all four expected items with collector exit code zero and no reported errors.
-This validates the release, not the installed LaunchDaemon; scheduler cutover
-remains a separate approval gate.
+After explicit approval, the installed LaunchDaemon was moved to consolidated
+release `191e7de` through `chumji-news-current`. Its first cutover run again
+covered all four items with collector exit zero and no reported errors. The
+pre-cutover plist and transitional checkout remain available for rollback.
 
 ### P1 — fresh-food publication ownership
 
