@@ -134,6 +134,10 @@ Mac mini, ops account
 - Transitional operations deployment checkout:
   `/Users/ops/services/chumji-ops`; do not remove it until every installed
   command path has been migrated and verified
+- Commit-addressed consolidated releases:
+  `/Users/ops/services/chumji-news-releases/<commit>`
+- Promoted consolidated runtime link:
+  `/Users/ops/services/chumji-news-current`
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
 - Cathode market-board output:

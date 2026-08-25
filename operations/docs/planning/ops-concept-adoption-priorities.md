@@ -54,6 +54,12 @@ must not expand the public application's tabs.
    validator preserved its last good output because automated sources were not
    all complete; the specific source was not recorded in the failure status.
 
+The fresh-food source fix was merged as `cb35ce9` and staged as a
+commit-addressed release. A manual run as the `ops` user on 2026-08-25 covered
+all four expected items with collector exit code zero and no reported errors.
+This validates the release, not the installed LaunchDaemon; scheduler cutover
+remains a separate approval gate.
+
 ### P1 — fresh-food publication ownership
 
 Fresh-food is the strongest first adoption because the public Prices page and
@@ -102,3 +108,16 @@ separate cutover step. Direct live validation from the development worktree was
 not forced: the `ops` user cannot read the owner worktree and the owner user
 cannot read the ops SecretRef. Validate the exact commit only after staging a
 reviewed release in an ops-readable path.
+
+The reviewed release layout is:
+
+- immutable release: `/Users/ops/services/chumji-news-releases/<commit>`
+- promoted runtime link: `/Users/ops/services/chumji-news-current`
+- transitional rollback checkout: `/Users/ops/services/chumji-ops`
+
+For fresh-food cutover, first point `chumji-news-current` at the validated
+release, install the reviewed plist, run one manual job, and compare its
+`shadow-status.json` with the pre-cutover output. Roll back by restoring the
+previous plist and runtime path if the command exits non-zero, any expected
+item is missing, or errors are reported. Do not archive the transitional
+checkout until every installed command has migrated independently.
