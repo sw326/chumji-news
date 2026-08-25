@@ -55,25 +55,26 @@ copying old scripts. A future feed needs an explicit product decision and a
 fresh source audit. The active OpenClaw jobs remain the production path until a
 separately approved component-by-component cutover to `operations/`.
 
-## Production-to-operations gap
+## Rejected AI-less shadow
 
-The existing `operations/jobs/news` implementation is a shadow candidate, not
-a drop-in copy of the active publisher:
+The former `operations/jobs/news` implementation was not a drop-in copy of the
+active publisher:
 
-| Concern | Active OpenClaw jobs | `operations/jobs/news` |
+| Concern | Active OpenClaw jobs | Rejected shadow |
 | --- | --- | --- |
 | Profiles | news, IT, trend | news, IT, trend |
 | Collection | workspace-specific fetchers; trend has observed-evidence ranking | standalone public RSS/Atom fetcher |
 | Interpretation | OpenClaw GPT summarizer | deterministic AI-less ranking and rendering |
 | Supabase publication | enabled | deliberately absent |
 | Telegram publication | enabled | deliberately absent |
-| Runtime | `claude-workspace/scripts/cron` | `chumji-news/operations/jobs/news` shadow |
+| Runtime | `claude-workspace/scripts/cron` | retired local-only LaunchDaemons |
 
-Moving the scheduler path now would remove interpretation and both publication
-outputs, and would change source-selection behavior. Readiness therefore needs
-fixture comparisons for each active profile, an explicit decision on AI-less
-versus model-assisted summaries, and separately reviewed Supabase and Telegram
-adapters. The dormant Reddit script is not part of this migration baseline.
+The same-day sample below showed insufficient parity, so the user chose to
+retire this implementation rather than optimize a second producer. Its code,
+contracts, manifests, and three installed LaunchDaemons were removed. Git
+history and existing local artifacts remain available as evidence. The active
+production jobs are unchanged and the dormant Reddit script is not part of a
+future migration baseline.
 
 ### Same-day URL parity sample
 
@@ -93,13 +94,11 @@ same named source families, yet their low overlap shows that feed timing,
 per-source limits, title filters, and selection policy materially change the
 briefing before model interpretation is considered.
 
-The next implementation order is therefore:
+Any future consolidation uses this order:
 
 1. preserve production collection and evidence-based trend selection in this
    repository as the baseline;
-2. run both selectors over the same frozen inputs and explain every inclusion
-   difference;
-3. decide separately whether article summaries remain model-assisted;
-4. only then add idempotent Supabase and Telegram publication adapters.
+2. decide separately whether article summaries remain model-assisted;
+3. only then add idempotent Supabase and Telegram publication adapters.
 
-Do not cut over the news schedulers based on URL overlap alone.
+Do not recreate the rejected shadow under another path.

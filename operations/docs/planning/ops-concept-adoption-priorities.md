@@ -69,18 +69,19 @@ daily snapshot already use it. Compare current production output with the
 operations collector, define artifact retention outside routine dirty Git
 state, then add publication adapters and perform an approved shadow/cutover.
 
-### P2 — news, IT, and trend producer reconciliation
+### P2 — news, IT, and trend producer consolidation
 
-The operations shadow changes both source selection and interpretation and has
-no Supabase or Telegram publisher. First compare fixtures and output quality,
-choose deterministic versus model-assisted interpretation explicitly, and add
-idempotent publication adapters. Do not restore the retired Reddit profile.
+The rejected operations shadow changed both source selection and interpretation
+and had no Supabase or Telegram publisher. It has been retired instead of
+becoming a second producer. Future work imports the active production
+collectors into this repository, chooses model-assisted interpretation
+explicitly, and adds idempotent publication adapters. Do not restore the
+retired Reddit profile.
 
 The first same-day cited-URL sample found only 2/14 shadow morning URLs and
 1/8 shadow IT URLs in their production counterparts. This rules out a direct
 AI-less scheduler replacement. Preserve the production collectors as the
-baseline, compare both selectors on frozen inputs, and treat model usage and
-publication as later independent decisions.
+baseline and treat model usage and publication as later independent decisions.
 
 ### P3 — cathode market as a separately justified feature
 
@@ -116,6 +117,10 @@ separate cutover step. Direct live validation from the development worktree was
 not forced: the `ops` user cannot read the owner worktree and the owner user
 cannot read the ops SecretRef. Validate the exact commit only after staging a
 reviewed release in an ops-readable path.
+
+The three news shadow LaunchDaemons were subsequently retired by explicit user
+decision. Their local artifacts were retained; this evidence paragraph records
+the pre-retirement observation rather than current runtime state.
 
 The reviewed release layout is:
 

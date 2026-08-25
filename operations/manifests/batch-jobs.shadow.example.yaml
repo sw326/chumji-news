@@ -17,24 +17,6 @@ defaults:
   publish: false
   productionDestinations: false
 secretRefs:
-  - name: news.reddit.oauth
-    provider: macos-keychain
-    scope: local-ops-shadow
-    owner: ops
-    lookup: chumji-ops/news/reddit-oauth
-    rotation: approval-required
-  - name: news.model.api
-    provider: macos-keychain
-    scope: local-ops-shadow
-    owner: ops
-    lookup: chumji-ops/news/model-api
-    rotation: approval-required
-  - name: news.telegram.destination
-    provider: macos-keychain
-    scope: cutover-only
-    owner: ops
-    lookup: chumji-ops/news/telegram-destination
-    rotation: approval-required
   - name: fresh-food.source.api
     provider: macos-keychain
     scope: local-ops-shadow
@@ -66,23 +48,6 @@ secretRefs:
     lookup: chumji-ops/global-intel/telegram-destination
     rotation: approval-required
 jobs:
-  news:
-    contract: jobs/news/contract.md
-    schedule:
-      status: inactive
-      cadence: inventory-confirmed
-    modelPolicy: news.briefing.model.default
-    apis:
-      - news.sources.http
-      - news.reddit.api
-      - news.model.api
-    secrets:
-      - news.reddit.oauth
-      - news.model.api
-      - news.telegram.destination
-    guiLoginDependency: false
-    duplicateKey: news:{inputWindowStart}:{inputWindowEnd}
-    cutoverGate: explicit-approval-required
   freshFood:
     contract: jobs/fresh-food/contract.md
     schedule:

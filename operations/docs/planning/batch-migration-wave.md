@@ -21,7 +21,6 @@ separate cutover approval is recorded.
 
 | Family | Contract | Issue body draft | Created issue | Purpose |
 | --- | --- | --- | --- | --- |
-| news/IT/trend | `jobs/news/contract.md` | `docs/planning/issue-news-batch.md` | sw326/openclaw_v2#18 | Migrate active briefing collection as an ops-owned shadow job while preserving OpenClaw ownership. |
 | fresh-food | `jobs/fresh-food/contract.md` | `docs/planning/issue-fresh-food-batch.md` | sw326/openclaw_v2#17 | Migrate price collection and snapshot generation without Vercel production deployment changes. |
 | global-intel | `jobs/global-intel/contract.md` | `docs/planning/issue-global-intel-batch.md` | sw326/openclaw_v2#19 | Migrate world-affairs briefing production with model/API boundaries and duplicate prevention. |
 

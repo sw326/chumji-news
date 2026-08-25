@@ -3,10 +3,8 @@ set -euo pipefail
 
 required_files=(
   "docs/planning/batch-migration-wave.md"
-  "docs/planning/issue-news-batch.md"
   "docs/planning/issue-fresh-food-batch.md"
   "docs/planning/issue-global-intel-batch.md"
-  "jobs/news/contract.md"
   "jobs/fresh-food/contract.md"
   "jobs/global-intel/contract.md"
   "manifests/batch-jobs.shadow.example.yaml"

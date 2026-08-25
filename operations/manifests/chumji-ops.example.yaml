@@ -25,10 +25,6 @@ services:
     secrets:
       - alert-hub.webhook
 jobs:
-  news:
-    path: jobs/news
-    cadence: example-only
-    healthMarker: news.last_success
   freshFood:
     path: jobs/fresh-food
     cadence: example-only
