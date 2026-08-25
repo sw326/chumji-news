@@ -138,6 +138,9 @@ Mac mini, ops account
   `/Users/ops/services/chumji-news-releases/<commit>`
 - Promoted consolidated runtime link:
   `/Users/ops/services/chumji-news-current`
+- Fresh-food shadow LaunchDaemon: migrated to the promoted consolidated
+  runtime on 2026-08-25; the first approved cutover run completed with all
+  four expected items and no errors
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
 - Cathode market-board output:
