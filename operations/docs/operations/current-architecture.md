@@ -220,8 +220,9 @@ Archive it only after a final reference scan and an approved cleanup.
 
 ## Known Gaps
 
-1. Add reviewed summarization and idempotent publication adapters around the
-   imported production news collectors before any cron cutover.
+1. Cut over the three production news cron commands to the reviewed
+   commit-addressed `chumji-news` runtime wrapper and retain the prior commands
+   as rollback references until scheduled runs succeed.
 2. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
 3. Archive the obsolete `ops` workspace after the rollback retention period.
@@ -229,8 +230,8 @@ Archive it only after a final reference scan and an approved cleanup.
    only after the saved company runtime identity is refreshed and a full
    control-mail round trip passes.
 
-The first gap is source-complete at the code level: the morning, IT, and trend
-collectors from `claude-workspace` commit `f1555d0` are preserved under
-`operations/producers/news`. The installed OpenClaw cron still runs the source
-checkout; summarization, publication adapters, and runtime cutover remain
-separate work.
+The first gap is code-complete: collectors, byte-frozen prompt contracts,
+text-only GPT summarization, idempotent Supabase/Telegram publication, and an
+explicit publish wrapper are preserved under `operations/producers/news`.
+The installed OpenClaw cron still runs the source checkout until the approved
+runtime cutover is applied and verified.
