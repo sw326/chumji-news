@@ -34,6 +34,11 @@ profile templates, and prompt constraints. Frozen-input SHA-256 tests detect
 any byte-level prompt drift before a model is called; source JSON is validated
 but deliberately not reserialized.
 
+`run_profile.sh` is the scheduler entrypoint. It defaults to `--dry-run`; only
+an explicit `--publish` performs the idempotent Supabase/Telegram step. Runtime
+state and logs live outside the release checkout so a commit-addressed release
+can be rolled back without losing delivery receipts.
+
 ## Validation
 
 ```bash
