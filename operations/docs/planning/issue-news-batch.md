@@ -1,11 +1,11 @@
-# Issue Draft: migrate news/IT/trend/Reddit briefing to ops shadow job
+# Issue Draft: migrate news/IT/trend briefing to ops shadow job
 
 Parent: sw326/openclaw_v2#16
 Depends on: #11 inventory, #12 repository bootstrap
 
 ## Goal
 
-Create an ops-owned shadow implementation for the news, IT, trend, and Reddit
+Create an ops-owned shadow implementation for the active news, IT, and trend
 briefing batch without changing OpenClaw cron, Telegram delivery, Claude billing
 or auth, Gemini auth, Vercel production, Supabase production, or live processes.
 
@@ -13,7 +13,8 @@ or auth, Gemini auth, Vercel production, Supabase production, or live processes.
 
 - Public news and technology feeds identified by the #11 inventory.
 - Trend source snapshots identified by the #11 inventory.
-- Reddit source list identified by the #11 inventory.
+- Public community feeds used as trend discovery sources, without restoring a
+  standalone Reddit briefing.
 - Legacy output samples for comparison, accessed only after approval if they
   require production credentials or private paths.
 
