@@ -16,14 +16,24 @@ The files preserve the active collection contracts:
   artifact.
 
 They are not scheduled from this directory yet. The existing OpenClaw cron
-continues to run the source checkout in `claude-workspace`. This copy contains
-no model, Supabase, Telegram, or credential handling and therefore cannot
-publish by itself.
+continues to run the source checkout in `claude-workspace`.
+
+`adapters/openclaw_gpt_summarize.sh` preserves the active text-only GPT call.
+`adapters/publish.py` separates publication from collection and summarization:
+
+- it refuses to overwrite a different briefing for the same date/category;
+- an identical rerun is a database no-op;
+- an atomic local receipt prevents duplicate Telegram delivery while allowing
+  recovery when the database write succeeded but delivery did not;
+- credentials are read from files and never accepted as command arguments.
+
+These adapters are tested but not connected to a production schedule yet.
 
 ## Validation
 
 ```bash
 python3 -m unittest discover -s operations/producers/news/tests -v
+bash -n operations/producers/news/adapters/openclaw_gpt_summarize.sh
 python3 operations/producers/news/fetch_morning_news.py
 python3 operations/producers/news/fetch_it_tech.py
 python3 operations/producers/news/fetch_trends.py --audit-dir /tmp/trend-audit
