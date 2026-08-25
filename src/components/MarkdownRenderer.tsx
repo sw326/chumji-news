@@ -38,11 +38,12 @@ interface ParsedList {
 type ParsedBlock = ParsedArticle | ParsedParagraph | ParsedHr | ParsedList;
 type ParsedNode = ParsedSection | ParsedArticle | ParsedParagraph | ParsedHr | ParsedList;
 
-// Parse inline markdown — links, bold, #issue 링크
+// Parse inline markdown — links and bold text. Issue links must be explicit:
+// bare issue numbers cannot identify which repository owns the issue.
 function parseInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   // Pattern: links [text](url) and **bold**
-  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<![\w/])#(\d+)(?!\w)/g;
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
   let last = 0;
   let match;
   let key = 0;
@@ -67,20 +68,6 @@ function parseInline(text: string): React.ReactNode {
     } else if (match[3] !== undefined) {
       // Bold
       parts.push(<strong key={key++} className="font-semibold">{match[3]}</strong>);
-    } else if (match[4] !== undefined) {
-      // #123 → GitHub issue link
-      const issueNum = match[4];
-      parts.push(
-        <a
-          key={key++}
-          href={`https://github.com/sw326/openclaw-workspace/issues/${issueNum}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent font-medium hover:underline"
-        >
-          #{issueNum}
-        </a>
-      );
     }
     last = match.index + match[0].length;
   }

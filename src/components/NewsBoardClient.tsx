@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { NewsPost, Category } from "@/lib/types";
+import { NewsPost, Category, isCategory } from "@/lib/types";
 import { groupByDate, PostsCursor } from "@/lib/data";
 import { fetchPostsPage } from "@/lib/data";
 import CategoryTabs from "./CategoryTabs";
@@ -23,7 +23,7 @@ interface SavedNewsState {
 }
 
 function isFilter(value: unknown): value is Category | "all" {
-  return value === "all" || ["news", "it", "trend", "realestate", "moltbook", "opendata", "system", "issues", "reddit"].includes(String(value));
+  return value === "all" || isCategory(value);
 }
 
 function formatDateLabel(dateStr: string): string {

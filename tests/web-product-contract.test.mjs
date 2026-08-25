@@ -12,6 +12,25 @@ test("the surviving navigation exposes only finished news product routes", async
   assert.match(tabs, /min-h-10/);
 });
 
+test("category navigation exposes only feeds with verified publishers", async () => {
+  const [tabs, types, board] = await Promise.all([
+    source("src/components/CategoryTabs.tsx"),
+    source("src/lib/types.ts"),
+    source("src/components/NewsBoardClient.tsx"),
+  ]);
+
+  assert.match(tabs, /ACTIVE_CATEGORIES\.map/);
+  assert.match(types, /ACTIVE_CATEGORIES[^;]+"news"[^;]+"it"[^;]+"trend"[^;]+"opendata"/s);
+  assert.match(types, /CATEGORIES[^;]+"realestate"[^;]+"moltbook"[^;]+"system"[^;]+"issues"[^;]+"reddit"/s);
+  assert.match(board, /isCategory\(value\)/);
+});
+
+test("bare issue numbers are not linked to a retired repository", async () => {
+  const renderer = await source("src/components/MarkdownRenderer.tsx");
+
+  assert.doesNotMatch(renderer, /openclaw-workspace\/issues/);
+});
+
 test("bookmarks keep a complete index and serialize writes per article", async () => {
   const [provider, migration] = await Promise.all([
     source("src/components/ScrapProvider.tsx"),
