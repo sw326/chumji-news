@@ -27,7 +27,7 @@ export default async function PriceSnapshotPage({ params, searchParams }: PagePr
         <div className="mx-auto max-w-5xl px-4 py-3">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold tracking-tight">신선식품 가격</h1>
-            <MainTabs />
+            <MainTabs active="prices" />
           </div>
         </div>
       </header>

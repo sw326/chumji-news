@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 import { NewsPost, Category, CATEGORIES } from "./types";
 
 export const PAGE_SIZE = 20;
-export const PRICE_SNAPSHOT_CATEGORY: Category = "opendata";
+// Storage-only category exposed exclusively through the price graph product.
+export const PRICE_SNAPSHOT_CATEGORY = "opendata" as const;
 export const PRICE_SNAPSHOT_PREFIX = "# 신선식품 가격 스냅샷";
 
 export async function getAllPosts(): Promise<NewsPost[]> {
