@@ -1,0 +1,39 @@
+schemaVersion: ops.chumji/v1alpha1
+metadata:
+  name: chumji-ops-example
+  status: example-only
+  owner: ops
+approval:
+  requiredBefore:
+    - service-install
+    - scheduler-change
+    - production-credential-use
+    - cutover
+    - rollback
+secretRefs:
+  - name: alert-hub.webhook
+    provider: macos-keychain
+    scope: local-ops
+    owner: ops
+    lookup: chumji-ops/alert-hub/webhook
+    rotation: review-quarterly
+services:
+  alertHub:
+    path: services/alert-hub
+    healthEndpoint: /healthz
+    logStream: alert-hub
+    secrets:
+      - alert-hub.webhook
+jobs:
+  news:
+    path: jobs/news
+    cadence: example-only
+    healthMarker: news.last_success
+  freshFood:
+    path: jobs/fresh-food
+    cadence: example-only
+    healthMarker: fresh-food.last_success
+  globalIntel:
+    path: jobs/global-intel
+    cadence: example-only
+    healthMarker: global-intel.last_success

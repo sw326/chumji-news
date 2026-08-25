@@ -246,9 +246,11 @@ function ArticleCard({ article, postId, postDate, category }: {
   category: Category;
 }) {
   const router = useRouter();
-  const { isScrapped, toggleScrap } = useScraps();
+  const { isScrapped, isScrapPending, toggleScrap } = useScraps();
   const articleKey = createArticleKey(postId, article.sourceUrl, article.title);
   const saved = isScrapped(articleKey);
+  const pending = isScrapPending(articleKey);
+  const [scrapError, setScrapError] = React.useState("");
 
   async function handleScrap() {
     const draft: NewsScrapDraft = {
@@ -262,23 +264,34 @@ function ArticleCard({ article, postId, postDate, category }: {
       source_text: article.sourceText,
       source_url: article.sourceUrl,
     };
-    const result = await toggleScrap(draft);
-    if (result === "login") router.push("/scraps");
+    setScrapError("");
+    try {
+      const result = await toggleScrap(draft);
+      if (result === "login") router.push("/scraps");
+    } catch {
+      setScrapError("북마크를 변경하지 못했습니다.");
+    }
   }
 
   return (
     <div className="relative rounded-xl border border-card-border bg-card/60 p-4 pr-12 hover:border-accent/30 hover:bg-card transition-all">
       <button
         type="button"
+        disabled={pending}
         onClick={() => void handleScrap()}
-        aria-label={saved ? "스크랩 해제" : "기사 스크랩"}
+        aria-label={pending ? "북마크 변경 중" : saved ? "북마크 해제" : "기사 북마크"}
         aria-pressed={saved}
-        className={`absolute right-3 top-3 rounded-md p-2 transition-colors ${saved ? "bg-accent/10 text-accent" : "text-muted hover:bg-accent/10 hover:text-accent"}`}
+        className={`absolute right-3 top-3 rounded-md p-2 transition-colors disabled:cursor-wait disabled:opacity-50 ${saved ? "bg-accent/10 text-accent" : "text-muted hover:bg-accent/10 hover:text-accent"}`}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
         </svg>
       </button>
+      {scrapError && (
+        <button type="button" onClick={() => setScrapError("")} className="mb-2 block text-left text-xs text-red-600" role="alert">
+          {scrapError} 눌러서 닫기
+        </button>
+      )}
       <div className="flex items-start gap-2">
         {article.emoji && (
           <span className="text-lg leading-none mt-0.5 shrink-0">{article.emoji}</span>

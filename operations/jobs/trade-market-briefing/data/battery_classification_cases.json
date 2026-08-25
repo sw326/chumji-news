@@ -1,0 +1,31 @@
+{
+  "version":"2026-08-05.1",
+  "source":{
+    "title":"이차전지 HS 표준해석 지침",
+    "publisher":"관세청",
+    "published":"2023-01",
+    "classification_version":"HSK 2022",
+    "url":"https://unipass.customs.go.kr/clip/ctensrch/openULS0404026Q.do",
+    "ebook_url":"https://unipass.customs.go.kr/clip/ebook/hs/ebook_0006/01/index.html",
+    "usage":"reference-only-noncommercial",
+    "notice":"지침은 2022년 1월 1일 기준이며 상업적 용도로 사용할 수 없다고 명시한다. 원문을 재배포하지 않고 코드·사례명·쪽수·분류결정 식별자만 구조화한다."
+  },
+  "cases":[
+    {"id":"cam-lfp-pure","stage":"CAM","chemistry":"LFP","name_ko":"인산철의 리튬염","hsk2022":"2842909000","page":84,"decision":"품목분류2과-1880","scope":"화학적으로 단일한 LiFePO4"},
+    {"id":"cam-ncm","stage":"CAM","chemistry":"NCM","name_ko":"니켈코발트망간 산화물의 리튬염","hsk2022":"2841909020","page":85,"decision":"품목분류4과-6340","scope":"일정한 조성의 단일 화합물"},
+    {"id":"cam-lco","stage":"CAM","chemistry":"LCO","name_ko":"코발트산 리튬","hsk2022":"2841909010","page":87,"decision":"품목분류2과-1663","scope":"화학적으로 단일한 LiCoO2"},
+    {"id":"cam-nca","stage":"CAM","chemistry":"NCA","name_ko":"니켈코발트알루미늄 산화물의 리튬염","hsk2022":"2841909030","page":88,"decision":"품목분류2과-11862","scope":"일정한 조성의 단일 화합물"},
+    {"id":"cam-other-lithium-metal-oxide","stage":"CAM","chemistry":"other","name_ko":"기타 산화금속산의 리튬염","hsk2022":"2841909090","page":90,"decision":"품목분류2과-8247","scope":"별도 세분류가 없는 화학적으로 단일한 산화금속산염"},
+    {"id":"cam-lfp-carbon-mix","stage":"CAM","chemistry":"LFP","name_ko":"인산철 리튬과 탄소의 혼합·코팅 조제품","hsk2022":"3824999090","page":92,"decision":"품목분류2과-5151 외","scope":"화학적으로 단일하지 않은 혼합·코팅 조제품"},
+    {"id":"pcam-nc-hydroxide","stage":"pCAM","chemistry":"NC","name_ko":"니켈코발트 수산화물","hsk2022":"2825902090","page":95,"decision":"품목분류2과-6447","scope":"일정한 조성의 금속수산화물"},
+    {"id":"pcam-ncm-hydroxide","stage":"pCAM","chemistry":"NCM","name_ko":"니켈코발트망간 수산화물","hsk2022":"2825902050","page":97,"decision":"품목분류4과-6339","scope":"전용 HSK 세분류가 있는 NCM 수산화물"},
+    {"id":"pcam-ncm-oxide","stage":"pCAM","chemistry":"NCM","name_ko":"니켈코발트망간 산화물","hsk2022":"2825901090","page":99,"decision":"품목분류2과-8275","scope":"화학적으로 단일한 금속산화물"},
+    {"id":"pcam-nca-hydroxide","stage":"pCAM","chemistry":"NCA","name_ko":"니켈코발트알루미늄 수산화물","hsk2022":"2825902090","page":101,"decision":"품목분류2과-12365","scope":"별도 전용 세분류가 없는 기타 금속수산화물"},
+    {"id":"raw-sulfate-solution-mix","stage":"raw-mixture","chemistry":"NCM","name_ko":"니켈·코발트·망간 황산염 혼합액","hsk2022":"3824999090","page":103,"decision":"품목분류2과-17985","scope":"여러 황산염과 물을 혼합·조제한 비단일 화학조제품"},
+    {"id":"raw-nickel-metallurgy","stage":"raw","chemistry":"nickel","name_ko":"니켈 제련 중간생산물","hsk2022":"7501209090","page":105,"decision":"품목분류4과-8687","scope":"불순물을 포함한 니켈 제련 중간생산물"},
+    {"id":"raw-cobalt-metallurgy","stage":"raw","chemistry":"cobalt","name_ko":"코발트 제련 중간생산물","hsk2022":"8105202000","page":107,"decision":"품목분류4과-507 외","scope":"코발트 제련 과정의 중간생산물"},
+    {"id":"raw-manganese-sulfate","stage":"raw","chemistry":"manganese","name_ko":"이차전지 제조용 황산망간","hsk2022":"2833293010","page":110,"decision":"품목분류2과-9068","scope":"이차전지 제조용으로 세분된 황산망간"},
+    {"id":"raw-nickel-powder","stage":"raw","chemistry":"nickel","name_ko":"니켈 가루","hsk2022":"7504001000","page":111,"decision":"품목분류4과-276","scope":"물리적 형태가 가루인 니켈"},
+    {"id":"raw-nickel-briquette","stage":"raw","chemistry":"nickel","name_ko":"니켈 브리켓","hsk2022":"7502109000","page":113,"decision":"품목분류4과-9169","scope":"합금하지 않은 니켈 괴의 기타 세분류"}
+  ]
+}

@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# chumji-news
 
-## Getting Started
+`chumji-news` is the single development repository for the personal news web
+product and the Mac mini jobs and services that support it.
 
-First, run the development server:
+The Next.js production application remains at the repository root so the
+existing `chumji-news` Vercel project and local publication workflow do not
+need a root-directory change. Operational source imported from the retired
+`chumji-ops` repository lives under `operations/`.
+
+## Layout
+
+- `src/`, `public/`, `supabase/`, and root `scripts/` — production news,
+  fresh-food, and scraps web application.
+- `operations/jobs/` — deterministic and shadow batch jobs.
+- `operations/services/` — alert hub, Orca bridge, and secret-handoff source.
+- `operations/deploy/` — inactive or reviewed macOS deployment definitions.
+- `operations/docs/` — architecture, health, cutover, and rollback records.
+- `operations/security/` — SecretRef contract. Secret values never belong in
+  Git.
+
+The abandoned `chumji-ops/apps/web` fork is intentionally absent from the
+working tree. Its Git history is retained through the repository-consolidation
+merge, but future UI development happens only in the root Next.js app.
+
+## Web development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+npm run check
+npm run verify:production
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`verify:production` is read-only. Do not deploy or change Supabase while
+running repository validation.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Operations development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Each component has its own README or contract under `operations/`. Run tests
+from the component directory or use the documented module-specific command.
+There is not yet one root command for every Python, Go, and Node component.
 
-## Learn More
+Repository consolidation does not itself move a scheduler, service, runtime
+checkout, Vercel project, Supabase project, or credential. Read
+`operations/docs/operations/current-architecture.md` and verify live state
+before any operational mutation.
 
-To learn more about Next.js, take a look at the following resources:
+## Safety
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Preserve dirty worktrees and generated snapshots.
+- Keep secrets and mutable runtime data outside Git.
+- Treat deployment definitions as source, not proof that a service is active.
+- Require a reviewed cutover before changing cron, launchd, Vercel, Supabase,
+  Telegram, Gateway, or an ops-owned live path.

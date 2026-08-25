@@ -50,7 +50,8 @@ interface ScrapContextValue {
   loadError: string;
   loadMoreScraps: () => Promise<void>;
   isScrapped: (articleKey: string) => boolean;
-  toggleScrap: (draft: NewsScrapDraft) => Promise<"saved" | "removed" | "login">;
+  isScrapPending: (articleKey: string) => boolean;
+  toggleScrap: (draft: NewsScrapDraft) => Promise<"saved" | "removed" | "login" | "pending">;
   signIn: (email: string) => Promise<string | null>;
   verifyOtp: (email: string, token: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -66,7 +67,15 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
   const [hasMore, setHasMore] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [scrapIndex, setScrapIndex] = useState<Map<string, string>>(new Map());
+  const [pendingArticleKeys, setPendingArticleKeys] = useState<Set<string>>(new Set());
+  const scrapIndexRef = useRef<Map<string, string>>(new Map());
+  const pendingArticleKeysRef = useRef<Set<string>>(new Set());
   const loadInFlight = useRef(false);
+
+  const replaceScrapIndex = useCallback((next: Map<string, string>) => {
+    scrapIndexRef.current = next;
+    setScrapIndex(next);
+  }, []);
 
   const loadScraps = useCallback(async (userId: string) => {
     const [result, indexResult] = await Promise.all([
@@ -81,8 +90,8 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
     const nextIndex = new Map<string, string>();
     for (const item of indexResult.data ?? []) nextIndex.set(item.article_key, item.id);
     for (const item of result.scraps) nextIndex.set(item.article_key, item.id);
-    setScrapIndex(nextIndex);
-  }, []);
+    replaceScrapIndex(nextIndex);
+  }, [replaceScrapIndex]);
 
   const loadMoreScraps = useCallback(async () => {
     if (!user || loadInFlight.current || (!hasMore && scraps.length > 0)) return;
@@ -107,6 +116,7 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
       setScrapIndex((current) => {
         const next = new Map(current);
         for (const scrap of result.scraps) next.set(scrap.article_key, scrap.id);
+        scrapIndexRef.current = next;
         return next;
       });
       setHasMore(result.hasMore);
@@ -140,7 +150,9 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
         setScraps([]);
         setHasMore(false);
         setLoadError("");
-        setScrapIndex(new Map());
+        replaceScrapIndex(new Map());
+        pendingArticleKeysRef.current.clear();
+        setPendingArticleKeys(new Set());
       }
     });
 
@@ -148,34 +160,44 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [loadScraps]);
+  }, [loadScraps, replaceScrapIndex]);
 
   const toggleScrap = useCallback(async (draft: NewsScrapDraft) => {
     if (!supabase || !user) return "login" as const;
-    const existingId = scrapIndex.get(draft.article_key);
+    if (pendingArticleKeysRef.current.has(draft.article_key)) return "pending" as const;
 
-    if (existingId) {
-      const { error } = await supabase.from("news_scraps").delete().eq("id", existingId);
-      if (error) throw error;
-      setScraps((current) => current.filter((scrap) => scrap.id !== existingId));
-      setScrapIndex((current) => {
-        const next = new Map(current);
+    pendingArticleKeysRef.current.add(draft.article_key);
+    setPendingArticleKeys(new Set(pendingArticleKeysRef.current));
+    try {
+      const existingId = scrapIndexRef.current.get(draft.article_key);
+
+      if (existingId) {
+        const { error } = await supabase.from("news_scraps").delete().eq("id", existingId);
+        if (error) throw error;
+        setScraps((current) => current.filter((scrap) => scrap.id !== existingId));
+        const next = new Map(scrapIndexRef.current);
         next.delete(draft.article_key);
-        return next;
-      });
-      return "removed" as const;
-    }
+        replaceScrapIndex(next);
+        return "removed" as const;
+      }
 
-    const { data, error } = await supabase
-      .from("news_scraps")
-      .insert({ ...draft, user_id: user.id })
-      .select("*")
-      .single();
-    if (error) throw error;
-    setScraps((current) => [data as NewsScrap, ...current]);
-    setScrapIndex((current) => new Map(current).set(draft.article_key, (data as NewsScrap).id));
-    return "saved" as const;
-  }, [scrapIndex, user]);
+      const { data, error } = await supabase
+        .from("news_scraps")
+        .insert({ ...draft, user_id: user.id })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const savedScrap = data as NewsScrap;
+      setScraps((current) => [savedScrap, ...current.filter((scrap) => scrap.id !== savedScrap.id)]);
+      const next = new Map(scrapIndexRef.current);
+      next.set(draft.article_key, savedScrap.id);
+      replaceScrapIndex(next);
+      return "saved" as const;
+    } finally {
+      pendingArticleKeysRef.current.delete(draft.article_key);
+      setPendingArticleKeys(new Set(pendingArticleKeysRef.current));
+    }
+  }, [replaceScrapIndex, user]);
 
   const signIn = useCallback(async (email: string) => {
     if (!supabase) return "Supabase가 설정되지 않았습니다.";
@@ -210,6 +232,7 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
       loadError,
       loadMoreScraps,
       isScrapped: (articleKey) => scrapIndex.has(articleKey),
+      isScrapPending: (articleKey) => pendingArticleKeys.has(articleKey),
       toggleScrap,
       signIn,
       verifyOtp,

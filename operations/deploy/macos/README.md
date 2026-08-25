@@ -1,0 +1,26 @@
+# macOS Deployment Notes
+
+This directory contains the reviewed manifest source for `chumji-ops` jobs and
+selected standalone services. Files ending in `.plist` correspond to installed
+production or shadow LaunchDaemons; `.example` files remain inactive examples.
+
+Do not copy, load, unload, or replace files in `~/Library/LaunchAgents`,
+`/Library/LaunchAgents`, `/Library/LaunchDaemons`, cron, or any live service
+path without explicit cutover approval. A checked-in manifest records approved
+state; it does not authorize a runtime mutation.
+
+Manifest conventions:
+
+- Use labels prefixed with `com.chumji.`.
+- Keep program paths inside an approved checkout or release directory.
+- Reference secrets by SecretRef lookup only.
+- Never embed secret values.
+- Log only to the component's approved path.
+
+The Investment Assistant keeps its own LaunchDaemon template in its project
+repository. The disaster alert hub retains a disabled template because its
+production replacement and restart require a separate approval gate.
+
+`com.chumji.ops-trade-market-briefing.plist` runs the validated cathode market
+board refresh weekly. It reuses only the ops-owned data.go.kr SecretRef and
+publishes local artifacts; GACC remains a manual verification step.

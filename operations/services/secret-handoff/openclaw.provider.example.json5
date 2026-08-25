@@ -1,0 +1,26 @@
+{
+  // Deployment example only. Install nothing from this file unchanged.
+  secrets: {
+    providers: {
+      "secret-handoff": {
+        source: "exec",
+        command: "/usr/bin/sudo",
+        args: [
+          "-n",
+          "-u",
+          "ops",
+          "/opt/homebrew/bin/node",
+          "/Users/ops/services/secret-handoff/current/src/main.mjs",
+          "resolve",
+          "--config",
+          "/Users/ops/Library/Application Support/secret-handoff/config.json"
+        ],
+        jsonOnly: true,
+        timeoutMs: 5000,
+        noOutputTimeoutMs: 5000,
+        maxOutputBytes: 262144,
+        trustedDirs: ["/usr/bin"]
+      }
+    }
+  }
+}
