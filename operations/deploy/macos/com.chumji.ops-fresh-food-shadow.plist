@@ -8,7 +8,7 @@
   <array>
     <string>/usr/bin/python3</string>
     <string>-B</string>
-    <string>/Users/ops/services/chumji-ops/jobs/fresh-food/run_shadow.py</string>
+    <string>/Users/ops/services/chumji-news-current/operations/jobs/fresh-food/run_shadow.py</string>
     <string>--output-root</string>
     <string>/Users/ops/Library/Application Support/chumji-ops/shadow/fresh-food</string>
     <string>--data-key-file</string>
@@ -26,7 +26,7 @@
   <key>UserName</key>
   <string>ops</string>
   <key>WorkingDirectory</key>
-  <string>/Users/ops/services/chumji-ops/jobs/fresh-food</string>
+  <string>/Users/ops/services/chumji-news-current/operations/jobs/fresh-food</string>
   <key>StandardOutPath</key>
   <string>/Users/ops/Library/Logs/chumji-ops/fresh-food-shadow.log</string>
   <key>StandardErrorPath</key>
