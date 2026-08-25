@@ -83,6 +83,11 @@ The first same-day cited-URL sample found only 2/14 shadow morning URLs and
 AI-less scheduler replacement. Preserve the production collectors as the
 baseline and treat model usage and publication as later independent decisions.
 
+The active collector baseline is now copied into `operations/producers/news`
+with its source commit recorded. This is source consolidation only: the
+OpenClaw cron, GPT summarizer, Supabase publisher, and Telegram delivery remain
+on the existing production path.
+
 ### P3 — cathode market as a separately justified feature
 
 Keep the validated backend and provenance model. Do not import the old Market

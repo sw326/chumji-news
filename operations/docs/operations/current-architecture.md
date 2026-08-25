@@ -220,11 +220,17 @@ Archive it only after a final reference scan and an approved cleanup.
 
 ## Known Gaps
 
-1. Import the active production news collectors into the surviving repository
-   without restoring the rejected AI-less shadow implementation.
+1. Add reviewed summarization and idempotent publication adapters around the
+   imported production news collectors before any cron cutover.
 2. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
 3. Archive the obsolete `ops` workspace after the rollback retention period.
 4. Replace the validated renewable SSH long-wait with direct Orca federation
    only after the saved company runtime identity is refreshed and a full
    control-mail round trip passes.
+
+The first gap is source-complete at the code level: the morning, IT, and trend
+collectors from `claude-workspace` commit `f1555d0` are preserved under
+`operations/producers/news`. The installed OpenClaw cron still runs the source
+checkout; summarization, publication adapters, and runtime cutover remain
+separate work.
