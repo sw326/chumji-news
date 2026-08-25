@@ -99,7 +99,7 @@ export default async function PricesPage({ searchParams }: PricesPageProps) {
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="mb-3 flex items-center justify-between">
             <h1 className="text-xl font-bold tracking-tight">신선식품 가격</h1>
-            <MainTabs active="prices" />
+            <MainTabs />
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {PRICE_CATEGORIES.map((priceCategory) => {

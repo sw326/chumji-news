@@ -7,7 +7,8 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8"
 test("the surviving navigation exposes only finished news product routes", async () => {
   const tabs = await source("src/components/MainTabs.tsx");
 
-  for (const label of ["뉴스", "가격", "스크랩"]) assert.match(tabs, new RegExp(`label="${label}"`));
+  for (const label of ["뉴스", "스크랩"]) assert.match(tabs, new RegExp(`label="${label}"`));
+  assert.doesNotMatch(tabs, /label="가격"|href="\/prices"/);
   for (const route of ["/market", "/alerts", "/operations"]) assert.doesNotMatch(tabs, new RegExp(route));
   assert.match(tabs, /min-h-10/);
 });
