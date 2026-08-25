@@ -66,11 +66,11 @@ def main() -> int:
         str(output_dir),
     ]
     result = subprocess.run(command, env=env, text=True, capture_output=True)
-    if result.returncode:
+    report_path = output_dir / "report.json"
+    if result.returncode and not report_path.exists():
         print(result.stderr, file=sys.stderr)
         return result.returncode
 
-    report_path = output_dir / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
     validation = validate_report(report)
     snapshots = sorted(output_dir.glob("snapshot-*.html"), key=lambda path: path.stat().st_mtime)
@@ -82,6 +82,7 @@ def main() -> int:
         "generated_at": report.get("generatedAt"),
         "model_route": "none",
         "publication": "disabled",
+        "collector_exit_code": result.returncode,
         "report_path": str(report_path),
         "snapshot_path": str(snapshot),
         "report_sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
@@ -93,6 +94,8 @@ def main() -> int:
         encoding="utf-8",
     )
     print(json.dumps(status, ensure_ascii=False))
+    if result.returncode:
+        return result.returncode
     return 0 if validation["item_count"] else 1
 
 

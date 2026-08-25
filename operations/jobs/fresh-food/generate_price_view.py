@@ -361,9 +361,14 @@ def garak_points(item: str, generated_at: dt.datetime, days: int) -> tuple[list[
     return points, None
 
 
-def build_item(key: str, item: str, side: str, grade: str, days: int) -> dict[str, Any]:
-    recent_payload = request_json(ENDPOINTS["recent"], common_params(key, 1000))
-    recent_rows = extract_items(recent_payload)
+def build_item(
+    key: str,
+    item: str,
+    side: str,
+    grade: str,
+    days: int,
+    recent_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
     candidates = filter_recent(recent_rows, item, None, grade, side)
     selected = choose_recent(candidates, side, item)
     if not selected:
@@ -504,9 +509,22 @@ def main() -> int:
         "items": [],
         "errors": [],
     }
+    try:
+        recent_payload = request_json(ENDPOINTS["recent"], common_params(key, 1000))
+        recent_rows = extract_items(recent_payload)
+    except Exception as exc:
+        recent_rows = []
+        recent_error: Exception | None = exc
+    else:
+        recent_error = None
+
     for item in args.items:
         try:
-            data["items"].append(build_item(key, item, args.side, args.grade, args.days))
+            if recent_error:
+                raise recent_error
+            data["items"].append(
+                build_item(key, item, args.side, args.grade, args.days, recent_rows)
+            )
         except Exception as exc:  # keep the view useful even when one item is seasonal/missing
             data["errors"].append({"item": item, "error": str(exc)})
 
