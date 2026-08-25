@@ -101,7 +101,7 @@ function parseBlock(lines: string[]): ParsedBlock {
 
   if (isArticle) {
     const emoji = boldMatch
-      ? boldMatch[1].trim()
+      ? (boldMatch[1]?.trim() ?? "")
       : emojiOnlyMatch![1].trim();
     const title = boldMatch
       ? boldMatch[2].trim()

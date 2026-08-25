@@ -30,9 +30,11 @@ historical links remain untouched.
 ## Product boundary
 
 The primary navigation exposes only `news`, `it`, `trend`, and `opendata`.
-Historical categories remain in the category type and complete category list
-so old detail URLs, database rows, and bookmark filters continue to work.
-No historical content is deleted.
+Historical categories with stored rows remain in the category type and complete
+category list so old detail URLs, database rows, and bookmark filters continue
+to work. `moltbook` is removed from the application contract because it has no
+rows and no producer. Applied migration history is not rewritten and no
+historical content is deleted.
 
 The obsolete root `TODOS.md` and unused `src/lib/mock-data.ts` were removed.
 The TODO described already-completed category and UI work and incorrectly
@@ -52,3 +54,23 @@ Do not revive the Reddit, issue, real-estate, system, or Moltbook categories by
 copying old scripts. A future feed needs an explicit product decision and a
 fresh source audit. The active OpenClaw jobs remain the production path until a
 separately approved component-by-component cutover to `operations/`.
+
+## Production-to-operations gap
+
+The existing `operations/jobs/news` implementation is a shadow candidate, not
+a drop-in copy of the active publisher:
+
+| Concern | Active OpenClaw jobs | `operations/jobs/news` |
+| --- | --- | --- |
+| Profiles | news, IT, trend | news, IT, trend |
+| Collection | workspace-specific fetchers; trend has observed-evidence ranking | standalone public RSS/Atom fetcher |
+| Interpretation | OpenClaw GPT summarizer | deterministic AI-less ranking and rendering |
+| Supabase publication | enabled | deliberately absent |
+| Telegram publication | enabled | deliberately absent |
+| Runtime | `claude-workspace/scripts/cron` | `chumji-news/operations/jobs/news` shadow |
+
+Moving the scheduler path now would remove interpretation and both publication
+outputs, and would change source-selection behavior. Readiness therefore needs
+fixture comparisons for each active profile, an explicit decision on AI-less
+versus model-assisted summaries, and separately reviewed Supabase and Telegram
+adapters. The dormant Reddit script is not part of this migration baseline.
