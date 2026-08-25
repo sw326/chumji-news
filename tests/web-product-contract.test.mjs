@@ -7,8 +7,7 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8"
 test("the surviving navigation exposes only finished news product routes", async () => {
   const tabs = await source("src/components/MainTabs.tsx");
 
-  for (const label of ["뉴스", "스크랩"]) assert.match(tabs, new RegExp(`label="${label}"`));
-  assert.doesNotMatch(tabs, /label="가격"|href="\/prices"/);
+  for (const label of ["뉴스", "가격", "스크랩"]) assert.match(tabs, new RegExp(`label="${label}"`));
   for (const route of ["/market", "/alerts", "/operations"]) assert.doesNotMatch(tabs, new RegExp(route));
   assert.match(tabs, /min-h-10/);
 });
@@ -21,7 +20,8 @@ test("the product contract contains only feeds with verified publishers", async 
   ]);
 
   assert.match(tabs, /CATEGORIES\.map/);
-  assert.match(types, /CATEGORIES[^;]+"news"[^;]+"it"[^;]+"trend"[^;]+"opendata"/s);
+  assert.match(types, /CATEGORIES[^;]+"news"[^;]+"it"[^;]+"trend"/s);
+  assert.doesNotMatch(types, /opendata:\s*"공공데이터"|\|\s*"opendata"/);
   for (const retired of ["realestate", "moltbook", "system", "issues", "reddit"]) {
     assert.doesNotMatch(types, new RegExp(retired));
   }
@@ -36,6 +36,7 @@ test("list and bookmark queries exclude retired feed rows", async () => {
   ]);
 
   assert.match(data, /\.in\("category", CATEGORIES\)/);
+  assert.match(data, /PRICE_SNAPSHOT_CATEGORY = "opendata"/);
   assert.match(scraps, /\.in\("category", CATEGORIES\)/);
   assert.match(detail, /if \(!CATEGORIES\.includes\(category\)\) \{\s*notFound\(\)/);
 });
@@ -88,5 +89,7 @@ test("news detail cards expose guarded bookmark controls while price pages stay 
   assert.match(renderer, /aria-label=\{pending \? "북마크 변경 중"/);
   assert.match(renderer, /disabled=\{pending\}/);
   assert.doesNotMatch(prices, /ScrapProvider|useScraps|기사 북마크/);
+  assert.match(prices, /grouped\.entries\(\)/);
+  assert.match(prices, /rounded-xl border border-card-border bg-card/);
   assert.doesNotMatch(priceDetail, /ScrapProvider|useScraps|기사 북마크/);
 });
