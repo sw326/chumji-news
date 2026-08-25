@@ -29,6 +29,11 @@ continues to run the source checkout in `claude-workspace`.
 
 These adapters are tested but not connected to a production schedule yet.
 
+`build_prompt.py` and `prompts/` preserve the current production playbook,
+profile templates, and prompt constraints. Frozen-input SHA-256 tests detect
+any byte-level prompt drift before a model is called; source JSON is validated
+but deliberately not reserialized.
+
 ## Validation
 
 ```bash
