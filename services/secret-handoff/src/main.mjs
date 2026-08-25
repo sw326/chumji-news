@@ -14,6 +14,32 @@ function loadConfig() {
   return JSON.parse(fs.readFileSync(path, 'utf8'));
 }
 
+function loadStrictFileValue(path, label) {
+  const linkStat = fs.lstatSync(path);
+  if (!linkStat.isFile() || linkStat.isSymbolicLink()) throw new Error(`${label} path must be a regular file, not a symlink`);
+  const stat = fs.statSync(path);
+  if ((stat.mode & 0o077) !== 0) throw new Error(`${label} file must not be accessible by group or others`);
+  if (typeof process.getuid === 'function' && stat.uid !== process.getuid()) throw new Error(`${label} file must be owned by the service user`);
+  const value = fs.readFileSync(path, 'utf8').trim();
+  if (!value) throw new Error(`${label} file is empty`);
+  return value;
+}
+
+function loadSecretInput(spec, legacyEnvName, label) {
+  if (spec?.provider === 'file') return loadStrictFileValue(spec.path, label);
+  if (spec?.provider === 'env') {
+    const value = process.env[spec.name];
+    if (!value) throw new Error(`missing ${label} environment variable: ${spec.name}`);
+    return value;
+  }
+  if (legacyEnvName) {
+    const value = process.env[legacyEnvName];
+    if (!value) throw new Error(`missing ${label} environment variable: ${legacyEnvName}`);
+    return value;
+  }
+  throw new Error(`unsupported ${label} provider`);
+}
+
 function loadMasterKey(spec) {
   let encoded;
   if (spec.provider === 'keychain') {
@@ -23,12 +49,7 @@ function loadMasterKey(spec) {
     if (result.status !== 0) throw new Error('unable to load master key from macOS Keychain');
     encoded = result.stdout.trim();
   } else if (spec.provider === 'file') {
-    const linkStat = fs.lstatSync(spec.path);
-    if (!linkStat.isFile() || linkStat.isSymbolicLink()) throw new Error('master key path must be a regular file, not a symlink');
-    const stat = fs.statSync(spec.path);
-    if ((stat.mode & 0o077) !== 0) throw new Error('master key file must not be accessible by group or others');
-    if (typeof process.getuid === 'function' && stat.uid !== process.getuid()) throw new Error('master key file must be owned by the service user');
-    encoded = fs.readFileSync(spec.path, 'utf8').trim();
+    encoded = loadStrictFileValue(spec.path, 'master key');
   } else if (spec.provider === 'env' && process.env.NODE_ENV === 'test') {
     encoded = process.env[spec.name];
   } else {
@@ -47,8 +68,7 @@ async function readStdin() {
 
 function createTelegramChallengeDeliverer(spec) {
   if (!spec) return null;
-  const token = process.env[spec.botTokenEnv];
-  if (!token) throw new Error(`missing Telegram bot token environment variable: ${spec.botTokenEnv}`);
+  const token = loadSecretInput(spec.botToken, spec.botTokenEnv, 'Telegram bot token');
   return async ({ ownerId, requestId, purpose, expiresAt, code }) => {
     const match = /^telegram:(\d+)$/.exec(ownerId);
     if (!match) throw new Error('invalid Telegram ownerId');
@@ -74,8 +94,7 @@ process.umask(0o077);
 const vault = new SecretVault({ dbPath: config.dbPath, masterKey: loadMasterKey(config.masterKey) });
 
 if (command === 'serve') {
-  const controlToken = process.env[config.controlTokenEnv];
-  if (!controlToken) throw new Error(`missing control token environment variable: ${config.controlTokenEnv}`);
+  const controlToken = loadSecretInput(config.controlToken, config.controlTokenEnv, 'control token');
   const server = createSecretHandoffServer({
     vault,
     publicBaseUrl: config.publicBaseUrl,

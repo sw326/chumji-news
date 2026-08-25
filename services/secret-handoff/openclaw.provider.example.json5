@@ -2,7 +2,7 @@
   // Deployment example only. Install nothing from this file unchanged.
   secrets: {
     providers: {
-      secret_handoff: {
+      "secret-handoff": {
         source: "exec",
         command: "/usr/bin/sudo",
         args: [
