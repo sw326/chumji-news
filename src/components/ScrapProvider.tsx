@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { NewsScrap, NewsScrapDraft } from "@/lib/types";
+import { CATEGORIES, type NewsScrap, type NewsScrapDraft } from "@/lib/types";
 
 const SCRAPS_PAGE_SIZE = 30;
 
@@ -19,6 +19,7 @@ async function fetchScrapsPage(userId: string, cursor: ScrapsCursor | null) {
     .from("news_scraps")
     .select("*")
     .eq("user_id", userId)
+    .in("category", CATEGORIES)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(SCRAPS_PAGE_SIZE + 1);
@@ -81,7 +82,7 @@ export default function ScrapProvider({ children }: { children: React.ReactNode 
     const [result, indexResult] = await Promise.all([
       fetchScrapsPage(userId, null),
       supabase
-        ? supabase.from("news_scraps").select("id, article_key").eq("user_id", userId)
+        ? supabase.from("news_scraps").select("id, article_key").eq("user_id", userId).in("category", CATEGORIES)
         : Promise.resolve({ data: null, error: new Error("Supabase가 설정되지 않았습니다.") }),
     ]);
     setScraps(result.scraps);
