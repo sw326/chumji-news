@@ -1,6 +1,6 @@
 "use client";
 
-import { ACTIVE_CATEGORIES, Category, CATEGORY_LABELS } from "@/lib/types";
+import { CATEGORIES, Category, CATEGORY_LABELS } from "@/lib/types";
 
 interface CategoryTabsProps {
   selected: Category | "all";
@@ -18,7 +18,7 @@ export default function CategoryTabs({
         active={selected === "all"}
         onClick={() => onChange("all")}
       />
-      {ACTIVE_CATEGORIES.map((cat) => (
+      {CATEGORIES.map((cat) => (
         <TabButton
           key={cat}
           label={CATEGORY_LABELS[cat]}

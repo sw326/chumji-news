@@ -29,12 +29,12 @@ historical links remain untouched.
 
 ## Product boundary
 
-The primary navigation exposes only `news`, `it`, `trend`, and `opendata`.
-Historical categories with stored rows remain in the category type and complete
-category list so old detail URLs, database rows, and bookmark filters continue
-to work. `moltbook` is removed from the application contract because it has no
-rows and no producer. Applied migration history is not rewritten and no
-historical content is deleted.
+The application contract and primary navigation expose only `news`, `it`,
+`trend`, and `opendata`. Retired categories are also filtered from aggregate
+post and bookmark queries, and their direct detail routes are rejected as
+invalid categories. Applied migration history is not rewritten and this change
+does not delete stored Supabase rows. Database deletion requires a separately
+reviewed target count and rollback decision.
 
 The obsolete root `TODOS.md` and unused `src/lib/mock-data.ts` were removed.
 The TODO described already-completed category and UI work and incorrectly

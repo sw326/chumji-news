@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { NewsPost, Category } from "./types";
+import { NewsPost, Category, CATEGORIES } from "./types";
 
 export const PAGE_SIZE = 20;
 export const PRICE_SNAPSHOT_CATEGORY: Category = "opendata";
@@ -10,6 +10,7 @@ export async function getAllPosts(): Promise<NewsPost[]> {
   const { data, error } = await supabase
     .from("news_posts")
     .select("*")
+    .in("category", CATEGORIES)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -153,6 +154,7 @@ export async function fetchPostsPage(
   let query = supabase
     .from("news_posts")
     .select("*")
+    .in("category", CATEGORIES)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE + 1);
