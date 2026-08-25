@@ -46,7 +46,7 @@ its Git history describe the approved architecture and why it changed.
 ```text
 External sources
   |
-  +-- Garak Market / KAMIS ------------ fresh-food shadow job
+  +-- Garak Market / KAMIS ------------ price snapshot production pipeline
   +-- ACLED / ReliefWeb / OpenSky ----- global-intel shadow job
   +-- EMSC / USGS / KMA / JMA / GDACS / PTWC / SWPC - live alert hub
   +-- HoYoLab -------------------------- live daily check-in
@@ -79,11 +79,11 @@ Mac mini, ops account
 | --- | --- | --- | --- | --- |
 | Disaster alert hub | `ops` | always-on LaunchDaemon | production; EMSC WebSocket + USGS one-minute polling | Telegram |
 | HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | production; first scheduled run verified | HoYoLab account action |
-| Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
+| Fresh-food collector shadow | `ops` | retired LaunchDaemon, formerly 09:30 | disabled after production pipeline cutover | none |
 | Cathode market pipeline | `ops` | LaunchDaemon, Monday 10:20 | runtime state requires cutover re-verification | local artifact and Supabase path; UI remains preview-only |
 | Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
 | Morning/IT/trend news | OpenClaw | OpenClaw cron | cut over to consolidated runtime; first scheduled runs pending | Supabase, Vercel, Telegram path |
-| Legacy fresh-food snapshot | OpenClaw | OpenClaw cron, 09:20 | production | Supabase, Vercel, Telegram path |
+| Fresh-food price snapshot | OpenClaw | OpenClaw cron, 09:20 | cut over to consolidated runtime; first scheduled run pending | validated graph, Supabase, Vercel, Telegram |
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
 | Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
 | News web | Vercel | root `chumji-news` deployment | production | `chumji-news.vercel.app` |
@@ -137,9 +137,13 @@ Mac mini, ops account
   `/Users/chumji/.openclaw/services/chumji-news-releases/<commit>`
 - OpenClaw news runtime link:
   `/Users/chumji/.openclaw/services/chumji-news-current`
-- Fresh-food shadow LaunchDaemon: migrated to the promoted consolidated
-  runtime on 2026-08-25; the first approved cutover run completed with all
-  four expected items and no errors
+- Price snapshot runtime: commit `00d26f1` under the OpenClaw release path.
+  Its non-publishing release smoke completed with all four expected items and
+  no errors. The 09:20 cron now invokes
+  `operations/producers/prices/run_price_snapshot.sh` through the current link.
+- Fresh-food shadow LaunchDaemon: disabled and unloaded after the collector
+  became part of the production price pipeline. Its plist and prior
+  commit-addressed release remain available for rollback.
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
 - Cathode market-board output:
@@ -171,6 +175,13 @@ context, or direct chat delivery. The target design is:
 
 > Collection, ranking, storage, and publication mechanics are code; model-based
 > interpretation is optional and event-driven.
+
+The price cron is a command job rather than an agent turn. It remains in
+OpenClaw because it owns the existing Telegram publication and failure-alert
+boundary. Its repository runner performs deterministic collection and
+validation, stages the graph in a temporary clean deployment, and exits before
+any external write when validation fails. Generated HTML is runtime data and
+must not modify the development worktree.
 
 The weekly skill-health audit follows the same boundary. Its deterministic
 collector in `operations/jobs/skill-health/` streams recent active-session indexes and
