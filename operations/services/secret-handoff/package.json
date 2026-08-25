@@ -1,0 +1,13 @@
+{
+  "name": "secret-handoff",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.mjs serve --config config.json",
+    "resolve": "node src/main.mjs resolve --config config.json",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

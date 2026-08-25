@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- SHADOW TEMPLATE ONLY. Do not install, load, unload, bootout, kickstart, or restart this label without cutover approval. -->
+  <key>Label</key>
+  <string>com.chumji.earthquake-alert</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ops/services/earthquake-alert/earthquake-alert</string>
+    <string>-config</string>
+    <string>/Users/ops/.config/earthquake-alert/config.json</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/ops/services/earthquake-alert</string>
+  <key>UserName</key>
+  <string>ops</string>
+  <key>GroupName</key>
+  <string>staff</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/ops/Library/Logs/EarthquakeAlert/stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ops/Library/Logs/EarthquakeAlert/stderr.log</string>
+</dict>
+</plist>

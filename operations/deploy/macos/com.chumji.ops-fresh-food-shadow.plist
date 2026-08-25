@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.chumji.ops-fresh-food-shadow</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-B</string>
+    <string>/Users/ops/services/chumji-ops/jobs/fresh-food/run_shadow.py</string>
+    <string>--output-root</string>
+    <string>/Users/ops/Library/Application Support/chumji-ops/shadow/fresh-food</string>
+    <string>--data-key-file</string>
+    <string>/Users/ops/.config/chumji-ops/secrets/data-go-kr-api-key</string>
+    <string>--garak-password-file</string>
+    <string>/Users/ops/.config/chumji-ops/secrets/garak-publicdata-passwd</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>UserName</key>
+  <string>ops</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/ops/services/chumji-ops/jobs/fresh-food</string>
+  <key>StandardOutPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/fresh-food-shadow.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ops/Library/Logs/chumji-ops/fresh-food-shadow.error.log</string>
+</dict>
+</plist>
