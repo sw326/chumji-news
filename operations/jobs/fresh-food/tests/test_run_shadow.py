@@ -38,6 +38,23 @@ class FreshFoodShadowTest(unittest.TestCase):
         self.assertEqual(validation["item_count"], 4)
         self.assertEqual(validation["missing_items"], [])
 
+    def test_collector_uses_https_endpoints(self):
+        collector_path = MODULE_PATH.with_name("fresh_price_alert.py")
+        source = collector_path.read_text(encoding="utf-8")
+        self.assertNotIn('"http://apis.data.go.kr/', source)
+        self.assertIn('"https://apis.data.go.kr/', source)
+        self.assertIn("REQUEST_ATTEMPTS", source)
+
+    def test_view_fetches_recent_catalog_once(self):
+        generator_path = MODULE_PATH.with_name("generate_price_view.py")
+        source = generator_path.read_text(encoding="utf-8")
+        main_source = source[source.index("def main()") :]
+        self.assertEqual(main_source.count('request_json(ENDPOINTS["recent"]'), 1)
+
+    def test_shadow_status_records_collector_exit(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        self.assertIn('"collector_exit_code": result.returncode', source)
+
 
 if __name__ == "__main__":
     unittest.main()

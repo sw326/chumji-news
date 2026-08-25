@@ -15,15 +15,17 @@ import os
 import pathlib
 import statistics
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Iterable
 
 ENDPOINTS = {
-    "recent": "http://apis.data.go.kr/B552845/recent/price",
-    "per_day": "http://apis.data.go.kr/B552845/perDay/price",
-    "per_region": "http://apis.data.go.kr/B552845/perRegion/price",
-    "per_year_month": "http://apis.data.go.kr/B552845/perYearMonth/price",
+    "recent": "https://apis.data.go.kr/B552845/recent/price",
+    "per_day": "https://apis.data.go.kr/B552845/perDay/price",
+    "per_region": "https://apis.data.go.kr/B552845/perRegion/price",
+    "per_year_month": "https://apis.data.go.kr/B552845/perYearMonth/price",
 }
 
 DEFAULT_KEY_FILE = pathlib.Path(
@@ -32,6 +34,8 @@ DEFAULT_KEY_FILE = pathlib.Path(
         str(pathlib.Path.home() / ".config" / "data-go-kr" / "api_key"),
     )
 )
+REQUEST_TIMEOUT_SECONDS = float(os.getenv("FRESH_PRICE_REQUEST_TIMEOUT", "12"))
+REQUEST_ATTEMPTS = max(1, int(os.getenv("FRESH_PRICE_REQUEST_ATTEMPTS", "2")))
 
 
 def read_key() -> str:
@@ -73,8 +77,18 @@ def request_json(endpoint: str, params: dict[str, str]) -> dict[str, Any]:
         f"{endpoint}?{query}",
         headers={"User-Agent": "openclaw-fresh-food-price-alert/0.2"},
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8", errors="replace")
+    raw = ""
+    for attempt in range(1, REQUEST_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as resp:
+                raw = resp.read().decode("utf-8", errors="replace")
+            break
+        except (TimeoutError, urllib.error.URLError) as exc:
+            if attempt >= REQUEST_ATTEMPTS:
+                raise RuntimeError(
+                    f"data.go.kr unavailable after {REQUEST_ATTEMPTS} attempts: {exc}"
+                ) from exc
+            time.sleep(min(2 ** (attempt - 1), 2))
     try:
         return json.loads(raw)
     except json.JSONDecodeError:

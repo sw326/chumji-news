@@ -48,8 +48,11 @@ must not expand the public application's tabs.
    `/Users/ops/services/chumji-ops`; prepare commit-addressed replacement and
    rollback paths before archiving the old repository.
 4. Resolve the observed non-zero last exits for the fresh-food shadow and
-   trade-market job before treating either as cutover-ready. The current user
-   cannot read the ops-owned logs, so the failure cause remains unverified.
+   trade-market job before treating either as cutover-ready. Read-only log
+   inspection found that the old fresh-food collector timed out on all four
+   items while using the pre-hardening HTTP implementation. The trade-market
+   validator preserved its last good output because automated sources were not
+   all complete; the specific source was not recorded in the failure status.
 
 ### P1 — fresh-food publication ownership
 
@@ -92,5 +95,10 @@ Read-only `launchctl` inspection on the observation date found the alert hub,
 secret handoff, and Orca bridge running. Scheduled news shadows, global-intel,
 ops-status, HoYoLab, fresh-food, and trade-market were installed but normally
 idle between runs. Their last-exit codes were zero except fresh-food and
-trade-market, which were one. Exit codes establish a diagnostic need, not the
-failure cause or current product value.
+trade-market, which were one. The fresh-food source in this repository lagged
+the production skill's HTTPS, retry, and request-sharing hardening. The source
+fix does not alter the installed LaunchDaemon; runtime validation remains a
+separate cutover step. Direct live validation from the development worktree was
+not forced: the `ops` user cannot read the owner worktree and the owner user
+cannot read the ops SecretRef. Validate the exact commit only after staging a
+reviewed release in an ops-readable path.
