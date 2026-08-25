@@ -46,7 +46,6 @@ its Git history describe the approved architecture and why it changed.
 ```text
 External sources
   |
-  +-- RSS / Reddit / Hacker News ------ news shadow jobs
   +-- Garak Market / KAMIS ------------ fresh-food shadow job
   +-- ACLED / ReliefWeb / OpenSky ----- global-intel shadow job
   +-- EMSC / USGS / KMA / JMA / GDACS / PTWC / SWPC - live alert hub
@@ -56,7 +55,6 @@ External sources
 Mac mini, ops account
   |
   +-- /Users/ops/services/chumji-ops (transitional runtime checkout)
-  |     +-- jobs/news
   |     +-- jobs/fresh-food
   |     +-- jobs/global-intel
   |     +-- services/alert-hub
@@ -81,12 +79,9 @@ Mac mini, ops account
 | --- | --- | --- | --- | --- |
 | Disaster alert hub | `ops` | always-on LaunchDaemon | production; EMSC WebSocket + USGS one-minute polling | Telegram |
 | HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | production; first scheduled run verified | HoYoLab account action |
-| Morning news shadow | `ops` | LaunchDaemon, 08:10 | shadow | local only |
-| IT news shadow | `ops` | LaunchDaemon, 09:10 | shadow | local only |
 | Fresh-food shadow | `ops` | LaunchDaemon, 09:30 | shadow | local only |
 | Cathode market pipeline | `ops` | LaunchDaemon, Monday 10:20 | runtime state requires cutover re-verification | local artifact and Supabase path; UI remains preview-only |
 | Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
-| Trend shadow | `ops` | LaunchDaemon, 13:10 | shadow | local only |
 | Legacy morning/IT/trend news | OpenClaw | OpenClaw cron | production | Supabase, Vercel, Telegram path |
 | Legacy fresh-food snapshot | OpenClaw | OpenClaw cron, 09:20 | production | Supabase, Vercel, Telegram path |
 | Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
@@ -225,11 +220,11 @@ Archive it only after a final reference scan and an approved cleanup.
 
 ## Known Gaps
 
-1. Compare five days of AI-less news output and decide the publication cutover.
-2. Compare fresh-food shadow and production results before moving publication.
-3. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
+1. Import the active production news collectors into the surviving repository
+   without restoring the rejected AI-less shadow implementation.
+2. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
    the default situation-report source; GDELT remains opt-in for diagnostics.
-4. Archive the obsolete `ops` workspace after the rollback retention period.
-5. Replace the validated renewable SSH long-wait with direct Orca federation
+3. Archive the obsolete `ops` workspace after the rollback retention period.
+4. Replace the validated renewable SSH long-wait with direct Orca federation
    only after the saved company runtime identity is refreshed and a full
    control-mail round trip passes.
