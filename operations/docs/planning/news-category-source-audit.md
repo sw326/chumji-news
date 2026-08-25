@@ -74,3 +74,32 @@ outputs, and would change source-selection behavior. Readiness therefore needs
 fixture comparisons for each active profile, an explicit decision on AI-less
 versus model-assisted summaries, and separately reviewed Supabase and Telegram
 adapters. The dormant Reddit script is not part of this migration baseline.
+
+### Same-day URL parity sample
+
+An exact-release shadow rerun and the rendered production pages were compared
+on 2026-08-25 using canonical cited article URLs. This is a timing-sensitive
+sample, not a general quality score:
+
+| Profile | Shadow URLs | Production URLs | Overlap | Shadow overlap | Production overlap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| morning | 14 | 13 | 2 | 14.29% | 15.38% |
+| IT | 8 | 9 | 1 | 12.50% | 11.11% |
+| trend | 18 | 0 | 0 | 0% | not applicable |
+
+The trend page existed but contained no cited articles at the observation
+time, before its normal production publication window. Morning and IT used the
+same named source families, yet their low overlap shows that feed timing,
+per-source limits, title filters, and selection policy materially change the
+briefing before model interpretation is considered.
+
+The next implementation order is therefore:
+
+1. preserve production collection and evidence-based trend selection in this
+   repository as the baseline;
+2. run both selectors over the same frozen inputs and explain every inclusion
+   difference;
+3. decide separately whether article summaries remain model-assisted;
+4. only then add idempotent Supabase and Telegram publication adapters.
+
+Do not cut over the news schedulers based on URL overlap alone.

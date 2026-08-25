@@ -76,6 +76,12 @@ no Supabase or Telegram publisher. First compare fixtures and output quality,
 choose deterministic versus model-assisted interpretation explicitly, and add
 idempotent publication adapters. Do not restore the retired Reddit profile.
 
+The first same-day cited-URL sample found only 2/14 shadow morning URLs and
+1/8 shadow IT URLs in their production counterparts. This rules out a direct
+AI-less scheduler replacement. Preserve the production collectors as the
+baseline, compare both selectors on frozen inputs, and treat model usage and
+publication as later independent decisions.
+
 ### P3 — cathode market as a separately justified feature
 
 Keep the validated backend and provenance model. Do not import the old Market

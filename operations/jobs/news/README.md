@@ -62,6 +62,21 @@ copies use separate labels and the following comparison times:
 The report records input/selected counts, rejection reasons, source coverage,
 policy version, and confirms `model_route: "none"`.
 
+Compare a shadow briefing with an exported production Markdown or rendered HTML
+file before making a producer decision:
+
+```bash
+python3 jobs/news/compare_briefings.py \
+  --profile morning \
+  --shadow /path/to/morning-briefing.md \
+  --legacy /path/to/production-page.html \
+  --output /path/to/morning-parity.json
+```
+
+The report compares canonical cited article URLs and records overlap in both
+directions. It is evidence for source and selection parity; it does not judge
+summary quality or authorize publication.
+
 During shadow validation, the `ailess-news-v3` IT policy selects at most 10
 articles, caps English titles at four, requires a technology signal in the
 title and a non-empty summary, limits each source to three articles, and
