@@ -47,7 +47,6 @@ its Git history describe the approved architecture and why it changed.
 External sources
   |
   +-- Garak Market / KAMIS ------------ price snapshot production pipeline
-  +-- ACLED / ReliefWeb / OpenSky ----- global-intel shadow job
   +-- EMSC / USGS / KMA / JMA / GDACS / PTWC / SWPC - live alert hub
   +-- HoYoLab -------------------------- live daily check-in
   |
@@ -56,7 +55,6 @@ Mac mini, ops account
   |
   +-- /Users/ops/services/chumji-ops (transitional runtime checkout)
   |     +-- jobs/fresh-food
-  |     +-- jobs/global-intel
   |     +-- services/alert-hub
   |
   +-- /Users/ops/services/earthquake-alert
@@ -80,12 +78,10 @@ Mac mini, ops account
 | Disaster alert hub | `ops` | always-on LaunchDaemon | production; EMSC WebSocket + USGS one-minute polling | Telegram |
 | HoYoLab check-in | `ops` | LaunchDaemon, 05:05 | production; first scheduled run verified | HoYoLab account action |
 | Fresh-food collector shadow | `ops` | retired LaunchDaemon, formerly 09:30 | disabled after production pipeline cutover | none |
-| Cathode market pipeline | `ops` | LaunchDaemon, Monday 10:20 | runtime state requires cutover re-verification | local artifact and Supabase path; UI remains preview-only |
-| Global-intel shadow | `ops` | LaunchDaemon, 09:50 | source-health shadow | local only |
+| Cathode market backend | none | no schedule | source preserved for question-driven research | last validated local artifact only |
 | Morning/IT/trend news | OpenClaw | OpenClaw cron | cut over to consolidated runtime; first scheduled runs pending | Supabase, Vercel, Telegram path |
 | Fresh-food price snapshot | OpenClaw | OpenClaw cron, 09:20 | cut over to consolidated runtime; first scheduled run pending | validated graph, Supabase, Vercel, Telegram |
-| Legacy global-intel briefing | OpenClaw | disabled cron | disabled | none |
-| Public operations snapshot | `ops` | LaunchDaemon, every 5 minutes | production | Supabase read-only snapshot |
+| Legacy global-intel briefing | none | no schedule | retired; recoverable from Git history | none |
 | News web | Vercel | root `chumji-news` deployment | production | `chumji-news.vercel.app` |
 | Retired ops web prototype | Vercel | former `chumji-ops/apps/web` deployment | preview only | `chumji-ops-preview.vercel.app`; no future development |
 | Investment Assistant | `ops` | always-on LaunchDaemon + internal scheduler | production, read-only | Remote MCP |
@@ -100,9 +96,8 @@ Mac mini, ops account
 - The connected Supabase project is displayed as `chumji-finance`; its project
   ref is `sdshtmydiylvtqkbatmb`.
 - The preview project does not receive a Supabase service-role key.
-- The `ops` exporter holds its service-role key only in an ops-owned SecretRef.
-  It upserts `alerts` and `operations`; after migration 004 approval it may also
-  publish the validated `trade-market` row.
+- The former `ops` exporter and its service-role SecretRef are not active. No
+  production route consumes `alerts`, `operations`, or `trade-market` rows.
 - Shadow jobs do not write to Supabase or send Telegram messages.
 - The `chumji-news` Vercel project is the authoritative production web surface
   and continues to build the repository root.
@@ -144,6 +139,11 @@ Mac mini, ops account
 - Fresh-food shadow LaunchDaemon: disabled and unloaded after the collector
   became part of the production price pipeline. Its plist and prior
   commit-addressed release remain available for rollback.
+- Consumerless jobs retired on 2026-08-25: global-intel shadow, public-status
+  exporter, and weekly cathode-market refresh. Their installed plist files were
+  archived under the ops-owned retired directory before removal. Code for the
+  market research backend and the last validated artifact remain available;
+  global-intel and exporter source are recoverable from Git history.
 - Shadow output:
   `/Users/ops/Library/Application Support/chumji-ops/shadow`
 - Cathode market-board output:
@@ -238,9 +238,10 @@ Archive it only after a final reference scan and an approved cleanup.
 1. Verify the first scheduled morning, IT, and trend runs from consolidated
    release `6901ab3`; retain the prior commands as rollback references until
    all three complete successfully.
-2. Refresh the invalid ACLED credential. ReliefWeb RSS now replaces GDELT as
-   the default situation-report source; GDELT remains opt-in for diagnostics.
-3. Archive the obsolete `ops` workspace after the rollback retention period.
+2. Complete a final reference scan and archive the obsolete `ops` workspace
+   after the rollback retention period.
+3. Decide whether to retire the protected ops web preview after the same
+   retention period.
 4. Replace the validated renewable SSH long-wait with direct Orca federation
    only after the saved company runtime identity is refreshed and a full
    control-mail round trip passes.
