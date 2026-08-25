@@ -3,6 +3,7 @@ import { Category, CATEGORIES, CATEGORY_LABELS } from "@/lib/types";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import DetailBackLink from "@/components/DetailBackLink";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +28,7 @@ export default async function NewsPage({ params, searchParams }: PageProps) {
   const category = cat as Category;
 
   if (!CATEGORIES.includes(category)) {
-    return (
-      <main className="flex items-center justify-center min-h-screen">
-        <p className="text-muted">잘못된 카테고리입니다.</p>
-      </main>
-    );
+    notFound();
   }
 
   const post = await getPost(date, category);

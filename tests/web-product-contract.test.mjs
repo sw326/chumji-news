@@ -28,13 +28,15 @@ test("the product contract contains only feeds with verified publishers", async 
 });
 
 test("list and bookmark queries exclude retired feed rows", async () => {
-  const [data, scraps] = await Promise.all([
+  const [data, scraps, detail] = await Promise.all([
     source("src/lib/data.ts"),
     source("src/components/ScrapProvider.tsx"),
+    source("src/app/news/[date]/[cat]/page.tsx"),
   ]);
 
   assert.match(data, /\.in\("category", CATEGORIES\)/);
   assert.match(scraps, /\.in\("category", CATEGORIES\)/);
+  assert.match(detail, /if \(!CATEGORIES\.includes\(category\)\) \{\s*notFound\(\)/);
 });
 
 test("bare issue numbers are not linked to a retired repository", async () => {

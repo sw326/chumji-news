@@ -11,7 +11,9 @@ Status: shadow implementation, inactive.
 
 ## Inputs
 
-- Public news, IT, trend, and Reddit source lists from the #11 inventory.
+- Public news, IT, and trend source lists from the #11 inventory. A public
+  Reddit feed may be one trend discovery source, but there is no standalone
+  Reddit product profile.
 - Approved legacy output samples for parity comparison.
 - Optional model/API credentials referenced only by SecretRef.
 - Existing public-feed collector JSON (`articles` array) for the AI-less route.
@@ -37,8 +39,6 @@ Status: shadow implementation, inactive.
 | --- | --- | --- |
 | `news.briefing.model.default` | model policy | Summarization and briefing generation route. |
 | `news.sources.http` | API | Public source fetching. |
-| `news.reddit.api` | API | Reddit source access if approved. |
-| `news.reddit.oauth` | SecretRef | Reddit OAuth/service credential lookup. |
 | `news.model.api` | SecretRef | Ops-owned model API credential lookup. |
 | `news.telegram.destination` | SecretRef | Cutover-only Telegram destination lookup. |
 
