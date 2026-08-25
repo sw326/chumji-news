@@ -27,7 +27,7 @@ function MainTab({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3.5 ${
+      className={`inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3.5 ${
         active
           ? "bg-foreground text-background"
           : "border border-card-border bg-card text-muted hover:border-accent/40 hover:text-accent"

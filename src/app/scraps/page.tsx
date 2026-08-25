@@ -39,7 +39,7 @@ function toDraft(scrap: NewsScrap): NewsScrapDraft {
 
 export default function ScrapsPage() {
   const router = useRouter();
-  const { user, scraps, loading, loadingMore, hasMore, loadError, loadMoreScraps, signIn, verifyOtp, signOut, toggleScrap } = useScraps();
+  const { user, scraps, loading, loadingMore, hasMore, loadError, loadMoreScraps, signIn, verifyOtp, signOut, isScrapPending, toggleScrap } = useScraps();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -121,7 +121,8 @@ export default function ScrapsPage() {
   async function handleDelete(scrap: NewsScrap) {
     try {
       const draft = toDraft(scrap);
-      await toggleScrap(draft);
+      const result = await toggleScrap(draft);
+      if (result !== "removed") return;
       setDeletedDraft(draft);
       setActionMessage("");
       if (undoTimer.current) clearTimeout(undoTimer.current);
@@ -134,7 +135,8 @@ export default function ScrapsPage() {
   async function handleUndo() {
     if (!deletedDraft) return;
     try {
-      await toggleScrap(deletedDraft);
+      const result = await toggleScrap(deletedDraft);
+      if (result !== "saved") return;
       setDeletedDraft(null);
       if (undoTimer.current) clearTimeout(undoTimer.current);
     } catch {
@@ -296,9 +298,10 @@ export default function ScrapsPage() {
                   >
                     <button
                       type="button"
+                      disabled={isScrapPending(scrap.article_key)}
                       aria-label="스크랩 삭제"
                       onClick={() => void handleDelete(scrap)}
-                      className="absolute right-3 top-3 rounded-md p-2 text-accent hover:bg-accent/10"
+                      className="absolute right-3 top-3 rounded-md p-2 text-accent hover:bg-accent/10 disabled:cursor-wait disabled:opacity-50"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></svg>
                     </button>
