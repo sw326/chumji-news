@@ -46,7 +46,9 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   reddit: "Reddit",
 };
 
-export const CATEGORIES: Category[] = [
+// Every category that may exist in historical posts or scraps. Keep this list
+// for direct links and bookmark filters even after a publisher is retired.
+export const CATEGORIES: readonly Category[] = [
   "news",
   "it",
   "trend",
@@ -57,3 +59,16 @@ export const CATEGORIES: Category[] = [
   "issues",
   "reddit",
 ];
+
+// Categories with a currently verified publication path. Navigation should
+// not advertise historical or never-launched feeds as active products.
+export const ACTIVE_CATEGORIES: readonly Category[] = [
+  "news",
+  "it",
+  "trend",
+  "opendata",
+];
+
+export function isCategory(value: unknown): value is Category {
+  return CATEGORIES.includes(String(value) as Category);
+}
