@@ -35,14 +35,14 @@ CONSTRAINTS = {
 
 [근거 계약]
 - 원천 JSON의 title, summary, metrics만 사실 근거로 사용한다. URL·도메인·고유명만 보고 정체성·산업·기능을 추측하지 않는다.
-- official_metrics_title_only_no_comment_text는 HN 공식 API의 점수·댓글 수에 근거해 수치화된 화제 규모만 표현할 수 있다. 댓글 원문은 수집하지 않았으므로 반응의 내용·방향·평가를 만들지 않는다.
+- official_metrics_title_only_no_comment_text는 HN 공식 API의 점수·댓글 수에 근거해 수치화된 화제 규모만 표현할 수 있다. source_metrics_title_only_no_comment_text는 Lobsters 공개 JSON의 점수·댓글 수·태그에 근거해 Lobsters 안의 화제 규모와 분류만 표현할 수 있다. 두 경우 모두 댓글 원문은 수집하지 않았으므로 반응의 내용·방향·평가를 만들지 않는다.
 - feed_content_no_engagement와 title_only_no_engagement에는 신뢰 가능한 참여 지표가 없다. 확산, 화제, 열광, 반응이 많다는 표현을 쓰지 않는다.
 - 지표 없는 제목 자체에 viral, gains momentum, 뜨거운 반응, 화제 같은 수식어가 있어도 반복·번역하지 말고 사건·제품·주제의 핵심만 중립적으로 전달한다.
 - summary가 비어 있으면 제목에 명시된 내용 이상으로 설명을 확장하지 않는다. OpenLogi처럼 불투명한 고유명도 의미를 추측하지 말고 제목과 관측 수치만 전달한다.
 - 다른 항목에 같은 이름의 설명이 있더라도 항목끼리 근거를 섞지 않는다.
-- 출력 소스 순서는 GeekNews, Hacker News, Reddit, ZDNet Korea로 고정한다. Product Hunt와 핫딜은 입력에 없으며 추가하지 않는다.
-- Hacker News와 Reddit은 article_url 원문 링크와 discussion_url 댓글·토론 링크를 모두 표시한다. Reddit·GeekNews의 community_submission을 근거 없는 커뮤니티 화제로 바꾸지 않는다.
-- selection_policy.hacker_news.temporary_threshold=true이며 현재 36시간·50점 또는 댓글 20개 기준은 임시값이다. 브리핑 본문에는 정책 설명을 덧붙이지 않는다.""",
+- 출력 소스 순서는 GeekNews, Hacker News, Lobsters, Reddit, ZDNet Korea로 고정한다. Product Hunt와 핫딜은 입력에 없으며 추가하지 않는다.
+- Hacker News, Lobsters, Reddit은 article_url 원문 링크와 discussion_url 댓글·토론 링크를 모두 표시한다. Reddit·GeekNews의 community_submission을 근거 없는 커뮤니티 화제로 바꾸지 않는다.
+- selection_policy.hacker_news.temporary_threshold=true이며 현재 36시간·50점 또는 댓글 20개 기준은 임시값이다. selection_policy.lobsters.temporary_threshold=true이며 현재 48시간·30점 또는 댓글 10개 기준도 임시값이다. 브리핑 본문에는 정책 설명을 덧붙이지 않는다.""",
 }
 
 TEMPLATE = {"morning": "morning-news.md", "it": "it-tech.md", "trend": "trend.md"}

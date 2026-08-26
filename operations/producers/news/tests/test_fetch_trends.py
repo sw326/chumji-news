@@ -97,19 +97,75 @@ class HackerNewsSelectionTest(unittest.TestCase):
         self.assertEqual(candidate["selection_reason"], "older_than_36h")
 
 
+class LobstersSelectionTest(unittest.TestCase):
+    def item(
+        self, score=30, comments=0, age_hours=1, url="https://example.com/story"
+    ):
+        return {
+            "short_id": "abc123",
+            "created_at": (NOW - timedelta(hours=age_hours)).isoformat(),
+            "title": "A careful systems article",
+            "url": url,
+            "score": score,
+            "comment_count": comments,
+            "tags": ["programming", "systems"],
+            "short_id_url": "https://lobste.rs/s/abc123",
+            "comments_url": "https://lobste.rs/s/abc123/a_careful_systems_article",
+        }
+
+    def test_score_or_comments_can_meet_threshold(self):
+        score_selected = fetch_trends.normalize_lobsters_candidate(
+            self.item(score=30, comments=0), NOW
+        )
+        comments_selected = fetch_trends.normalize_lobsters_candidate(
+            self.item(score=1, comments=10), NOW
+        )
+
+        self.assertTrue(score_selected["selected"])
+        self.assertTrue(comments_selected["selected"])
+        self.assertEqual(score_selected["source_kind"], "community_topic")
+        self.assertEqual(
+            score_selected["evidence_level"],
+            "source_metrics_title_only_no_comment_text",
+        )
+        self.assertEqual(score_selected["metrics"]["tags"], ["programming", "systems"])
+
+    def test_low_engagement_and_old_items_are_excluded(self):
+        low = fetch_trends.normalize_lobsters_candidate(
+            self.item(score=29, comments=9), NOW
+        )
+        old = fetch_trends.normalize_lobsters_candidate(
+            self.item(score=100, comments=50, age_hours=49), NOW
+        )
+
+        self.assertFalse(low["selected"])
+        self.assertIn("below_temporary_lobsters_threshold", low["selection_reason"])
+        self.assertFalse(old["selected"])
+        self.assertEqual(old["selection_reason"], "older_than_48h")
+
+    def test_text_post_uses_lobsters_story_as_article_url(self):
+        candidate = fetch_trends.normalize_lobsters_candidate(
+            self.item(url="", score=100), NOW
+        )
+
+        self.assertTrue(candidate["selected"])
+        self.assertEqual(candidate["article_url"], "https://lobste.rs/s/abc123")
+
+
 class SourceClassificationTest(unittest.TestCase):
     def test_source_mix_and_order_match_editorial_policy(self):
         self.assertEqual(
             [item["key"] for item in fetch_trends.SOURCES],
-            ["geeknews", "hacker_news", "reddit", "zdnet"],
+            ["geeknews", "hacker_news", "lobsters", "reddit", "zdnet"],
         )
         self.assertEqual(fetch_trends.HN_SELECTION_LIMIT, 5)
+        self.assertEqual(fetch_trends.LOBSTERS_SELECTION_LIMIT, 3)
         self.assertEqual(
             {
                 key: value["selection_limit"]
                 for key, value in fetch_trends.SOURCE_POLICIES.items()
             },
-            {"geeknews": 6, "reddit": 4, "zdnet": 3},
+            {"geeknews": 6, "lobsters": 3, "reddit": 4, "zdnet": 3},
         )
 
     def test_geeknews_is_classified_as_curated_submission(self):
@@ -161,6 +217,48 @@ class SourceClassificationTest(unittest.TestCase):
 
 
 class CandidateSchemaAndAuditTest(unittest.TestCase):
+    def test_cross_source_duplicate_keeps_first_eligible_source(self):
+        first = fetch_trends.normalize_hn_candidate(
+            {
+                "title": "Shared article",
+                "hn_item_id": 100,
+                "article_url": "https://example.com/story?utm_source=hn",
+                "published_at": NOW,
+            },
+            {
+                "id": 100,
+                "type": "story",
+                "title": "Shared article",
+                "url": "https://example.com/story?utm_source=hn",
+                "time": int(NOW.timestamp()),
+                "score": 100,
+                "descendants": 50,
+            },
+            NOW,
+        )
+        duplicate = fetch_trends.normalize_lobsters_candidate(
+            {
+                "created_at": NOW.isoformat(),
+                "title": "Shared article on Lobsters",
+                "url": "http://EXAMPLE.com/story/#discussion",
+                "score": 100,
+                "comment_count": 50,
+                "tags": ["programming"],
+                "short_id_url": "https://lobste.rs/s/duplicate",
+                "comments_url": "https://lobste.rs/s/duplicate/shared_article",
+            },
+            NOW,
+        )
+
+        fetch_trends.apply_cross_source_deduplication([first, duplicate])
+
+        self.assertTrue(first["selected"])
+        self.assertFalse(duplicate["selected"])
+        self.assertEqual(
+            duplicate["selection_reason"],
+            "duplicate_article_url:first_source=Hacker News",
+        )
+
     def test_source_limits_do_not_promote_or_force_candidates(self):
         candidates = []
         for index in range(6):
@@ -222,6 +320,8 @@ class CandidateSchemaAndAuditTest(unittest.TestCase):
         output = fetch_trends.build_output(NOW, [selected, excluded], [])
         self.assertEqual([item["title"] for item in output["articles"]], ["Selected"])
         self.assertTrue(output["selection_policy"]["hacker_news"]["temporary_threshold"])
+        self.assertTrue(output["selection_policy"]["lobsters"]["temporary_threshold"])
+        self.assertIn("normalized_article_url", output["selection_policy"]["cross_source_deduplication"])
         self.assertFalse(output["selection_policy"]["force_target_count"])
 
     def test_daily_audit_appends_run_snapshots(self):
