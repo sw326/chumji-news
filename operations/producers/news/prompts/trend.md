@@ -20,6 +20,12 @@
 제목에서 확인되는 사실 + 관측된 점수·댓글 수
 [원문](article_url) · [HN 댓글·토론](discussion_url)
 
+🦞 Lobsters 개발자 화제
+
+📌 **헤드라인**
+제목에서 확인되는 사실 + 관측된 점수·댓글 수·태그
+[원문](article_url) · [Lobsters 댓글·토론](discussion_url)
+
 🗣️ Reddit 제출
 
 📌 **헤드라인**
@@ -39,6 +45,9 @@
 - `official_metrics_title_only_no_comment_text`: `metrics`의 점수·댓글 수를
   수치로 적고 “HN에서 화제”라고 할 수 있다. 댓글 원문이 없으므로 찬반,
   우려, 호평, 열광 등 반응의 내용이나 방향은 쓰지 않는다.
+- `source_metrics_title_only_no_comment_text`: Lobsters가 공개한 점수·댓글
+  수·태그를 수치와 분류 근거로 적고 “Lobsters에서 화제”라고 할 수 있다.
+  댓글 원문이 없으므로 반응의 내용이나 방향은 쓰지 않는다.
 - `feed_content_no_engagement`: 제목과 `summary`만 요약한다. 확산, 화제,
   열광, 반응이 많다는 표현은 쓰지 않는다.
 - `title_only_no_engagement`: 제목을 번역하거나 그대로 전달하는 범위를
@@ -55,10 +64,11 @@
 3. 링크는 입력의 `article_url`과 `discussion_url`만 사용한다. 홈페이지나
    섹션 URL을 새로 만들지 않는다.
 4. 제목·설명은 한국어로 쓰되, 입력 근거 밖의 의미를 보충하지 않는다.
-5. 출력 소스 순서는 GeekNews, Hacker News, Reddit, ZDNet Korea로 고정한다.
+5. 출력 소스 순서는 GeekNews, Hacker News, Lobsters, Reddit, ZDNet Korea로
+   고정한다.
 6. Reddit·GeekNews의 `source_kind=community_submission` 항목을 커뮤니티
    화제나 확산 사례로 바꾸지 않는다.
 7. 같은 이름의 다른 항목에 설명이 있더라도 각 항목의 근거를 섞지 않는다.
-8. Hacker News와 Reddit은 원문 링크와 댓글·토론 링크를 모두 표시한다.
+8. Hacker News, Lobsters, Reddit은 원문 링크와 댓글·토론 링크를 모두
+   표시한다.
 9. 본문만 출력하고 인사말, 진행 메시지, 완료 보고를 붙이지 않는다.
-

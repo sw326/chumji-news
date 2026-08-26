@@ -9,12 +9,12 @@ class PromptParityTests(unittest.TestCase):
     DATE = "2026.08.25 (화)"
     FIXTURE = json.dumps({"articles": [{"title": "고정 기사", "url": "https://example.test/a"}]}, ensure_ascii=False, separators=(",", ":"))
 
-    def test_frozen_prompt_hashes_match_legacy_cron_contract(self):
+    def test_frozen_prompt_hashes_match_production_contract(self):
         expected = {
-            # Generated independently from the three active cron heredocs.
+            # Frozen production prompt contract; update only with reviewed prompt changes.
             "morning": "b7de0613de7a3a9538e84cbc698ba2d790ac1f8f2ec7d8557b91ddd49c20a85c",
             "it": "0493b4c81aac9a1ff2badfdc8028e6d7005fb0de91e7bcdf14d4bd12454107b3",
-            "trend": "4dfd9d05009b38d2d5643674d97a0713f1e7b8f29109efb6e267c6e4a865180d",
+            "trend": "a5a4ae72ab06c37a62c8a5ed5e637370d15488d7f2550b0b0bb92e8d484ecdae",
         }
         actual = {profile: hashlib.sha256(build_prompt(profile, self.DATE, self.FIXTURE).encode()).hexdigest() for profile in expected}
         self.assertEqual(actual, expected)

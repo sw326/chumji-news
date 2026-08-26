@@ -11,9 +11,9 @@ The files preserve the active collection contracts:
 - `fetch_morning_news.py`: six general-news RSS sources and production title
   filters;
 - `fetch_it_tech.py`: six technology RSS sources and production URL filters;
-- `fetch_trends.py`: recent feed discovery plus official Hacker News metrics,
-  explicit evidence levels, deterministic selection reasons, and an audit
-  artifact.
+- `fetch_trends.py`: recent feed discovery plus Hacker News and Lobsters public
+  engagement metrics, cross-source article URL deduplication, explicit evidence
+  levels, deterministic selection reasons, and an audit artifact.
 
 They are not scheduled from this directory yet. The existing OpenClaw cron
 continues to run the source checkout in `claude-workspace`.

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Discover trend candidates from RSS and select them deterministically.
+"""Discover trend candidates from public feeds and select them deterministically.
 
-RSS is a discovery surface, not proof that an item is popular. Hacker News
-engagement is refreshed from the official API before selection. The JSON sent
-to the summarizer contains selected candidates only; a daily audit file keeps
-both selected and rejected candidates with the metrics observed at run time.
+RSS is a discovery surface, not proof that an item is popular. Hacker News and
+Lobsters engagement is read from their public JSON endpoints before selection.
+The JSON sent to the summarizer contains selected candidates only; a daily
+audit file keeps both selected and rejected candidates with the metrics
+observed at run time.
 """
 
 import argparse
@@ -31,12 +32,21 @@ HN_MAX_AGE_HOURS = 36
 HN_MIN_SCORE = 50
 HN_MIN_COMMENTS = 20
 HN_SELECTION_LIMIT = 5
+LOBSTERS_API_URL = "https://lobste.rs/hottest.json"
+LOBSTERS_MAX_AGE_HOURS = 48
+LOBSTERS_MIN_SCORE = 30
+LOBSTERS_MIN_COMMENTS = 10
+LOBSTERS_SELECTION_LIMIT = 3
 
 # These windows are deterministic freshness filters, not claims of popularity.
 # The HN engagement threshold is intentionally called out as temporary in the
 # emitted policy so it can be tuned after observing audit data.
 SOURCE_POLICIES = {
     "geeknews": {"max_age_hours": 48, "selection_limit": 6},
+    "lobsters": {
+        "max_age_hours": LOBSTERS_MAX_AGE_HOURS,
+        "selection_limit": LOBSTERS_SELECTION_LIMIT,
+    },
     "reddit": {"max_age_hours": 48, "selection_limit": 4},
     "zdnet": {"max_age_hours": 36, "selection_limit": 3},
 }
@@ -55,6 +65,12 @@ SOURCES = [
         "limit": 30,
     },
     {
+        "key": "lobsters",
+        "name": "Lobsters",
+        "url": LOBSTERS_API_URL,
+        "limit": 25,
+    },
+    {
         "key": "reddit",
         "name": "Reddit r/technology",
         "url": "https://www.reddit.com/r/technology/.rss",
@@ -71,6 +87,7 @@ SOURCES = [
 SOURCE_KIND = {
     "reddit": "community_submission",
     "geeknews": "community_submission",
+    "lobsters": "community_topic",
     "zdnet": "editorial_news",
 }
 
@@ -181,6 +198,34 @@ def _is_http_url(value):
     except ValueError:
         return False
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def canonical_article_url(value):
+    """Normalize a public article URL for cross-source duplicate detection."""
+    try:
+        parsed = urllib.parse.urlsplit(value or "")
+    except ValueError:
+        return None
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return None
+    host = parsed.hostname.lower()
+    port = parsed.port
+    if port and not (
+        (parsed.scheme == "http" and port == 80)
+        or (parsed.scheme == "https" and port == 443)
+    ):
+        host = f"{host}:{port}"
+    path = parsed.path or "/"
+    if path != "/":
+        path = path.rstrip("/")
+    tracking = {"fbclid", "gclid", "mc_cid", "mc_eid"}
+    query = [
+        (key, item)
+        for key, item in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        if not key.lower().startswith("utm_") and key.lower() not in tracking
+    ]
+    normalized_query = urllib.parse.urlencode(sorted(query))
+    return urllib.parse.urlunsplit(("", host, path, normalized_query, ""))
 
 
 def _reddit_article_url(raw_content, discussion_url):
@@ -325,6 +370,83 @@ def normalize_hn_candidate(discovered, api_item, now=None):
     )
 
 
+def normalize_lobsters_candidate(item, now=None):
+    """Apply a temporary age/engagement threshold to Lobsters metadata."""
+    now = now or utc_now()
+    if not isinstance(item, dict):
+        return candidate_record(
+            source="Lobsters",
+            source_kind="community_submission",
+            title="",
+            published_at=None,
+            article_url=None,
+            selected=False,
+            selection_reason="invalid_lobsters_record",
+        )
+
+    title = str(item.get("title") or "").strip()
+    published_at = parse_published_at(str(item.get("created_at") or ""))
+    discussion_url = item.get("comments_url") or item.get("short_id_url")
+    article_url = item.get("url") or item.get("short_id_url") or discussion_url
+    try:
+        score = int(item.get("score") or 0)
+        comments = int(item.get("comment_count") or 0)
+    except (TypeError, ValueError):
+        score = 0
+        comments = 0
+    tags = [tag for tag in (item.get("tags") or []) if isinstance(tag, str)]
+    metrics = {
+        "score": score,
+        "comments": comments,
+        "tags": tags,
+        "observed_from": "lobsters_hottest_json",
+    }
+    selected = False
+
+    if not title:
+        reason = "missing_title"
+    elif not _is_http_url(article_url):
+        reason = "missing_article_url"
+    elif not _is_http_url(discussion_url):
+        reason = "missing_discussion_url"
+    elif published_at is None:
+        reason = "missing_published_at"
+    else:
+        age = now - published_at
+        if age > timedelta(hours=LOBSTERS_MAX_AGE_HOURS):
+            reason = f"older_than_{LOBSTERS_MAX_AGE_HOURS}h"
+        elif age < timedelta(minutes=-5):
+            reason = "published_at_in_future"
+        elif score < LOBSTERS_MIN_SCORE and comments < LOBSTERS_MIN_COMMENTS:
+            reason = (
+                "below_temporary_lobsters_threshold: "
+                f"score={score}<{LOBSTERS_MIN_SCORE} and "
+                f"comments={comments}<{LOBSTERS_MIN_COMMENTS}"
+            )
+        else:
+            selected = True
+            reason = (
+                "meets_temporary_lobsters_threshold: "
+                f"age<={LOBSTERS_MAX_AGE_HOURS}h and "
+                f"(score={score}>={LOBSTERS_MIN_SCORE} or "
+                f"comments={comments}>={LOBSTERS_MIN_COMMENTS})"
+            )
+
+    return candidate_record(
+        source="Lobsters",
+        source_kind="community_topic",
+        title=title,
+        published_at=published_at,
+        article_url=article_url,
+        discussion_url=discussion_url,
+        summary="",
+        metrics=metrics,
+        evidence_level="source_metrics_title_only_no_comment_text",
+        selected=selected,
+        selection_reason=reason,
+    )
+
+
 def _request_bytes(url, timeout=12):
     req = urllib.request.Request(
         url,
@@ -415,6 +537,21 @@ def discover_rss(source):
     return discovered, None
 
 
+def discover_lobsters(source):
+    try:
+        payload = fetch_json(source["url"])
+    except Exception as exc:
+        return [], f"{source['name']}: fetch error — {exc}"
+    if not isinstance(payload, list):
+        return [], f"{source['name']}: invalid JSON contract"
+    discovered = [
+        item for item in payload[: source["limit"]] if isinstance(item, dict)
+    ]
+    if not discovered:
+        return [], f"{source['name']}: no candidates (JSON contract may have changed)"
+    return discovered, None
+
+
 def _fetch_hn_api_item(item_id):
     try:
         return fetch_json(f"{HN_API_BASE}/item/{item_id}.json")
@@ -428,6 +565,16 @@ def collect_candidates(now=None):
     errors = []
 
     for source in SOURCES:
+        if source["key"] == "lobsters":
+            discovered, error = discover_lobsters(source)
+            if error:
+                errors.append(error)
+                continue
+            candidates.extend(
+                normalize_lobsters_candidate(item, now) for item in discovered
+            )
+            continue
+
         discovered, error = discover_rss(source)
         if error:
             errors.append(error)
@@ -464,8 +611,28 @@ def collect_candidates(now=None):
             for item in discovered
         )
 
+    apply_cross_source_deduplication(candidates)
     apply_selection_limits(candidates)
     return candidates, errors
+
+
+def apply_cross_source_deduplication(candidates):
+    """Keep the first eligible source for each normalized article URL."""
+    seen = {}
+    for candidate in candidates:
+        if not candidate["selected"]:
+            continue
+        canonical = canonical_article_url(candidate.get("article_url"))
+        if not canonical:
+            continue
+        first_source = seen.get(canonical)
+        if first_source is None:
+            seen[canonical] = candidate["source"]
+            continue
+        candidate["selected"] = False
+        candidate["selection_reason"] = (
+            f"duplicate_article_url:first_source={first_source}"
+        )
 
 
 def apply_selection_limits(candidates):
@@ -499,6 +666,9 @@ def selection_policy():
         "rss_role": "candidate_discovery_only",
         "force_target_count": False,
         "selection_order": "observed_feed_order_after_source_criteria",
+        "cross_source_deduplication": (
+            "normalized_article_url_first_eligible_source_wins"
+        ),
         "hacker_news": {
             "metrics_source": "official_api",
             "max_age_hours": HN_MAX_AGE_HOURS,
@@ -507,6 +677,15 @@ def selection_policy():
             "logic": "age <= max_age AND (score >= min_score OR comments >= min_comments)",
             "temporary_threshold": True,
             "selection_limit": HN_SELECTION_LIMIT,
+        },
+        "lobsters": {
+            "metrics_source": "public_hottest_json",
+            "max_age_hours": LOBSTERS_MAX_AGE_HOURS,
+            "min_score": LOBSTERS_MIN_SCORE,
+            "min_comments": LOBSTERS_MIN_COMMENTS,
+            "logic": "age <= max_age AND (score >= min_score OR comments >= min_comments)",
+            "temporary_threshold": True,
+            "selection_limit": LOBSTERS_SELECTION_LIMIT,
         },
         "other_source_freshness_hours": {
             key: value["max_age_hours"] for key, value in SOURCE_POLICIES.items()
