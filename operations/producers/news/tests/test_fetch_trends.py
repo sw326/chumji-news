@@ -13,9 +13,63 @@ SPEC.loader.exec_module(fetch_trends)
 
 NOW = datetime(2026, 8, 19, 8, 0, tzinfo=timezone.utc)
 
+GITHUB_TRENDING_HTML = b"""
+<article class="Box-row">
+  <h2><a href="/general/photo-app">general / photo-app</a></h2>
+  <p>A photo sharing application</p>
+  <span itemprop="programmingLanguage">Ruby</span>
+  <span>9,999 stars today</span>
+</article>
+<article class="Box-row">
+  <h2><a href="/dev/agent-kit">dev / agent-kit</a></h2>
+  <p>AI coding agent workflow toolkit</p>
+  <span itemprop="programmingLanguage">Python</span>
+  <span>1,234 stars today</span>
+</article>
+<article class="Box-row">
+  <h2><a href="/infra/mcp-server">infra / mcp-server</a></h2>
+  <p>MCP developer tool server</p>
+  <span itemprop="programmingLanguage">Rust</span>
+  <span>800 stars today</span>
+</article>
+<article class="Box-row">
+  <h2><a href="/tools/terminal-cli">tools / terminal-cli</a></h2>
+  <p>Developer terminal workflow</p>
+  <span itemprop="programmingLanguage">Go</span>
+  <span>700 stars today</span>
+</article>
+"""
+
 
 def source(key):
     return next(item for item in fetch_trends.SOURCES if item["key"] == key)
+
+
+class GitHubTrendingSelectionTest(unittest.TestCase):
+    def test_focus_then_stars_then_page_rank_and_limit(self):
+        records = fetch_trends.parse_github_trending(
+            GITHUB_TRENDING_HTML, source("github_trending")
+        )
+
+        self.assertEqual(len(records), 3)
+        self.assertEqual(records[0]["repository"], "dev/agent-kit")
+        self.assertNotIn("general/photo-app", [item["repository"] for item in records])
+
+        candidate = fetch_trends.normalize_github_candidate(records[0])
+        self.assertTrue(candidate["selected"])
+        self.assertEqual(candidate["source_kind"], "repository_trending")
+        self.assertEqual(candidate["metrics"]["stars_today"], 1234)
+        self.assertEqual(candidate["metrics"]["daily_rank"], 2)
+        self.assertEqual(
+            candidate["evidence_level"],
+            "source_metrics_repository_description",
+        )
+
+    def test_layout_failure_is_isolated(self):
+        with self.assertRaisesRegex(ValueError, "no GitHub Trending"):
+            fetch_trends.parse_github_trending(
+                b"<html></html>", source("github_trending")
+            )
 
 
 class HackerNewsSelectionTest(unittest.TestCase):
@@ -156,8 +210,16 @@ class SourceClassificationTest(unittest.TestCase):
     def test_source_mix_and_order_match_editorial_policy(self):
         self.assertEqual(
             [item["key"] for item in fetch_trends.SOURCES],
-            ["geeknews", "hacker_news", "lobsters", "reddit", "zdnet"],
+            [
+                "github_trending",
+                "geeknews",
+                "hacker_news",
+                "lobsters",
+                "reddit",
+                "zdnet",
+            ],
         )
+        self.assertEqual(fetch_trends.GITHUB_SELECTION_LIMIT, 3)
         self.assertEqual(fetch_trends.HN_SELECTION_LIMIT, 5)
         self.assertEqual(fetch_trends.LOBSTERS_SELECTION_LIMIT, 3)
         self.assertEqual(
@@ -321,6 +383,9 @@ class CandidateSchemaAndAuditTest(unittest.TestCase):
         self.assertEqual([item["title"] for item in output["articles"]], ["Selected"])
         self.assertTrue(output["selection_policy"]["hacker_news"]["temporary_threshold"])
         self.assertTrue(output["selection_policy"]["lobsters"]["temporary_threshold"])
+        self.assertEqual(
+            output["selection_policy"]["github_trending"]["selection_limit"], 3
+        )
         self.assertIn("normalized_article_url", output["selection_policy"]["cross_source_deduplication"])
         self.assertFalse(output["selection_policy"]["force_target_count"])
 

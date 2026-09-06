@@ -14,7 +14,7 @@ class PromptParityTests(unittest.TestCase):
             # Frozen production prompt contract; update only with reviewed prompt changes.
             "morning": "b7de0613de7a3a9538e84cbc698ba2d790ac1f8f2ec7d8557b91ddd49c20a85c",
             "it": "0493b4c81aac9a1ff2badfdc8028e6d7005fb0de91e7bcdf14d4bd12454107b3",
-            "trend": "a5a4ae72ab06c37a62c8a5ed5e637370d15488d7f2550b0b0bb92e8d484ecdae",
+            "trend": "815ff5d3a9e498dbc8d1771a2ea6a935ba65e70b4e0b547b7083a7501b0f6251",
         }
         actual = {profile: hashlib.sha256(build_prompt(profile, self.DATE, self.FIXTURE).encode()).hexdigest() for profile in expected}
         self.assertEqual(actual, expected)

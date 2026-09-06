@@ -37,6 +37,14 @@ LOBSTERS_MAX_AGE_HOURS = 48
 LOBSTERS_MIN_SCORE = 30
 LOBSTERS_MIN_COMMENTS = 10
 LOBSTERS_SELECTION_LIMIT = 3
+GITHUB_TRENDING_URL = "https://github.com/trending?since=daily"
+GITHUB_SELECTION_LIMIT = 3
+GITHUB_FOCUS_TOKENS = {
+    "agent", "ai", "api", "cli", "code", "coding", "database", "developer",
+    "devtool", "framework", "github", "infra", "llm", "mcp", "model",
+    "open source", "opensource", "python", "rust", "sdk", "security",
+    "terminal", "tool", "typescript", "workflow",
+}
 
 # These windows are deterministic freshness filters, not claims of popularity.
 # The HN engagement threshold is intentionally called out as temporary in the
@@ -52,6 +60,12 @@ SOURCE_POLICIES = {
 }
 
 SOURCES = [
+    {
+        "key": "github_trending",
+        "name": "GitHub Trending",
+        "url": GITHUB_TRENDING_URL,
+        "limit": GITHUB_SELECTION_LIMIT,
+    },
     {
         "key": "geeknews",
         "name": "GeekNews",
@@ -85,6 +99,7 @@ SOURCES = [
 ]
 
 SOURCE_KIND = {
+    "github_trending": "repository_trending",
     "reddit": "community_submission",
     "geeknews": "community_submission",
     "lobsters": "community_topic",
@@ -92,6 +107,7 @@ SOURCE_KIND = {
 }
 
 SOURCE_SECTION = {
+    "repository_trending": "GitHub Trending",
     "community_topic": "검증된 커뮤니티 화제",
     "community_submission": "커뮤니티 제출·큐레이션",
     "editorial_news": "편집 뉴스",
@@ -117,6 +133,86 @@ class _HTMLExtractor(HTMLParser):
         href = dict(attrs).get("href")
         if href:
             self.links.append(unescape(href))
+
+
+class GitHubTrendingParser(HTMLParser):
+    """Extract repository cards from GitHub's public daily Trending page."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.records = []
+        self.current = None
+        self.capture = None
+        self.capture_depth = 0
+        self.heading_depth = 0
+        self.buffer = []
+
+    @staticmethod
+    def _classes(attrs):
+        return set((dict(attrs).get("class") or "").split())
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        classes = self._classes(attrs)
+        if tag == "article" and "Box-row" in classes:
+            self.current = {"description": "", "language": "", "text": []}
+            return
+        if self.current is None:
+            return
+        if tag == "h2":
+            self.heading_depth = 1
+        elif self.heading_depth:
+            self.heading_depth += 1
+        if self.capture is not None:
+            self.capture_depth += 1
+            return
+        if tag == "a" and self.heading_depth and not self.current.get("path"):
+            href = (attrs_dict.get("href") or "").strip()
+            if re.fullmatch(r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", href):
+                self.current["path"] = href
+                self.capture = "repository"
+        elif tag == "p":
+            self.capture = "description"
+        elif tag == "span" and attrs_dict.get("itemprop") == "programmingLanguage":
+            self.capture = "language"
+        if self.capture is not None:
+            self.capture_depth = 1
+            self.buffer = []
+
+    def handle_data(self, data):
+        if self.current is None:
+            return
+        self.current["text"].append(data)
+        if self.capture is not None:
+            self.buffer.append(data)
+
+    def handle_endtag(self, tag):
+        if self.current is None:
+            return
+        if self.capture is not None:
+            self.capture_depth -= 1
+            if self.capture_depth == 0:
+                value = re.sub(r"\s+", " ", "".join(self.buffer)).strip()
+                self.current[self.capture] = value
+                self.capture = None
+                self.buffer = []
+        if self.heading_depth:
+            self.heading_depth -= 1
+        if tag == "article":
+            page_text = re.sub(r"\s+", " ", "".join(self.current["text"]))
+            match = re.search(r"([\d,]+)\s+stars?\s+today", page_text, re.I)
+            path = self.current.get("path")
+            if path and match:
+                self.records.append(
+                    {
+                        "repository": path.strip("/"),
+                        "description": self.current.get("description", ""),
+                        "language": self.current.get("language", ""),
+                        "stars_today": int(match.group(1).replace(",", "")),
+                        "rank": len(self.records) + 1,
+                    }
+                )
+            self.current = None
 
 
 def strip_html(value):
@@ -226,6 +322,56 @@ def canonical_article_url(value):
     ]
     normalized_query = urllib.parse.urlencode(sorted(query))
     return urllib.parse.urlunsplit(("", host, path, normalized_query, ""))
+
+
+def github_focus_score(record):
+    text = " ".join(
+        str(record.get(key, ""))
+        for key in ("repository", "description", "language")
+    ).casefold()
+    words = set(re.findall(r"[a-z0-9]+", text))
+    return sum(
+        1
+        for token in GITHUB_FOCUS_TOKENS
+        if (" " in token and token in text) or (" " not in token and token in words)
+    )
+
+
+def parse_github_trending(data, source):
+    parser = GitHubTrendingParser()
+    parser.feed(data.decode("utf-8", errors="replace"))
+    if not parser.records:
+        raise ValueError("no GitHub Trending repository cards found")
+    return sorted(
+        parser.records,
+        key=lambda item: (
+            -github_focus_score(item),
+            -item["stars_today"],
+            item["rank"],
+        ),
+    )[: source["limit"]]
+
+
+def normalize_github_candidate(item):
+    repository = item["repository"]
+    return candidate_record(
+        source="GitHub Trending",
+        source_kind="repository_trending",
+        title=repository,
+        published_at=None,
+        article_url=f"https://github.com/{repository}",
+        summary=item.get("description", ""),
+        metrics={
+            "language": item.get("language", ""),
+            "stars_today": item["stars_today"],
+            "daily_rank": item["rank"],
+            "focus_score": github_focus_score(item),
+            "observed_from": "github_daily_trending_page",
+        },
+        evidence_level="source_metrics_repository_description",
+        selected=True,
+        selection_reason="daily_trending_focus_rank",
+    )
 
 
 def _reddit_article_url(raw_content, discussion_url):
@@ -552,6 +698,14 @@ def discover_lobsters(source):
     return discovered, None
 
 
+def discover_github_trending(source):
+    try:
+        raw = _request_bytes(source["url"])
+        return parse_github_trending(raw, source), None
+    except Exception as exc:
+        return [], f"{source['name']}: fetch/parse error — {exc}"
+
+
 def _fetch_hn_api_item(item_id):
     try:
         return fetch_json(f"{HN_API_BASE}/item/{item_id}.json")
@@ -565,6 +719,14 @@ def collect_candidates(now=None):
     errors = []
 
     for source in SOURCES:
+        if source["key"] == "github_trending":
+            discovered, error = discover_github_trending(source)
+            if error:
+                errors.append(error)
+                continue
+            candidates.extend(normalize_github_candidate(item) for item in discovered)
+            continue
+
         if source["key"] == "lobsters":
             discovered, error = discover_lobsters(source)
             if error:
@@ -637,7 +799,10 @@ def apply_cross_source_deduplication(candidates):
 
 def apply_selection_limits(candidates):
     """Cap eligible feed-order results without relaxing any source criteria."""
-    limits = {"Hacker News": HN_SELECTION_LIMIT}
+    limits = {
+        "GitHub Trending": GITHUB_SELECTION_LIMIT,
+        "Hacker News": HN_SELECTION_LIMIT,
+    }
     limits.update(
         {
             source["name"]: SOURCE_POLICIES[source["key"]]["selection_limit"]
@@ -669,6 +834,12 @@ def selection_policy():
         "cross_source_deduplication": (
             "normalized_article_url_first_eligible_source_wins"
         ),
+        "github_trending": {
+            "metrics_source": "public_daily_trending_page",
+            "ranking": "focus_score_then_stars_today_then_daily_rank",
+            "selection_limit": GITHUB_SELECTION_LIMIT,
+            "layout_failure": "isolated_source_error",
+        },
         "hacker_news": {
             "metrics_source": "official_api",
             "max_age_hours": HN_MAX_AGE_HOURS,
