@@ -8,6 +8,12 @@
 ```text
 🔥 YYYY.MM.DD (요일) IT 트렌드 브리핑
 
+🐙 GitHub Trending
+
+📌 **owner/repository**
+저장소 설명과 관측된 언어·오늘 스타 증가·일일 순위
+[GitHub](article_url)
+
 🧭 GeekNews 큐레이션
 
 📌 **헤드라인**
@@ -42,6 +48,9 @@
 
 ## 근거 등급별 표현 제한
 
+- `source_metrics_repository_description`: 저장소 이름·설명과
+  `metrics`의 언어·오늘 스타 증가·GitHub 일일 순위만 사용한다.
+  총 스타 수, 평가, 성능, 인기 이유를 추측하지 않는다.
 - `official_metrics_title_only_no_comment_text`: `metrics`의 점수·댓글 수를
   수치로 적고 “HN에서 화제”라고 할 수 있다. 댓글 원문이 없으므로 찬반,
   우려, 호평, 열광 등 반응의 내용이나 방향은 쓰지 않는다.
@@ -64,7 +73,7 @@
 3. 링크는 입력의 `article_url`과 `discussion_url`만 사용한다. 홈페이지나
    섹션 URL을 새로 만들지 않는다.
 4. 제목·설명은 한국어로 쓰되, 입력 근거 밖의 의미를 보충하지 않는다.
-5. 출력 소스 순서는 GeekNews, Hacker News, Lobsters, Reddit, ZDNet Korea로
+5. 출력 소스 순서는 GitHub Trending, GeekNews, Hacker News, Lobsters, Reddit, ZDNet Korea로
    고정한다.
 6. Reddit·GeekNews의 `source_kind=community_submission` 항목을 커뮤니티
    화제나 확산 사례로 바꾸지 않는다.

@@ -11,9 +11,11 @@ The files preserve the active collection contracts:
 - `fetch_morning_news.py`: six general-news RSS sources and production title
   filters;
 - `fetch_it_tech.py`: six technology RSS sources and production URL filters;
-- `fetch_trends.py`: recent feed discovery plus Hacker News and Lobsters public
+- `fetch_trends.py`: daily GitHub Trending repositories focused on AI and
+  developer tools, recent feed discovery, Hacker News and Lobsters public
   engagement metrics, cross-source article URL deduplication, explicit evidence
-  levels, deterministic selection reasons, and an audit artifact.
+  levels, deterministic selection reasons, and an audit artifact. GitHub is
+  capped at three records and a layout failure is isolated from other sources.
 
 They are not scheduled from this directory yet. The existing OpenClaw cron
 continues to run the source checkout in `claude-workspace`.
