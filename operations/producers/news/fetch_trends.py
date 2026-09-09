@@ -337,7 +337,7 @@ def github_focus_score(record):
     )
 
 
-def parse_github_trending(data, source):
+def parse_github_trending(data, source, *, limit=True):
     parser = GitHubTrendingParser()
     parser.feed(data.decode("utf-8", errors="replace"))
     if not parser.records:
@@ -349,7 +349,7 @@ def parse_github_trending(data, source):
             -item["stars_today"],
             item["rank"],
         ),
-    )[: source["limit"]]
+    )[: source["limit"] if limit else None]
 
 
 def normalize_github_candidate(item):
@@ -698,10 +698,80 @@ def discover_lobsters(source):
     return discovered, None
 
 
+class PublishedArticleLinks(HTMLParser):
+    """Read only the published article, never navigation or embedded scripts."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.in_article = False
+        self.completed = False
+        self.repositories = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "article":
+            self.in_article = True
+        if self.in_article and tag == "a":
+            href = dict(attrs).get("href") or ""
+            parsed = urllib.parse.urlsplit(href)
+            if parsed.scheme in {"https", "http"} and parsed.hostname == "github.com":
+                match = re.fullmatch(r"/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:/.*)?", parsed.path)
+                if match:
+                    self.repositories.add(match[1].casefold().removesuffix(".git"))
+
+    def handle_endtag(self, tag):
+        if tag == "article" and self.in_article:
+            self.in_article = False
+            self.completed = True
+
+
+def read_recent_published_repositories(now, receipt_dir=None):
+    """Seven KST calendar dates including today; never use collection audits.
+
+    Receipts are written only after DB publication and Telegram success. Public
+    article HTML supplies repository identities without any credential access.
+    Existing receipt + unreadable/missing article is a visible history failure.
+    """
+    root = Path(receipt_dir or os.environ.get("CHUMJI_NEWS_RECEIPT_DIR") or
+                Path.home() / ".local/state/chumji-news/publication-receipts")
+    today = now.astimezone(ZoneInfo("Asia/Seoul")).date()
+    start = today - timedelta(days=6)
+    paths = list(root.iterdir())  # Missing/unreadable store is not empty history.
+    recent = []
+    for path in paths:
+        match = re.fullmatch(r"(\d{4}-\d{2}-\d{2})-(news|it|trend)\.json", path.name)
+        if not match:
+            continue
+        date = datetime.strptime(match[1], "%Y-%m-%d").date()
+        if not start <= date <= today:
+            continue
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(receipt, dict) or not re.fullmatch(
+            r"[0-9a-f]{64}", str(receipt.get("content_sha256", ""))
+        ):
+            raise ValueError("invalid publication receipt")
+        recent.append((match[1], match[2]))
+    if not recent:
+        raise ValueError("no recent successful publication receipts")
+
+    def read_article(post):
+        date, category = post
+        raw = _request_bytes(f"https://chumji-news.vercel.app/news/{date}/{category}")
+        parser = PublishedArticleLinks()
+        parser.feed(raw.decode("utf-8", errors="strict"))
+        parser.close()
+        if not parser.completed:
+            raise ValueError("published article missing from history response")
+        return parser.repositories
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        results = list(executor.map(read_article, sorted(recent)))
+    return set().union(*results)
+
+
 def discover_github_trending(source):
     try:
         raw = _request_bytes(source["url"])
-        return parse_github_trending(raw, source), None
+        return parse_github_trending(raw, source, limit=False), None
     except Exception as exc:
         return [], f"{source['name']}: fetch/parse error — {exc}"
 
@@ -713,18 +783,30 @@ def _fetch_hn_api_item(item_id):
         return None
 
 
-def collect_candidates(now=None):
+def collect_candidates(now=None, receipt_dir=None):
     now = now or utc_now()
     candidates = []
     errors = []
+    try:
+        recent_repositories = read_recent_published_repositories(now, receipt_dir)
+    except Exception as exc:
+        recent_repositories = None
+        errors.append(f"GitHub publication history unavailable: {type(exc).__name__}; GitHub omitted")
 
     for source in SOURCES:
         if source["key"] == "github_trending":
+            if recent_repositories is None:
+                continue
             discovered, error = discover_github_trending(source)
             if error:
                 errors.append(error)
                 continue
-            candidates.extend(normalize_github_candidate(item) for item in discovered)
+            for item in discovered:
+                candidate = normalize_github_candidate(item)
+                if item["repository"].casefold() in recent_repositories:
+                    candidate["selected"] = False
+                    candidate["selection_reason"] = "published_within_7_kst_days"
+                candidates.append(candidate)
             continue
 
         if source["key"] == "lobsters":
@@ -839,6 +921,10 @@ def selection_policy():
             "ranking": "focus_score_then_stars_today_then_daily_rank",
             "selection_limit": GITHUB_SELECTION_LIMIT,
             "layout_failure": "isolated_source_error",
+            "history": "successful_publication_receipts_and_public_article_links",
+            "exclusion_window": "today_and_previous_6_calendar_days_Asia/Seoul",
+            "history_failure": "omit_github_preserve_other_sources",
+            "backfill_duplicates": False,
         },
         "hacker_news": {
             "metrics_source": "official_api",
@@ -968,13 +1054,15 @@ def parse_args(argv=None):
         default=default_audit_dir(),
         help="directory for date-partitioned candidate audit JSON",
     )
+    parser.add_argument("--receipt-dir", type=Path, default=None,
+                        help="successful publication receipts (read-only)")
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
     collected_at = utc_now()
-    candidates, errors = collect_candidates(collected_at)
+    candidates, errors = collect_candidates(collected_at, args.receipt_dir)
     try:
         audit_path = write_daily_audit(
             args.audit_dir, collected_at, candidates, errors
