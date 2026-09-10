@@ -59,7 +59,15 @@ PY
 stage="$(mktemp -d /tmp/chumji-news-price-deploy.XXXXXX)"
 cleanup() { rm -rf "$stage"; }
 trap cleanup EXIT
-git -C "$ROOT" archive HEAD | tar -x -C "$stage"
+if [[ -e "$ROOT/.git" ]]; then
+  # Checkouts use committed bytes only; broken Git metadata must fail closed.
+  git -C "$ROOT" archive HEAD | tar -x -C "$stage"
+else
+  # Immutable releases are git archives themselves and have no .git metadata.
+  tar -C "$ROOT" --exclude='.git' --exclude='.env*' --exclude='.vercel' \
+    --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
+    --exclude='*.pyc' -cf - . | tar -x -C "$stage"
+fi
 mkdir -p "$stage/public/fresh-food/$snapshot_date"
 cp "$snapshot_file" "$stage/public/fresh-food/index.html"
 cp "$snapshot_file" "$stage/public/fresh-food/$snapshot_date/index.html"
@@ -88,14 +96,25 @@ set +a
 "$NODE" "$ROOT/scripts/save-price-snapshot.js" "$report_file"
 
 [[ -s "$TELEGRAM_TOKEN_FILE" ]] || { echo "missing Telegram SecretRef: $TELEGRAM_TOKEN_FILE" >&2; exit 1; }
-message="신선식품 가격 - $snapshot_date\n가락시장 최신 도매 + KAMIS 소매 조사\n그래프 보기: $PUBLIC_URL/prices/$snapshot_date"
-response="$(curl -fsS --max-time 60 -X POST \
-  "https://api.telegram.org/bot$(<"$TELEGRAM_TOKEN_FILE")/sendMessage" \
-  -F "chat_id=$TELEGRAM_CHAT_ID" -F "text=$message" -F "disable_web_page_preview=true")"
-"$PYTHON" - "$response" <<'PY'
-import json, sys
-data = json.loads(sys.argv[1])
-if not data.get("ok"):
-    raise SystemExit("Telegram publication failed")
-print("price snapshot publication complete")
-PY
+# Read the token inside the HTTP client, never into shell expansion or argv.
+"$PYTHON" - "$TELEGRAM_TOKEN_FILE" "$TELEGRAM_CHAT_ID" "$snapshot_date" "$PUBLIC_URL" <<'PY_SEND'
+import json
+import pathlib
+import sys
+import urllib.parse
+import urllib.request
+
+token_file, chat_id, date, public_url = sys.argv[1:]
+message = f"신선식품 가격 - {date}\n가락시장 최신 도매 + KAMIS 소매 조사\n그래프 보기: {public_url}/prices/{date}"
+try:
+    token = pathlib.Path(token_file).read_text().strip()
+    body = urllib.parse.urlencode({"chat_id": chat_id, "text": message, "disable_web_page_preview": "true"}).encode()
+    request = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=body, method="POST")
+    with urllib.request.urlopen(request, timeout=60) as response:
+        result = json.load(response)
+    if not result.get("ok"):
+        raise ValueError("Telegram rejected publication")
+except Exception:
+    raise SystemExit("Telegram publication failed; response details suppressed") from None
+print(f"price snapshot publication complete: message_id={result['result']['message_id']}")
+PY_SEND
