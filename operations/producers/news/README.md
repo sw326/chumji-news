@@ -21,7 +21,13 @@ The production OpenClaw cron runs `run_profile.sh` through the commit-addressed
 `~/.openclaw/services/chumji-news-current` link. The old `chumji-ops/jobs/news`
 shadow collector is not this production entrypoint.
 
-`adapters/openclaw_gpt_summarize.sh` preserves the active text-only GPT call.
+`adapters/openclaw_gpt_summarize.sh` preserves the active text-only OpenClaw
+call. It tries `OPENCLAW_MODEL` (default `openai/gpt-5.6-luna`) and then each
+space-separated `OPENCLAW_FALLBACK_MODELS` entry (default
+`anthropic/claude-haiku-4-5`) only after the previous model failed, so an
+expired provider login does not stop the briefing. The log records which model
+failed and which fallback produced the summary; an empty
+`OPENCLAW_FALLBACK_MODELS` disables fallback.
 `adapters/publish.py` separates publication from collection and summarization:
 
 - it refuses to overwrite a different briefing for the same date/category;
