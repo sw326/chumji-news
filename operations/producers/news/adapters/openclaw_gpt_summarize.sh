@@ -32,6 +32,7 @@ summarize_with() {
 }
 
 ATTEMPT=0
+set -f  # model ids are split on spaces only, never globbed
 for CANDIDATE in "$MODEL" $FALLBACK_MODELS; do
   ATTEMPT=$((ATTEMPT + 1))
   if summarize_with "$CANDIDATE" "$ATTEMPT"; then
