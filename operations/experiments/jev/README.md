@@ -35,3 +35,20 @@ https://vercel.com/docs/ai-gateway/modalities/evaluation
 
 This resolves the earlier Python compatibility question: `POST /v1/evaluate`
 accepts structured state, Boolean, Score and Choice questions directly.
+
+## Protected-proxy compatibility and access gate
+
+On the tested Mac, Python 3.14.4 rejects the OpenClaw proxy certificate with
+`SSLCertVerificationError` code 85 (Missing Authority Key Identifier), before
+sending an HTTP evaluation request. The installed `/opt/homebrew/bin/python3.11`
+works with its default certificate-chain and hostname verification, inherited
+proxy, and injected CA. Use that interpreter here; do not disable TLS checking
+or extract the protected credential. No proxy configuration workaround is needed.
+
+An authenticated evaluation attempt on 2026-09-21 returned HTTP 403 mentioning
+credit card and free credits, matching the payment-method verification gate in
+the official FAQ: https://vercel.com/docs/ai-gateway/faq . No model answer was
+received. Adding a payment method and purchasing credits are separate actions;
+neither is performed by this tool. Jev's free-tier eligibility remains unverified.
+After the owner completes verification, resume with a new output file.
+Sanitized evidence stays outside Git under `~/.local/state/jev-experiment/`.

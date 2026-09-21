@@ -128,6 +128,19 @@ def main():
                     record.update(status="failed", error_type=type(exc).__name__)
                     if isinstance(exc, urllib.error.HTTPError):
                         record["http_status"] = exc.code
+                        # Record only recognized machine codes, never raw messages/headers.
+                        try:
+                            error = json.loads(exc.read(16000)).get("error", {})
+                            error_type = error.get("type") if isinstance(error, dict) else None
+                            if error_type in {"customer_verification_required", "quota_for_entity_exceeded"}:
+                                record["provider_error_type"] = error_type
+                        except (ValueError, AttributeError, OSError):
+                            pass
+                    elif isinstance(exc, urllib.error.URLError):
+                        record["reason_type"] = type(exc.reason).__name__
+                        verify_code = getattr(exc.reason, "verify_code", None)
+                        if isinstance(verify_code, int):
+                            record["ssl_verify_code"] = verify_code
                     out.write(json.dumps(record, ensure_ascii=False) + "\n")
                     out.flush()
                     print("Stopped after failure; inspect the sanitized output. No retries.")
