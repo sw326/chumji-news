@@ -237,3 +237,43 @@ summary is missing. With both summaries, duplicate probability >=.90 and margin
 uncalibrated diagnostic thresholds. Report raw relations separately from this
 adapter so conservative abstention cannot hide false duplicate predictions.
 No measured downstream LLM savings or calibrated production cutoff is claimed.
+
+### Sparse versus verbatim-excerpt diagnostic
+
+`enrich.py` reuses the same eight real pairs and the exact `dedup.py` question,
+titles and provider. Only the summary fields change. Sixteen paired calls use
+deterministically mixed arm order; one extra call reverses the short/long Reuters
+wire pair (17 total). Run `dedup.py execute`, not a second API client:
+
+```sh
+python3.11 operations/experiments/jev/enrich.py prepare OUT --sources FETCH_JSON --prior PRIOR_MANIFEST
+# Protected Gateway only, public data, no ZDR; existing execution guards apply:
+python3.11 operations/experiments/jev/dedup.py execute OUT --public-data-no-zdr
+python3.11 operations/experiments/jev/enrich.py report OUT
+```
+
+`FETCH_JSON` is a local array of web-fetch snapshots with `id` R01A through
+R08B, `text`, `url`, `status`, `fetchedAt`, and optional `truncated`. Excerpt spans
+and source hashes are frozen in the manifest. Paragraph selectors target the
+saved September 21 snapshots, NOT arbitrary future fetches or a production
+extraction pipeline. A manual provenance audit must confirm the selected spans
+before calls; no summarization LLM is used. Comments, navigation and unrelated
+changelog entries are excluded. Selected excerpts, not whole articles, are the
+scope of the judgments. The original fetched snapshots stay outside Git.
+
+The expected enriched labels and rationales are frozen before these calls, but
+the analyst has seen earlier sparse results; agreement is NOT independent
+accuracy. Sparse inputs have no imposed full-text gold labels. R04 tests whether
+the official changelog's provider availability exception is preserved as new
+information. R01 reversal measures information containment in current snapshots,
+not historical publication order or old/corrected-state handling. Shared outbound
+source links (R02/R05) are alternative deterministic candidate signals, not proof
+that every commentary/revision can be safely discarded. Excerpt selection, fetch
+costs, annotation bias, missing text and one call per condition limit conclusions.
+
+If the runner stops on an error, `enrich.py continue-prepare OUT` can explicitly
+stage a single `OUT/continuation` manifest containing only never-attempted IDs.
+Failed IDs stay failures and are never retried. Inspect remaining IDs before
+executing `dedup.py execute OUT/continuation --public-data-no-zdr`. The combined
+report rejects duplicate IDs or altered request hashes and combines segment costs;
+its wall time excludes the manual pause. The frozen overall limit stays 17.
