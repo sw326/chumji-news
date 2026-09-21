@@ -52,3 +52,25 @@ received. Adding a payment method and purchasing credits are separate actions;
 neither is performed by this tool. Jev's free-tier eligibility remains unverified.
 After the owner completes verification, resume with a new output file.
 Sanitized evidence stays outside Git under `~/.local/state/jev-experiment/`.
+
+### Public-news test on Hobby
+
+After payment verification cleared, the next request returned `permission_denied`:
+per-request `zeroDataRetention` is available only on Pro and Enterprise. Card
+verification, plan-feature entitlement, and purchased credit balance are separate
+gates. Buying AI Gateway credits is not a Pro plan upgrade.
+
+For this public-article dataset only, add `--public-data-no-zdr` to omit the ZDR
+enforcement option. Default behavior still requires ZDR; there is no automatic
+fallback after a rejection. This opt-out does not guarantee provider retention
+or training policies and must not be reused for private or company data without
+separate review. Protected credential injection, TLS verification, and the
+single-provider restriction are unchanged.
+
+On 2026-09-21, ten public candidates across five sources passed response-schema
+checks without purchasing credits. Latency was 373–536 ms (median 415.5 ms),
+and response-reported cost was $0. This is a connectivity observation, not a
+quality benchmark or proof of permanently free pricing. Results remain outside
+Git in `~/.local/state/jev-experiment/20260921-1032-public-smoke.jsonl`.
+
+Reference: https://vercel.com/docs/ai-gateway/security-and-compliance/zdr

@@ -48,11 +48,13 @@ def sample(audit, limit):
     return result
 
 
-def payload(item):
+def payload(item, *, public_data_no_zdr=False):
     # Exclude selected, selection_reason, popularity and heuristic focus scores.
     state = {k: item.get(k) for k in ("source", "title", "summary", "published_at", "evidence_level")}
     body = {"model": MODEL, "state": state, "questions": QUESTIONS,
             "providerOptions": {"gateway": {"zeroDataRetention": True, "only": ["typesafe-ai"]}}}
+    if public_data_no_zdr:
+        del body["providerOptions"]["gateway"]["zeroDataRetention"]
     encoded = json.dumps(body, ensure_ascii=False).encode()
     if len(encoded) > 16000:
         raise ValueError("Request exceeds 16000-byte smoke-test limit")
@@ -88,11 +90,13 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="New local JSONL outside Git")
     parser.add_argument("--limit", type=int, default=10, choices=range(1, 11))
     parser.add_argument("--execute", action="store_true", help="Send up to 10 billable requests; no retries")
+    parser.add_argument("--public-data-no-zdr", action="store_true",
+                        help="Public news only: omit Pro/Enterprise-only ZDR enforcement")
     args = parser.parse_args()
     items = sample(json.loads(args.audit.read_text()), args.limit)
     if not items:
         parser.error("No candidates")
-    bodies = [payload(item) for item in items]  # Validate all before any request.
+    bodies = [payload(item, public_data_no_zdr=args.public_data_no_zdr) for item in items]
     key = os.environ.get("AI_GATEWAY_API_KEY") if args.execute else None
     if args.execute and not key:
         parser.error("AI_GATEWAY_API_KEY is missing; use protected Gateway execution")
