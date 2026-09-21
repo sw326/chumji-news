@@ -199,3 +199,41 @@ consumer payload size, retries and maintenance work. Adapter compactness is our
 interface design; it is not unique to Jev, and provider response bytes are larger
 than the four-field output. Preprocessing and fallback costs must not disappear
 from the comparison. Source selection/ranking remains a separate task.
+
+## Directed duplicate/follow-up diagnostic
+
+`dedup.py` asks how new candidate B relates to already processed A:
+`duplicate / followup / distinct / unknown`. It never deletes, publishes, or
+changes production. Fixture labels are frozen before calls, not independent gold.
+Sixteen fictional pairs cover translated/rephrased reports, price/date additions,
+restoration/correction/approval, different versions and reviews, missing evidence,
+and one embedded instruction. Eight real pairs are an unlabeled convenience
+sample from September 14–20 saved candidates, excluding repository-trending rows
+and deduplicating exact article URLs with latest observation retained. Discovery
+used title SequenceMatcher similarity (threshold .48), then manual choice of
+cross-language duplicates and hard negatives; this is not a production retrieval
+benchmark. The supplied discovery JSON, its SHA and article URLs identify the
+local input; indices refer only to that frozen file. Full articles were not read.
+Four reversed synthetic pairs test asymmetric information containment.
+
+Prepare uses no network; execute requires explicit public-only no-ZDR opt-out and
+protected Gateway Python 3.11. At most 28 requests, 3.2-second start intervals,
+30-second timeout, 16 KB requests, no redirects/retries, stop on first error,
+exclusive results file to prevent re-execution. Post-response $0.01 observed or
+reference-price guard is NOT a hard spending cap. Reference price is the earlier
+2026-09-21 catalog rate of $0.042/million input tokens, not an invoice.
+
+```sh
+python3.11 operations/experiments/jev/dedup.py prepare OUT --discovery FROZEN_JSON
+# Through protected Gateway execution only:
+python3.11 operations/experiments/jev/dedup.py execute OUT --public-data-no-zdr
+python3.11 operations/experiments/jev/dedup.py report OUT
+python3.11 -m unittest discover -s operations/experiments/jev -p test_dedup.py -v
+```
+
+The local observation adapter refuses even a duplicate-candidate flag when either
+summary is missing. With both summaries, duplicate probability >=.90 and margin
+>=.30 only produces `duplicate_candidate_only`, never a drop action. These are
+uncalibrated diagnostic thresholds. Report raw relations separately from this
+adapter so conservative abstention cannot hide false duplicate predictions.
+No measured downstream LLM savings or calibrated production cutoff is claimed.
