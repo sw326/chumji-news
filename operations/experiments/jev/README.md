@@ -74,3 +74,40 @@ quality benchmark or proof of permanently free pricing. Results remain outside
 Git in `~/.local/state/jev-experiment/20260921-1032-public-smoke.jsonl`.
 
 Reference: https://vercel.com/docs/ai-gateway/security-and-compliance/zdr
+
+## Frozen 50-article pilot
+
+`compare.py prepare OUTPUT_DIR` is offline. It freezes 50 exact-URL-unique
+candidates from the last run of each day, 2026-09-14 through 2026-09-20, keeping
+the latest observation for repeated URLs. Sampling is seeded and source-balanced,
+not representative of the original traffic proportions. It emits a hashed request
+manifest, a blind HTML rating sheet, and an empty label CSV outside Git.
+
+`compare.py execute OUTPUT_DIR` sends 50 baseline requests plus 12 exact repeats,
+12 Choice-order reversals, and 12 exploratory rubric variants (86 evaluations).
+Score criteria retain their ordinal order. It reuses the smoke schema validator,
+protected Gateway key, TLS validation, and single-provider route. Public-news-only
+ZDR opt-out is fixed in this pilot; do not use it for private inputs. All input
+state fields are allowlisted; original selection and metrics never reach Jev.
+
+The cost stop is $0.01 observed after a response, not a hard spending cap. Requests
+start at least 3.2 seconds apart (more conservative than the manifest's initial
+1.2-second minimum). No automatic retries: any failure stops the run. After a 429,
+wait for the window to clear, then explicitly use `--resume-rate-limit`. This
+checks the original manifest hash, preserves failure records, and skips completed
+request IDs/arms; it will not resume a non-rate failure. Never blindly rerun a
+completed batch. `report` processes saved results without network access.
+
+Repeat agreement includes any upstream caching; underlying model version is not
+pinned. Rubric variation is exploratory, not evidence of improved accuracy.
+Historic selection is a comparator, never ground truth. Empty summaries confound
+source/language comparisons. Independent human labels and a frozen holdout are
+required before accuracy, calibration, or production thresholds can be claimed.
+
+Commands (execute only through protected Gateway execution):
+
+```sh
+/opt/homebrew/bin/python3.11 operations/experiments/jev/compare.py prepare ~/.local/state/jev-experiment/pilot-20260921
+/opt/homebrew/bin/python3.11 operations/experiments/jev/compare.py execute ~/.local/state/jev-experiment/pilot-20260921
+/opt/homebrew/bin/python3.11 operations/experiments/jev/compare.py report ~/.local/state/jev-experiment/pilot-20260921
+```
