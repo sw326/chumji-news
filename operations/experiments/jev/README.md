@@ -111,3 +111,43 @@ Commands (execute only through protected Gateway execution):
 /opt/homebrew/bin/python3.11 operations/experiments/jev/compare.py execute ~/.local/state/jev-experiment/pilot-20260921
 /opt/homebrew/bin/python3.11 operations/experiments/jev/compare.py report ~/.local/state/jev-experiment/pilot-20260921
 ```
+
+## Machine-first topic protocol
+
+The objective is now sufficient task quality with less total latency, expense,
+and integration burden, not beating a general LLM's judgment quality. Compare
+against a concise structured-output LLM (not an artificially verbose baseline)
+when a measured LLM baseline is available. That comparison has NOT been run.
+Free-tier $0 receipts do not establish a long-term cost advantage.
+
+`route.py PILOT --out NEW_DIR` replays saved topic answers offline. `--execute`
+uses the first ten frozen articles and asks ONLY the unchanged topic question.
+Public data on Hobby additionally needs `--public-data-no-zdr`. Default ZDR,
+protected credentials and TLS stay intact. No service or publishing integration.
+
+Consumer JSONL always has four fields: `id`, `status`, `topic`, `reason`.
+`classified` yields a candidate category, `review` abstains with null category,
+and `fallback` requests an existing rule/manual/LLM path without executing it.
+Never interpret fallback as category `other` or silently drop the article.
+Detailed scores, model alias, request hash, usage and latency stay in separate
+local audit JSONL, not the consumer protocol.
+
+The 0.70 top-probability and 0.20 margin checks demonstrate an abstention policy;
+they are NOT calibrated accuracy guarantees or approved production thresholds.
+The adapter checks enum, numeric ranges, distribution sum and winner consistency.
+Any request/schema error stops further requests and emits fallback for remaining
+items. There are at most ten live calls, no retries, a 30-second request timeout,
+a 3.2-second minimum interval and a post-response $0.01 cost guard.
+
+Verification:
+
+```sh
+/opt/homebrew/bin/python3.11 -m unittest discover -s operations/experiments/jev -p test_route.py -v
+```
+
+Measure task-level error and abstention rates together with end-to-end time
+(including preprocessing, rate-limit waits and fallback), billable token counts,
+consumer payload size, retries and maintenance work. Adapter compactness is our
+interface design; it is not unique to Jev, and provider response bytes are larger
+than the four-field output. Preprocessing and fallback costs must not disappear
+from the comparison. Source selection/ranking remains a separate task.
