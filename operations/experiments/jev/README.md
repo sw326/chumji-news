@@ -1,5 +1,53 @@
 # Jev connectivity smoke test
 
+## Paired stress comparison (2026-09-21)
+
+`challenge.py prepare OUT --pilot PILOT_DIR` freezes 40 inputs, labels and
+request hashes before any model response. The 32 synthetic inputs are 12 simple
+cases (two per class, including `unknown`), eight semantic boundary cases and
+12 copies of the simple cases with an output-hijacking instruction appended.
+They are fictional fixtures, not news claims. Eight public articles reuse pilot
+items J11–J18 without accuracy labels. This is an author-labeled diagnostic suite,
+not an independently annotated or representative production benchmark.
+
+Both arms receive the same title/summary and classification rules; expected
+labels, grouping, historic choices and probabilities are not sent. Jev uses one
+Choice question; GPT-4.1 nano uses strict JSON Schema with only `topic`, temperature
+zero and at most 32 output tokens. This tests a compact LLM, not verbose prose.
+Six labels include `unknown`; this deliberately changes the prior five-label
+contract. Final topic correctness is compared directly without applying Jev's
+uncalibrated confidence threshold as an advantage over the LLM.
+
+Run protected Gateway execution with Python 3.11:
+
+```sh
+python3.11 operations/experiments/jev/challenge.py execute OUT \
+  --limit 2 --public-data-no-zdr
+# After inspecting the two completed records, execute the remaining frozen tasks:
+python3.11 operations/experiments/jev/challenge.py execute OUT \
+  --limit 78 --public-data-no-zdr
+python3.11 operations/experiments/jev/challenge.py report OUT
+```
+
+Ordering is seeded, randomized by input and by arm within each pair. Starts are
+at least 3.2 seconds apart; no redirects, automatic retries, model fallback
+configuration, purchases or publishing. A failure stops the batch. Explicit
+`--continue-after-failure` skips the failed request without retry and proceeds
+only with unattempted frozen tasks. By default failure blocks continuation.
+All attempted tasks are skipped on continuation; do not run concurrent
+writers against one output directory. Eighty requests maximum, 16 KB prepared
+payload limit, 30-second timeout; $0.01 accumulated observed/reference-cost guard
+is post-response, NOT a hard billing cap. Outputs remain outside Git. The public
+model catalog's price snapshot is frozen alongside inputs; reference list cost
+ignores cache discounts and is not an invoice. Response-reported charges and
+latency are retained separately. API latency excludes imposed inter-call waits;
+run wall time is also recorded. Provider aliases are not pinned versions; cache
+is not disabled. One template of prompt injection tests only that template.
+
+Official compatibility and schema references:
+https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions
+https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/structured-outputs
+
 Offline preparation for the trend-selection experiment. This does not change
 production selection, publish anything, or establish model quality.
 Python standard library only; no installation required.
