@@ -277,3 +277,40 @@ Failed IDs stay failures and are never retried. Inspect remaining IDs before
 executing `dedup.py execute OUT/continuation --public-data-no-zdr`. The combined
 report rejects duplicate IDs or altered request hashes and combines segment costs;
 its wall time excludes the manual pause. The frozen overall limit stays 17.
+
+### Source-first shadow router (offline)
+
+`shadow.py` consumes already selected pairs, saved web-fetch snapshots and exact
+request-matched responses. It does not fetch pages, call APIs, search all article
+pairs, schedule jobs or modify selected flags. It reuses the producer's existing
+`canonical_article_url` rather than introducing different URL normalization.
+
+For `news.hada.io/topic` snapshots only, a recognized `▲` plus bold title-link
+layout identifies the submitted original source. Arbitrary citations, comments,
+other hosts and ambiguous layouts are not source identity evidence. Layout changes
+fall back to the discussion URL; invalid URLs/missing excerpts remain review.
+Do not use this saved-markdown parser as an unvalidated production HTML extractor.
+
+Matching normalized source identities produce `code_source_group`: this groups
+references but does NOT assert identical content, versions, commentary or safe
+deletion. Both items always remain. Remaining supplied pairs with excerpts become
+`jev_candidate`; `jev-queue.json` records their request bodies. Offline results
+are reused only on exact question/input/provider request hashes and validated
+distributions. This is replay, not a production cache or fresh model evaluation.
+An absent/error/malformed response remains unresolved. New facts missed by the
+model and uncertainty observations remain visible, not hidden by routing.
+
+```sh
+python3 operations/experiments/jev/shadow.py \
+  --manifest ENRICHED/manifest.json --snapshots FETCH_JSON \
+  --responses ENRICHED/results.jsonl ENRICHED/continuation/results.jsonl \
+  --out SHADOW_OUT
+python3 -m unittest discover -s operations/experiments/jev -p 'test_shadow.py'
+```
+
+On the frozen eight-pair diagnostic, two source groups bypassed Jev and six exact
+responses were replayed. All articles remained; fresh API calls were zero. This
+is not a 25% production saving: source fetch/parse costs, candidate retrieval
+recall, article-version equivalence and downstream summary savings remain untested.
+Do not fetch every page solely to obtain this identity signal without measuring
+its cost. Production collection/delivery code is unchanged.
