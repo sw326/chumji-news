@@ -1,11 +1,36 @@
-import copy
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 import actions as a
 import sequential as s
 
 
 class SequentialTests(unittest.TestCase):
+    def test_unattempted_handoff_case_never_counts_as_success(self):
+        cases = [{'id': 'S01', 'pair_id':'Q01', 'condition':'routed', 'required_ids':[], 'expected_terminal':'handoff_to_research'},
+                 {'id': 'S02', 'pair_id':'Q01', 'condition':'fullscan', 'required_ids':[], 'expected_terminal':'handoff_to_research'}]
+        f = {'news': {'cases':[{'id':'N01','group':'public'}]}, 'search': {'cases':cases,'documents':[]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for c in cases:
+                p=root/'search'/c['id'];p.mkdir(parents=True)
+                a.exclusive(p/'state.json', {'status':'active','found_ids':[],'actions':[]})
+            with patch.object(a,'load_fixture',return_value=f), patch.object(s,'all_rows',return_value=[]), patch('builtins.print'):
+                result=s.report(root)
+            self.assertEqual(result['completed_pairs'], [])
+            self.assertFalse(any(row['goal_met'] for row in result['search']))
+            self.assertFalse(any(row['unnecessary_handoff'] for row in result['search']))
+
+    def test_failed_request_is_not_free_or_part_of_success_latency(self):
+        metrics = s.usage([{'status':'ok','latency_ms':400,'input_tokens':100,'reported_cost_usd':0},
+                           {'status':'error','http_status':429}])
+        self.assertEqual(metrics['calls'], 2)
+        self.assertEqual(metrics['succeeded'], 1)
+        self.assertEqual(metrics['failed'], 1)
+        self.assertEqual(metrics['median_ms'], 400)
+        self.assertEqual(metrics['reported_cost_known_n'], 1)
+
     def test_next_article_inherits_actual_result_not_expected_labels(self):
         first = {'incoming': {'id':'a','title':'Mission A','text':'launch','url':'https://example.org/a'}}
         before = s.fresh_news(first)

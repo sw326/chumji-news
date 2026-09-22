@@ -103,6 +103,16 @@ def all_rows(root):
     return rows
 
 
+def usage(rows):
+    ok = [r for r in rows if r['status'] == 'ok']
+    return {'calls': len(rows), 'succeeded': len(ok), 'failed': len(rows)-len(ok),
+            'median_ms': statistics.median(r['latency_ms'] for r in ok) if ok else None,
+            'input_tokens': sum(r.get('input_tokens',0) for r in rows),
+            'list_cost_usd': sum(r.get('list_cost_usd',0) for r in rows),
+            'reported_cost_usd': sum(r.get('reported_cost_usd') or 0 for r in rows),
+            'reported_cost_known_n': sum(r.get('reported_cost_usd') is not None for r in rows)}
+
+
 def execute_batch(root, out):
     m = a.validate_batch(out); previous = all_rows(root)
     if any(r['status'] != 'ok' for r in previous):
@@ -156,7 +166,11 @@ def run(root):
 def report(root):
     f = a.load_fixture(root); rows = all_rows(root); news = []
     for c in f['news']['cases']:
-        s = a.read(root/'news'/c['id']/'state.json'); got = s['receipt']
+        p = root/'news'/c['id']/'state.json'
+        if not p.exists() or a.read(p)['status'] != 'done':
+            news.append({'id': c['id'], 'group': c['group'], 'status': 'incomplete', 'acceptable': False})
+            continue
+        s = a.read(p); got = s['receipt']
         valid = bool(s.get('history')) and all(h['decision']['valid'] for h in s['history'])
         target_ok = 'event_id' not in c['expected'] or got.get('event_id') == c['expected']['event_id']
         news.append({'id': c['id'], 'group': c['group'], 'receipt': got, 'valid': valid,
@@ -171,10 +185,13 @@ def report(root):
         terminal = s['status'] in ('returned', 'handoff')
         returned = s['status'] == 'returned'; expected = c['expected_terminal'] == 'return_candidates'
         search.append({'id': c['id'], 'pair_id': c['pair_id'], 'condition': c['condition'],
-                       'actions': s['actions'], 'found_ids': s['found_ids'], 'valid': valid,
+                       'actions': s['actions'], 'found_ids': s['found_ids'], 'valid': valid, 'status': s['status'],
+                       'completed_valid': valid and terminal,
+                       'transport_failed': any(r['status'] != 'ok' for r in rr),
                        'goal_met': valid and terminal and returned == expected and (not expected or enough),
                        'premature_return': returned and (not expected or not enough),
-                       'unnecessary_handoff': s['status'] == 'handoff' and expected,
+                       'unnecessary_handoff': valid and s['status'] == 'handoff' and expected,
+                       'failure_fallback_handoff': not valid and s['status'] == 'handoff',
                        'model_calls': len(rr), 'input_tokens': sum(r.get('input_tokens', 0) for r in rr),
                        'api_ms_sum': sum(r.get('latency_ms', 0) for r in rr),
                        'list_cost_usd': sum(r.get('list_cost_usd', 0) for r in rr),
@@ -183,15 +200,20 @@ def report(root):
                        'distinct_body_characters': sum(len(docs[i]['text']) for i in s['found_ids'])})
     sums = ('goal_met','premature_return','unnecessary_handoff','model_calls','input_tokens',
             'api_ms_sum','list_cost_usd','retrieval_actions','distinct_documents','distinct_body_characters')
-    final = a.read(root/'news'/f['news']['cases'][-1]['id']/'state.json')
+    done_news = [c for c in f['news']['cases'] if (root/'news'/c['id']/'state.json').exists()]
+    final = a.read(root/'news'/done_news[-1]['id']/'state.json') if done_news else {'events':[], 'articles':[]}
+    completed_pairs = [pair for pair in sorted({r['pair_id'] for r in search})
+                       if len([r for r in search if r['pair_id']==pair and r['completed_valid']]) == 2]
     result = {'fixture_sha256': a.hash_obj(f), 'news': news, 'search': search,
               'final_events': final['events'], 'articles_preserved': len(final['articles']) == len(f['news']['cases']),
               'totals': {arm: {k: sum(r[k] for r in search if r['condition'] == arm) for k in sums} for arm in ('routed','fullscan')},
-              'usage': {'calls': len(rows), 'median_ms': statistics.median(r['latency_ms'] for r in rows) if rows else None,
-                        'input_tokens': sum(r.get('input_tokens',0) for r in rows),
-                        'list_cost_usd': sum(r.get('list_cost_usd',0) for r in rows),
-                        'reported_cost_usd': sum(r.get('reported_cost_usd') or 0 for r in rows)},
+              'completed_pairs': completed_pairs,
+              'paired_totals': {arm: {k: sum(r[k] for r in search if r['condition']==arm and r['pair_id'] in completed_pairs)
+                                     for k in sums} for arm in ('routed','fullscan')},
+              'usage': usage(rows),
               'limits': ['Selected NASA mission threads, not a representative production stream.',
+                         'Unpaired totals are observed partial workload only, not a valid comparison when interrupted.',
+                         'Distinct documents/characters mean locally materialized state, including initial packets of unattempted cases; not model reads.',
                          'Authored public-document questions and graph. No private wiki index or downstream writer.',
                          'Fullscan uses the same Jev sufficiency decision; it is not a strong-model baseline.',
                          'Distinct body exposure is not repeated model input; actual input tokens recorded separately.',
