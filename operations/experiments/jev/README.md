@@ -1,5 +1,62 @@
 # Jev connectivity smoke test
 
+## Wiki claim–evidence diagnostic (2026-09-22)
+
+Scope and acceptance: https://github.com/sw326/chumji-wiki/issues/20 . This uses
+the existing experiment harness, not the news pipeline. `claims.py` evaluates
+30 author-written claims against fixed excerpts of five public technical docs:
+Python list.sort/json, SQLite foreign keys, Git revert and MDN HTTP 404.
+Two supported paraphrases per source plus expansion, omitted condition,
+contradiction and insufficient-evidence cases yield 10 normal and 20 review
+cases. Four labels are supported/partial/conflict/unresolved; explicit conflict
+takes precedence, and an accurate partial summary is not an omission error.
+The wire field `topic` is retained to reuse `challenge.py`'s strict compact
+parser and protected HTTP executor; it denotes evidence relation here.
+
+`prepare` accepts a public-only source snapshot JSON with source keys matching
+`FIXTURES`, each including `url`, `fetchedAt`, `snapshot_text`, its SHA-256,
+character `spans` and exact `excerpt`. It checks span reconstruction and freezes
+the source snapshots, claims, labels/rationales, current public catalog prices,
+randomized paired request order and request hashes outside Git. Both models
+receive the same claim/evidence and rubric, but not labels, IDs or groups.
+
+```sh
+python3.11 operations/experiments/jev/claims.py prepare OUT --sources SOURCES_JSON
+# Through protected Gateway execution only (public/synthetic data):
+python3.11 operations/experiments/jev/claims.py execute OUT --limit 2 --public-data-no-zdr
+python3.11 operations/experiments/jev/claims.py execute OUT --limit 58 --public-data-no-zdr
+python3.11 operations/experiments/jev/claims.py report OUT
+python3.11 -m unittest discover -s operations/experiments/jev -p 'test_claims.py'
+```
+
+Thirty requests per model, at most 60 total; 3.2-second intervals; 30-second
+timeouts; no automatic retries or redirects; $0.01 post-response observed/list
+price guard, NOT a hard billing cap. Failure stops the run. Explicit
+`--continue-after-failure` skips attempted tasks including errors; no re-call.
+An OS file lock prevents concurrent writers. `inflight.json` left by an
+interrupted segment blocks reruns because the last billable request may not
+have a recorded response. Inspect it; never blindly remove it and retry.
+After the September 22 Q04/nano HTTP 429 (Azure, five requests/minute), the
+failed request was retained and 23 unattempted tasks continued after >60s
+with `--min-interval 13 --continue-after-failure`. The runtime interval may
+only increase the frozen minimum; request bodies/labels/order remain unchanged.
+Each segment records its actual interval and wall time separately.
+The no-ZDR opt-out is only for these public/synthetic fixtures, not private wiki
+or conversation text. No purchases, service/cron/skill changes, wiki edits,
+automatic promotions or production gates are performed by the script.
+
+Report preserves exact four-class confusion, missed review candidates, false
+alarms on supported claims, missing/API-error counts, matched-success latency
+and costs. The pilot threshold (<=2/20 missed review; <=1/10 normal false alarm)
+is frozen before responses and only motivates consideration of another test.
+It does not authorize deployment. Every case, including unflagged cases, must
+be inspected. Five source clusters and self-authored labels are not independent
+gold, real wiki traffic or model calibration. Single calls, unpinned model
+aliases and uncontrolled caches limit inference. Nano's Gateway provider may
+vary; inspect recorded routing metadata. Prompt preparation, source retrieval
+and actual downstream reviewer effort are NOT included in API latency or
+token prices; this diagnostic cannot establish total review-time savings.
+
 ## Paired stress comparison (2026-09-21)
 
 `challenge.py prepare OUT --pilot PILOT_DIR` freezes 40 inputs, labels and

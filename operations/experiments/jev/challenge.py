@@ -114,10 +114,14 @@ def parse(arm,d):
     if set(a)!= {'topic'} or a['topic'] not in CRITERIA:raise ValueError('Invalid enum')
     u=d['usage'];return a['topic'],u['prompt_tokens'],u['completion_tokens'],None
 
-def execute(out,limit,continue_after_failure=False):
+def execute(out,limit,continue_after_failure=False,minimum_interval=None):
     raw=(out/'manifest.json').read_bytes()
     if hashlib.sha256(raw).hexdigest()!=(out/'manifest.sha256').read_text():raise ValueError('Manifest changed')
     m=json.loads(raw);key=os.environ.get('AI_GATEWAY_API_KEY')
+    interval=m['interval_seconds']
+    if minimum_interval is not None:
+        if not smoke.valid_number(minimum_interval,0,60):raise ValueError('Invalid interval')
+        interval=max(interval,minimum_interval)
     if not key:raise ValueError('Protected key missing')
     path=out/'results.jsonl'
     old=[json.loads(x) for x in path.read_text().splitlines()] if path.exists() else []
@@ -133,7 +137,7 @@ def execute(out,limit,continue_after_failure=False):
             if calls>=limit or len(old)+calls>=m['max_calls'] or max(total,estimated)>=.01:break
             data=encoded(t['body'])
             if hashlib.sha256(data).hexdigest()!=t['sha256']:raise ValueError('Request changed')
-            time.sleep(max(0,m['interval_seconds']-(time.monotonic()-previous)))
+            time.sleep(max(0,interval-(time.monotonic()-previous)))
             previous=time.monotonic();calls+=1
             r={'id':t['id'],'arm':t['arm'],'request_sha256':t['sha256'],'started_at':time.strftime('%Y-%m-%dT%H:%M:%S%z')}
             try:
@@ -168,7 +172,7 @@ def execute(out,limit,continue_after_failure=False):
             f.write(json.dumps(r,ensure_ascii=False)+'\n');f.flush()
             print(json.dumps({k:r.get(k) for k in ['id','arm','status','topic','latency_ms','http_status','api_error']}),flush=True)
             if r['status']!='ok':break
-    with (out/'runs.jsonl').open('a') as f:f.write(json.dumps({'calls':calls,'wall_seconds':round(time.monotonic()-start,3),'continue_after_failure':continue_after_failure})+'\n')
+    with (out/'runs.jsonl').open('a') as f:f.write(json.dumps({'calls':calls,'wall_seconds':round(time.monotonic()-start,3),'continue_after_failure':continue_after_failure,'interval_seconds':interval})+'\n')
 
 def report(out):
     m=json.loads((out/'manifest.json').read_text());cases={c['id']:c for c in m['cases']}
