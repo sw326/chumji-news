@@ -493,3 +493,31 @@ Boundary labels stay excluded from confirmed denominators and are reported
 separately. Default diagnostic scope still accepts the original #23 manifest and
 results without modification. A passing real diagnostic is only a candidate for
 offline review-order usefulness evaluation; risk does not mean a bad edit.
+
+### Offline review ordering (wiki #25)
+
+`review_order.py` is an offline adapter for the exact #24 manifest and response
+hashes. It validates cached evidence and saved GitHub commit metadata; it never
+executes the model or fetches sources. No service or second web application is
+introduced. Run locally without any credential environment:
+
+```sh
+python3 operations/experiments/jev/review_order.py /path/to/change-holdout-20260922 /path/to/change-holdout-20260922-prep /path/to/new-output
+```
+
+Outputs: chronological and priority Markdown review packets (all16 retained),
+an **unfilled** review worksheet, and summary.json. Review packets omit frozen
+gold/rationales; only the priority packet displays model labels. Risk/unresolved
+rank first, substantive next, editorial last, stable chronological ties. Gold
+is used only after ordering to compute offline diagnostic metrics. Missing or
+modified responses fail closed; an existing output directory is never replaced.
+
+Compare chronological and newest-first baselines plus exact random-order
+expectations. First4/8 risk counts and last-risk position measure early exposure,
+not time saved. Unicode code-point counts of before+after are only a volume
+proxy, not rendered length, reading effort or a token budget. Full review always
+retains the same total volume. The cached runtime excludes prior source prep
+and API acquisition. Replaying a known, purposively selected sample is not an
+independent accuracy test or a blind human time trial. Do not populate worksheet
+measurements unless a reviewer actually supplies them. No integration or review
+skipping is authorized by these results.
