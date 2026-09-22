@@ -155,13 +155,13 @@ def validate(out):
             raise ValueError('Evidence not tied to source')
     return m
 
-def execute(out, limit, continuation, minimum_interval=None):
+def execute(out, limit, continuation, minimum_interval=None, validator=None):
     # Prevent concurrent writers; retain lock file (flock lifetime is the lock).
     with (out/'execution.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        m=validate(out)
+        m=(validator or validate)(out)
         rows=read_results(out,m)
-        if not 1<=limit<=60: raise ValueError('Invalid limit')
+        if not 1<=limit<=m['max_calls']: raise ValueError('Invalid limit')
         if any(r['status']!='ok' for r in rows) and not continuation:
             raise ValueError('Prior failure requires explicit skip-only continuation')
         # Unknown interrupted requests are not retried: the run remains blocked.

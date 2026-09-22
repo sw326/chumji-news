@@ -1,5 +1,41 @@
 # Jev connectivity smoke test
 
+## Append-only evidence diagnostic (2026-09-22)
+
+Scope: https://github.com/sw326/chumji-wiki/issues/22 . `evidence_ablation.py`
+freezes six previously observed claims (H01/H07/H15/H17/H20/H24), with baseline
+evidence unchanged and relevant public excerpts appended in a second variant.
+Claims, Jev question, model and TypeSafe-only route are unchanged. MDN return
+contracts/copy semantics/examples and ECMAScript string-comparison/flat clauses
+are additions, not copied claim spans. This is selected-case diagnosis, not a
+new holdout. Historical #21 manifests/results remain untouched. Six baseline
+re-measurements are explicitly authorized and stored in the new run directory.
+Unpinned versions, cache and single-call variation limit causal attribution.
+
+```sh
+python3.11 operations/experiments/jev/evidence_ablation.py prepare OUT --corpus CORPUS --labels LABELS
+# Protected Gateway only, public input:
+python3.11 operations/experiments/jev/evidence_ablation.py execute OUT --public-data-no-zdr
+python3.11 operations/experiments/jev/evidence_ablation.py report OUT
+```
+
+Corpus metadata references the exact prior manifest and source snapshots; cases
+carry pair IDs, variant, unchanged claim provenance and source-indexed evidence
+spans. Separate pre-call labels define expected/acceptable values and rationale.
+Only claim/evidence is sent. Audits reject state metadata, changed claims or
+baseline, non-append enrichment, overlapping/copied claim text, altered frozen
+labels and invalid task sets. The existing locked executor/parser is reused via
+an explicit validator callback; 12 calls maximum, 3.2-second minimum intervals,
+30-second timeouts, no automatic retries and the existing post-response $0.01
+cost guard. Failure continuation skips prior attempts, never reissues them.
+
+Enriched H15 is expected to remain conflict. A supported result stops adoption
+experiments for this wiki claim-checker approach; partial/unresolved or incomplete
+results mean hold. Even otherwise-correct enriched results do not establish an
+effect when the same claim was already labeled supported with insufficient
+baseline evidence. Report expected versus observed transitions and historical
+baseline changes separately. No automatic integration or approval follows.
+
 ## Verbatim public claim holdout (2026-09-22)
 
 Scope: https://github.com/sw326/chumji-wiki/issues/21 . `holdout.py` reuses
