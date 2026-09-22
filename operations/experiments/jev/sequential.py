@@ -113,9 +113,11 @@ def usage(rows):
             'reported_cost_known_n': sum(r.get('reported_cost_usd') is not None for r in rows)}
 
 
-def execute_batch(root, out):
+def execute_batch(root, out, continuation_check=None):
     m = a.validate_batch(out); previous = all_rows(root)
-    if any(r['status'] != 'ok' for r in previous):
+    if continuation_check:
+        continuation_check(root)
+    elif any(r['status'] != 'ok' for r in previous):
         raise ValueError('Prior failure preserved; no retry')
     old = a.claims.read_results(out, m, criteria=m['criteria']); done = {r['id'] for r in old}
     if len(previous) + sum(t['id'] not in done for t in m['tasks']) > MAX_CALLS:
@@ -128,19 +130,24 @@ def execute_batch(root, out):
         view = a.news_view(state) if m['domain'] == 'news' else a.search_view(state, a.load_fixture(root)['search']['documents'])
         if a.hash_obj(state) != t['state_sha256'] or a.request(m['domain'], view) != t['body']:
             raise ValueError('Stale request before sending')
-    a.claims.execute(out, len(m['tasks']), False, validator=a.validate_batch, criteria=m['criteria'])
+    if len(done) < len(m['tasks']):
+        a.claims.execute(out, len(m['tasks']), bool(continuation_check), validator=a.validate_batch, criteria=m['criteria'])
     rows = a.apply_batch(out)
-    if any(r['status'] != 'ok' for r in rows): raise ValueError('Transport failure: preserved, stopped')
+    if continuation_check:
+        continuation_check(root)
+    elif any(r['status'] != 'ok' for r in rows):
+        raise ValueError('Transport failure: preserved, stopped')
     time.sleep(3.2)
 
 
-def run(root):
+def run(root, continuation_check=None):
     if sys.version_info[:2] != (3, 11): raise ValueError('Protected execution requires Python 3.11')
     f = a.load_fixture(root)
     if a.read(root/'rules.json') != {'news': NEWS_RULE, 'search': a.RULES['search'], 'max_calls': MAX_CALLS}:
         raise ValueError('Rules changed')
     with (root/'controller.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if continuation_check: continuation_check(root)
         previous = None
         for index, c in enumerate(f['news']['cases'], 1):
             p = root/'news'/c['id']; initial = fresh_news(c, previous)
@@ -154,12 +161,12 @@ def run(root):
                     a.commit_action(p/'state.json', a.hash_obj(state), 'news', code, view)
                 else:
                     out = root/f'news-round-{index}'
-                    execute_batch(root, out if out.exists() else news_batch(root, c, index))
+                    execute_batch(root, out if out.exists() else news_batch(root, c, index), continuation_check)
             previous = a.read(p/'state.json')
         for wave in range(1, a.MAX_STEPS+1):
             out = root/f'search-round-{wave}'
             out = out if out.exists() else a.prepare_batch(root, 'search', wave)
-            if out: execute_batch(root, out)
+            if out: execute_batch(root, out, continuation_check)
     report(root)
 
 
