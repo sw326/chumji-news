@@ -65,3 +65,28 @@ State/provenance/results live outside Git under
 ~/.local/state/jev-experiment/action-followup-20260922{,-prep}/.
 The previous ACTIONS.md describes the original pilot, whose executable source is
 preserved at 4160c33 and /Users/chumji/workspace/chumji-jev-actions.
+
+## Outcome
+
+12 Jev calls succeeded. News: three code actions and one correct model-selected
+update on the same-URL correction; all four synthetic guards behaved as expected.
+Search control reached the frozen goal for 3/4 cases; described reached 4/4. In the
+cached_property case, control handed off; described actually ran secondary search
+then returned the required excerpt. It also retrieved an unrelated shutil excerpt:
+this is not evidence of perfect retrieval precision. Both conditions handed off
+the unsupported benchmark request; neither made a premature sufficient return.
+
+For the four questions, control used 5 Jev calls / 5,044 input tokens; described
+used 6 calls / 7,394 tokens. Frozen list-cost estimates: $0.000211848 / $0.000310548.
+Described accumulated 7 unique-per-episode documents / 3,512 body characters,
+versus 24 / 11,428 in the all-document baseline. These are final distinct-document
+exposure sums, NOT actual repeated model input, physical reads, human time, or
+end-to-end savings. The baseline calls no model and does not decide sufficiency.
+One less unnecessary research handoff is a potential downstream benefit, not a
+measured avoided production LLM invocation. No downstream writer ran in either arm.
+
+All 12 responses reported $0; overall reference list cost $0.000562254, API median
+568.5ms. No invoice/long-term-free or comparative latency claim. Paired initial
+requests differ only by catalog. All 12 final-state hashes were unchanged after
+network-blocked batch reapplication. Relevant offline tests: 95 pass. No extra
+calls, tuning, production integration or private-text egress followed.

@@ -352,7 +352,8 @@ def report(root):
                       'reported_cost_known_n':sum(r.get('reported_cost_usd') is not None for r in all_rows),
                       'list_cost_usd':sum(r.get('list_cost_usd') or 0 for r in all_rows)}
     summary['limits']=['Local API adapters only, no HTTP business API or production integration.',
-                       'News reuses known selected excerpts; search uses authored queries/graph and frozen initial hits.',
+                       'News fixture: '+fixture['news'].get('provenance',{}).get('design','See frozen fixture provenance.'),
+                       'Search uses authored queries/graph and frozen initial hits.',
                        'Labels are author adjudication, not human gold; no new model quality/latency superiority claim.',
                        'Candidate retrieval, search corpus coverage, multi-step errors and human utility remain unvalidated.']
     (root/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
