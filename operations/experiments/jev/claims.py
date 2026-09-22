@@ -201,7 +201,7 @@ def report(out):
     for arm in runner.MODELS:
         rr=[r for r in rows if r['arm']==arm];ok=[r for r in rr if r['status']=='ok']
         normal=[r for r in ok if cases[r['id']]['expected']=='supported']
-        need=[r for r in ok if cases[r['id']]['expected']!='supported']
+        need=[r for r in ok if cases[r['id']]['expected'] is not None and cases[r['id']]['expected']!='supported']
         miss=[r['id'] for r in need if r['topic']=='supported']
         false=[r['id'] for r in normal if r['topic']!='supported']
         groups={g:{'valid':sum(cases[r['id']]['group']==g for r in ok),
@@ -211,7 +211,7 @@ def report(out):
           'exact':sum(r['topic']==cases[r['id']]['expected'] for r in ok),
           'review_required_valid':len(need),'missed_review_ids':miss,
           'normal_valid':len(normal),'false_alarm_ids':false,'groups':groups,
-          'confusion':dict(Counter(cases[r['id']]['expected']+' -> '+r['topic'] for r in ok)),
+          'confusion':dict(Counter(cases[r['id']]['expected']+' -> '+r['topic'] for r in ok if cases[r['id']]['expected'] is not None)),
           'pilot_gate': 'incomplete' if len(ok)!=30 else ('met' if len(miss)<=2 and len(false)<=1 else 'not_met'),
           'median_ms':statistics.median(r['latency_ms'] for r in ok) if ok else None,
           'reported_cost_known_n':sum(r['reported_cost_usd'] is not None for r in ok),

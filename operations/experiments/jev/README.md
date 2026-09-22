@@ -1,5 +1,45 @@
 # Jev connectivity smoke test
 
+## Verbatim public claim holdout (2026-09-22)
+
+Scope: https://github.com/sw326/chumji-wiki/issues/21 . `holdout.py` reuses
+`claims.py`'s exact questions, models, response validation and protected executor.
+Thirty claims are verbatim sections from ten public MDN English pages, each
+paired with a distinct explanatory section of the same page. This is a
+convenience proxy for excerpt review, not private wiki traffic, independent
+world-truth verification or 30 independent source documents.
+
+The frozen corpus supplies `sources` (snapshot path, URL, hash, evidence spans
+and excerpt) and `cases` (id, source, slot, claim_context, claim_span, and the
+claim/evidence state). A separate pre-call adjudication supplies each case's
+`expected`, `acceptable_labels` and `rationale`. The two AI reviewers are not
+human gold. Unresolved reviewer alternatives use null `expected` and remain
+outside primary error-rate denominators; model `unresolved` is a distinct,
+ordinary review-required relation. Source spans reconstruct every claim,
+excluding only its prefixed document-title context, and cannot overlap evidence.
+
+```sh
+python3.11 operations/experiments/jev/holdout.py prepare OUT --corpus CORPUS --labels LABELS
+# Protected Gateway only; public data, never private wiki text:
+python3.11 operations/experiments/jev/holdout.py execute OUT --public-data-no-zdr
+python3.11 operations/experiments/jev/holdout.py report OUT
+python3.11 -m unittest discover -s operations/experiments/jev -p 'test*.py'
+```
+
+Sixty calls maximum, 13-second minimum starts, 30-second request timeout,
+no automatic retries, existing post-response $0.01 cost guard. Errors stop;
+explicit continuation only skips prior attempts, never retries them.
+Preserve source snapshots and both pre-call records outside Git. Request bodies
+include only public claim/evidence and the phase-one rubric, not review metadata.
+
+The exploratory follow-up gate requires 30 valid Jev replies, at least ten
+confirmed normal and ten confirmed review-needed cases, <=10% missed reviews
+and <=10% false alarms. Insufficient label coverage cannot pass. The September
+22 frozen set has normal 4, review-needed 18 and ambiguous 8, so its follow-up
+gate is already insufficient before calling either model. Do not replace samples
+or relabel to pass. Keep API timing separate from preparation, AI reviewer wall
+time and post-review; no human review-time savings or production approval follows.
+
 ## Wiki claim–evidence diagnostic (2026-09-22)
 
 Scope and acceptance: https://github.com/sw326/chumji-wiki/issues/20 . This uses
