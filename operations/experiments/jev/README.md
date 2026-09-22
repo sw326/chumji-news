@@ -521,3 +521,30 @@ and API acquisition. Replaying a known, purposively selected sample is not an
 independent accuracy test or a blind human time trial. Do not populate worksheet
 measurements unless a reviewer actually supplies them. No integration or review
 skipping is authorized by these results.
+
+### New-batch independent agent reviews (wiki #26)
+
+`fresh_review.py` freezes four to eight whole-file public MDN before/after pairs
+and reuses #23's classifier and the protected executor. The #26 selection log
+owns the latest30-commit cutoff, first-file/size filter and skipped cases. It is
+not a gold-labeled accuracy study. Independent baseline and assisted reviewers
+receive identical tasks and source text; only ordering and model hints differ.
+All records, including an API failure with an explicit unknown hint, stay in the
+review. Per-item timestamps are observed agent-session intervals, not human
+active time or pure inference duration. One run per condition cannot establish
+a causal speed benefit.
+
+```sh
+python3 operations/experiments/jev/fresh_review.py prepare /path/to/new-run --prep /path/to/prep
+# Protected Gateway only. Other Python versions are rejected before execution.
+/opt/homebrew/bin/python3.11 operations/experiments/jev/fresh_review.py execute /path/to/run --public-data-no-zdr
+```
+
+Preserve transport failures; no automatic retry. #26's first attempt used the
+wrong Python3.14 interpreter and hit the already documented proxy certificate
+compatibility issue. A public unauthenticated catalog probe confirmed Python3.11
+works with default TLS verification and the injected CA. Only the six unattempted
+items were then executed through the existing explicit skip-only continuation;
+the failed item was not retried. Do not weaken certificate checks or bypass the
+protected proxy. Report this real setup overhead separately from classification
+quality and reviewer-session time.
