@@ -155,12 +155,12 @@ def validate(out):
             raise ValueError('Evidence not tied to source')
     return m
 
-def execute(out, limit, continuation, minimum_interval=None, validator=None):
+def execute(out, limit, continuation, minimum_interval=None, validator=None, criteria=None):
     # Prevent concurrent writers; retain lock file (flock lifetime is the lock).
     with (out/'execution.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         m=(validator or validate)(out)
-        rows=read_results(out,m)
+        rows=read_results(out,m,criteria=criteria)
         if not 1<=limit<=m['max_calls']: raise ValueError('Invalid limit')
         if any(r['status']!='ok' for r in rows) and not continuation:
             raise ValueError('Prior failure requires explicit skip-only continuation')
@@ -169,7 +169,7 @@ def execute(out, limit, continuation, minimum_interval=None, validator=None):
         if journal.exists(): raise ValueError('Interrupted segment; inspect before any further calls')
         journal.write_text(json.dumps({'attempted_before':len(rows),'limit':limit}))
         try:
-            runner.CRITERIA=CRITERIA
+            runner.CRITERIA=CRITERIA if criteria is None else criteria
             if minimum_interval is None:
                 runner.execute(out,limit,continuation)
             else:
@@ -179,7 +179,7 @@ def execute(out, limit, continuation, minimum_interval=None, validator=None):
         else:
             journal.unlink()
 
-def read_results(out,m):
+def read_results(out,m,criteria=None):
     p=out/'results.jsonl'
     rows=[json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
     tasks={(t['id'],t['arm']):t for t in m['tasks']};seen=set()
@@ -189,7 +189,7 @@ def read_results(out,m):
             raise ValueError('Duplicate, foreign or altered response')
         seen.add(key)
         if r['status']=='ok':
-            runner.CRITERIA=CRITERIA
+            runner.CRITERIA=CRITERIA if criteria is None else criteria
             label,*_=runner.parse(r['arm'],r['response'])
             if label!=r['topic']: raise ValueError('Parsed label changed')
         elif r['status']!='error': raise ValueError('Invalid status')

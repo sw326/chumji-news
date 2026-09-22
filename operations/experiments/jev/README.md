@@ -447,3 +447,28 @@ is not a 25% production saving: source fetch/parse costs, candidate retrieval
 recall, article-version equivalence and downstream summary savings remain untested.
 Do not fetch every page solely to obtain this identity signal without measuring
 its cost. Production collection/delivery code is unchanged.
+
+## Directional change triage (wiki #23)
+
+`change_review.py` compares before/after text, not truth or approval. The frozen
+18-case diagnostic separates six public MDN forward edits, six reversed
+counterfactuals, and six authored Korean pairs. Four labels are risk, substantive,
+editorial, and unresolved. Risk means lost conditions/caveats or strengthened
+certainty, not proof the edit is incorrect. No production/private wiki input.
+
+```sh
+python3 operations/experiments/jev/change_review.py prepare /path/to/new-run --corpus /path/to/corpus.json --labels /path/to/labels.json
+# Only through the established protected Gateway environment:
+python3 operations/experiments/jev/change_review.py execute /path/to/run --limit 18 --public-data-no-zdr
+python3 operations/experiments/jev/change_review.py report /path/to/run
+```
+
+Requests contain only before/after and the frozen criterion, no labels, case IDs,
+or commit messages. Public excerpts retain full commit-addressed snapshots and
+character spans. Reverse pairs must exactly swap the matching public pair.
+Frozen policy can at most retain this as a candidate for independent real-change
+validation: no automatic approval, deployment, or waiver of mandatory review.
+Original claim-checker stop (#22) remains in force. API failures and interrupted
+journals are preserved; no automatic retry or extra-call tuning. Shared executor
+accepts explicit criteria for both response validation and execution, preserving
+all old defaults. Run the existing `unittest discover` suite offline.
