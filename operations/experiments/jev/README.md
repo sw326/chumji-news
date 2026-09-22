@@ -472,3 +472,24 @@ Original claim-checker stop (#22) remains in force. API failures and interrupted
 journals are preserved; no automatic retry or extra-call tuning. Shared executor
 accepts explicit criteria for both response validation and execution, preserving
 all old defaults. Run the existing `unittest discover` suite offline.
+
+### Real forward edits (wiki #24)
+
+The `--scope real` adapter freezes 16 new MDN/CPython forward excerpts. It reuses
+#23's exact RULE/CRITERIA and numeric thresholds, verifies the prior manifest,
+rejects exact prior requests, and checks raw source URLs, snapshot spans and
+parent→commit metadata. Parent lineage is also checked against the separately
+saved GitHub commit API records before freeze; metadata consistency alone is not
+cryptographic proof of Git history. There are no synthetic/reversed cases.
+
+```sh
+python3 operations/experiments/jev/change_review.py prepare /path/to/new-run --scope real --corpus /path/to/corpus.json --labels /path/to/labels.json --prior-manifest /path/to/change-review-20260922/manifest.json
+# Protected Gateway environment only, max16:
+python3 operations/experiments/jev/change_review.py execute /path/to/run --scope real --limit 16 --public-data-no-zdr
+python3 operations/experiments/jev/change_review.py report /path/to/run --scope real
+```
+
+Boundary labels stay excluded from confirmed denominators and are reported
+separately. Default diagnostic scope still accepts the original #23 manifest and
+results without modification. A passing real diagnostic is only a candidate for
+offline review-order usefulness evaluation; risk does not mean a bad edit.
