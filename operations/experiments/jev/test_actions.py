@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import actions as a
 
 class ControllerTests(unittest.TestCase):
@@ -73,6 +74,22 @@ class ControllerTests(unittest.TestCase):
     def test_labels_not_in_request(self):
         s=self.news();body=a.request('news',a.news_view(s))
         self.assertNotIn('expected',json.dumps(body)); self.assertNotIn('rationale',json.dumps(body))
+    def test_unavailable_response_is_fallback_not_model_success(self):
+        with tempfile.TemporaryDirectory() as t:
+            root=Path(t);out=root/'news-round-1';out.mkdir();p=root/'news'/'N01'/'state.json';p.parent.mkdir(parents=True)
+            state=self.news();a.exclusive(p,state);view=a.news_view(state)
+            manifest={'domain':'news','criteria':a.NEWS,'tasks':[{'id':'N01','state_sha256':a.hash_obj(state),'body':{'state':view}}]}
+            with patch.object(a,'validate_batch',return_value=manifest), patch.object(a,'load_fixture',return_value={'search':{'documents':[]}}), patch.object(a.claims,'read_results',return_value=[{'id':'N01','status':'ok','topic':'attach_2'}]):
+                a.apply_batch(out)
+            result=a.read(p);decision=result['history'][0]['decision']
+            self.assertEqual(result['actions'],['defer']);self.assertEqual(decision['raw_action'],'attach_2')
+            self.assertFalse(decision['valid']);self.assertEqual(decision['fallback_reason'],'unavailable_action')
+    def test_common_source_retrieves_without_declaring_duplicate(self):
+        s=self.news();s['incoming']['text']='Totally different language'
+        s['incoming']['title']='다른 언어';s['incoming']['source_identity']='//example.org/a'
+        s['events'][0]['source_identities']=['//example.org/a']
+        self.assertEqual(a.news_view(s)['candidates'][0]['id'],'e1')
+        self.assertIsNone(a.exact_news_action(s,a.news_view(s)))
     def test_search_result_not_truth_claim(self):
         s=self.search(); d=self.docs();r=a.transition('search',s,'return_candidates',a.search_view(s,d),d)
         self.assertEqual(r['packet'],[d[0]]);self.assertNotIn('answer',r)

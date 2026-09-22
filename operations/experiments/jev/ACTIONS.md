@@ -67,3 +67,26 @@ Outputs are outside Git under ~/.local/state/jev-experiment/action-controllers-2
 The adjacent *-prep directory owns provenance and author labels. The superseded
 pre-call directory preserves the uncalled naive candidate-retrieval preparation;
 it demonstrated two cross-language candidate misses before source identity reuse.
+
+## Observed outcome (no tuning/re-calls)
+
+16 Jev calls completed. The eight full-excerpt news cases executed the expected
+operation and target; the sparse-title diagnostic incorrectly attached instead
+of deferring. The exact-copy case was handled by code. All articles were retained.
+Five of six search episodes reached their pre-call acceptable terminal outcome.
+The linked-lookup case actually read the transaction excerpt and returned it.
+The alternate-index case handed off before searching, despite the answer being
+in the fixture's secondary index. Index scope/description was NOT exposed in
+model state; do not attribute that missed route solely to model capability.
+No Jev call selected search_other_index, so that model-to-API path has only offline
+unit verification, not demonstrated successful live selection.
+
+API median: 485ms; all 16 replies reported $0; frozen list-price token estimate:
+$0.000998886. No independent baseline, production traffic, human study, or total
+cost/time superiority. Final states and exact raw-response correspondence are
+outside Git with REPORT.md and summary.json. Network-blocked batch reapplication
+left all 16 final-state hashes unchanged. 93 relevant offline tests pass.
+
+Conclusion: bounded choices can directly drive local operations without another
+LLM. News input sufficiency and search tool descriptions remain requirements for
+a next prototype. This pilot does not authorize unattended production routing.
