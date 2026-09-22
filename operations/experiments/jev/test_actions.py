@@ -90,6 +90,18 @@ class ControllerTests(unittest.TestCase):
         s['events'][0]['source_identities']=['//example.org/a']
         self.assertEqual(a.news_view(s)['candidates'][0]['id'],'e1')
         self.assertIsNone(a.exact_news_action(s,a.news_view(s)))
+    def test_empty_or_whitespace_news_is_code_deferred(self):
+        for text in ('', '  \n\t'):
+            s=self.news();s['incoming']['text']=text
+            self.assertEqual(a.exact_news_action(s,a.news_view(s)),'defer')
+            self.assertEqual(a.news_view(s)['available_actions'],['defer'])
+    def test_tool_catalog_is_same_for_all_queries_and_does_not_change_search(self):
+        s=self.search();d=self.docs();plain=a.search_view(s,d)
+        s['tool_catalog']={'secondary':{'name':'JSON index','description':'JSON reference', 'query_contract':'Original query; lexical top3; only positive matches', 'coverage_note':'Incomplete public excerpts'}}
+        described=a.search_view(s,d)
+        self.assertEqual({k:v for k,v in described.items() if k!='tool_catalog'},plain)
+        self.assertEqual(described['tool_catalog'],s['tool_catalog'])
+        self.assertEqual(a.transition('search',s,'search_other_index',described,d)['receipt']['added_ids'],[])
     def test_search_result_not_truth_claim(self):
         s=self.search(); d=self.docs();r=a.transition('search',s,'return_candidates',a.search_view(s,d),d)
         self.assertEqual(r['packet'],[d[0]]);self.assertNotIn('answer',r)
