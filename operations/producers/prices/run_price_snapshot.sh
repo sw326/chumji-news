@@ -4,12 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 PYTHON="${FRESH_PRICE_PYTHON:-/opt/homebrew/bin/python3}"
 NODE="${FRESH_PRICE_NODE:-/opt/homebrew/bin/node}"
-VERCEL="${FRESH_PRICE_VERCEL:-$(command -v vercel || true)}"
 OUTPUT_ROOT="${FRESH_PRICE_OUTPUT_ROOT:-$HOME/Library/Application Support/chumji-news/price-snapshots}"
 DATA_KEY_FILE="${FRESH_PRICE_DATA_KEY_FILE:-$HOME/.config/data-go-kr/api_key}"
 GARAK_PASSWORD_FILE="${FRESH_PRICE_GARAK_PASSWORD_FILE:-$HOME/.openclaw/secrets/garak-publicdata-passwd}"
 APP_ENV_FILE="${FRESH_PRICE_APP_ENV_FILE:-$HOME/workspace/chumji-news/.env.local}"
-VERCEL_PROJECT_FILE="${FRESH_PRICE_VERCEL_PROJECT_FILE:-$HOME/workspace/chumji-news/.vercel/project.json}"
 TELEGRAM_TOKEN_FILE="${FRESH_PRICE_TELEGRAM_TOKEN_FILE:-$HOME/.openclaw/secrets/telegram-macmini-bot-token}"
 TELEGRAM_CHAT_ID="${FRESH_PRICE_TELEGRAM_CHAT_ID:-7800641846}"
 PUBLIC_URL="${FRESH_PRICE_PUBLIC_URL:-https://chumji-news.vercel.app}"
@@ -56,43 +54,21 @@ print(match.group(1))
 PY
 )"
 
-stage="$(mktemp -d /tmp/chumji-news-price-deploy.XXXXXX)"
-cleanup() { rm -rf "$stage"; }
-trap cleanup EXIT
-if [[ -e "$ROOT/.git" ]]; then
-  # Checkouts use committed bytes only; broken Git metadata must fail closed.
-  git -C "$ROOT" archive HEAD | tar -x -C "$stage"
-else
-  # Immutable releases are git archives themselves and have no .git metadata.
-  tar -C "$ROOT" --exclude='.git' --exclude='.env*' --exclude='.vercel' \
-    --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
-    --exclude='*.pyc' -cf - . | tar -x -C "$stage"
-fi
-mkdir -p "$stage/public/fresh-food/$snapshot_date"
-cp "$snapshot_file" "$stage/public/fresh-food/index.html"
-cp "$snapshot_file" "$stage/public/fresh-food/$snapshot_date/index.html"
-
+# Validate bytes/hashes before touching any external surface.
+"$NODE" "$ROOT/scripts/price-artifacts.mjs" --run "$run_root"
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  echo "validated price snapshot: $snapshot_date"
   echo "dry-run: publication disabled"
   exit 0
 fi
-
-[[ -n "$VERCEL" && -x "$VERCEL" ]] || { echo "missing Vercel CLI" >&2; exit 1; }
-[[ -s "$VERCEL_PROJECT_FILE" ]] || { echo "missing Vercel project reference: $VERCEL_PROJECT_FILE" >&2; exit 1; }
-mkdir -p "$stage/.vercel"
-cp "$VERCEL_PROJECT_FILE" "$stage/.vercel/project.json"
-(
-  cd "$stage"
-  "$VERCEL" deploy --prod --yes
-)
-curl -fsS --max-time 30 "$PUBLIC_URL/prices/$snapshot_date" >/dev/null
 
 [[ -s "$APP_ENV_FILE" ]] || { echo "missing application SecretRef: $APP_ENV_FILE" >&2; exit 1; }
 set -a
 # shellcheck disable=SC1090
 source "$APP_ENV_FILE"
 set +a
+"$NODE" "$ROOT/scripts/price-artifacts.mjs" --run "$run_root" --publish
+# Check the public graph byte-for-byte before exposing the summary or notifying.
+"$NODE" "$ROOT/scripts/verify-price-artifact.mjs" "$PUBLIC_URL" "$snapshot_date" "$snapshot_file"
 "$NODE" "$ROOT/scripts/save-price-snapshot.js" "$report_file"
 
 [[ -s "$TELEGRAM_TOKEN_FILE" ]] || { echo "missing Telegram SecretRef: $TELEGRAM_TOKEN_FILE" >&2; exit 1; }

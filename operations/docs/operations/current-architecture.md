@@ -91,6 +91,12 @@ Mac mini, ops account
 
 - News and price pages read existing Supabase `news_posts` data with the anon
   client.
+- Pending price artifact cutover (2026-09-23): the reviewed candidate separates
+  generated graphs from web deployment via `price_snapshot_artifacts`. The
+  additive SQL migration, archive import, web release and price-only executable
+  switch are not yet applied. See [the price producer runbook](../../producers/prices/README.md)
+  for ordered validation and rollback; this candidate is not evidence of live
+  runtime state.
 - The alerts, operations, and market pages exist only in the retired ops web
   preview. They are not routes in the production `chumji-news` application.
 - The connected Supabase project is displayed as `chumji-finance`; its project

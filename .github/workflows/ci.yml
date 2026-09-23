@@ -16,3 +16,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: python3 -m unittest discover -s operations/producers/prices/tests -v
+      - run: bash -n operations/producers/prices/run_price_snapshot.sh
