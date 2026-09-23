@@ -87,3 +87,17 @@ it does not establish that production SQL/RLS or Vercel has been migrated.
   latest, invalid/missing dates, database failure and recovery passed.
 - Production SQL migration, data import, web deployment and cron cutover remain
   unperformed at this review milestone. This section is evidence, not live state.
+
+## Production cutover evidence (2026-09-23)
+
+- Approved migration applied to the personal project through its authenticated
+  Supabase console. RLS enabled; public roles read-only; service-role INSERT.
+- All 67 dated artifacts imported without altering summaries or sending messages.
+  Service-role and anon full-byte readback matched the validated inventory.
+- Code `87e61b3` reached main; CI succeeded and Vercel deployment
+  `dpl_4ChFyNXXkgfYSxbVBB5KmeZF292r` became READY. Production seven-route smoke
+  and 67 dated graph hashes plus latest all passed.
+- Price cron executable alone moved to the immutable full-SHA release. Schedule,
+  recipient, delivery, timeout and failure alert unchanged; shared link untouched.
+- First scheduled run on the new path (2026-09-24 09:20 KST) is not yet verified.
+  Rollback references live in the operations architecture document.

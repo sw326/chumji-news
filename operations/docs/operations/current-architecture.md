@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-08-25
+Status date: 2026-09-23 (price artifact cutover; other component observations retain their dates)
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -80,7 +80,7 @@ Mac mini, ops account
 | Fresh-food collector shadow | `ops` | retired LaunchDaemon, formerly 09:30 | disabled after production pipeline cutover | none |
 | Cathode market backend | none | no schedule | source preserved for question-driven research | last validated local artifact only |
 | Morning/IT/trend news | OpenClaw | OpenClaw cron | cut over to consolidated runtime; first scheduled runs pending | Supabase, Vercel, Telegram path |
-| Fresh-food price snapshot | OpenClaw | OpenClaw cron, 09:20 | cut over to consolidated runtime; first scheduled run pending | validated graph, Supabase, Vercel, Telegram |
+| Fresh-food price snapshot | OpenClaw | OpenClaw cron, 09:20 | durable artifact cutover complete; first new scheduled run pending | Supabase graph and summary, Telegram; no daily web deployment |
 | Legacy global-intel briefing | none | no schedule | retired; recoverable from Git history | none |
 | News web | Vercel | root `chumji-news` deployment | production | `chumji-news.vercel.app` |
 | Retired ops web prototype | Vercel | former `chumji-ops/apps/web` deployment | preview only | `chumji-ops-preview.vercel.app`; no future development |
@@ -91,12 +91,14 @@ Mac mini, ops account
 
 - News and price pages read existing Supabase `news_posts` data with the anon
   client.
-- Pending price artifact cutover (2026-09-23): the reviewed candidate separates
-  generated graphs from web deployment via `price_snapshot_artifacts`. The
-  additive SQL migration, archive import, web release and price-only executable
-  switch are not yet applied. See [the price producer runbook](../../producers/prices/README.md)
-  for ordered validation and rollback; this candidate is not evidence of live
-  runtime state.
+- Price artifact cutover completed on 2026-09-23 with code `87e61b3`:
+  generated HTML is stored in `price_snapshot_artifacts`, independently of web
+  deployments. RLS is enabled; anon/authenticated have SELECT but no write
+  grants, and service-role has INSERT. All 67 recovered dated graphs were
+  imported and read back byte-for-byte via both service-role and anon access.
+  Production verified all 67 dated URLs plus latest, and the existing seven-route
+  smoke passed. See [the price producer runbook](../../producers/prices/README.md)
+  for ordered validation and rollback. No summary or notification was replayed.
 - The alerts, operations, and market pages exist only in the retired ops web
   preview. They are not routes in the production `chumji-news` application.
 - The connected Supabase project is displayed as `chumji-finance`; its project
@@ -116,8 +118,12 @@ Mac mini, ops account
 
 ### Web rollback reference
 
-- Current production deployment observed on 2026-08-25:
-  `dpl_C5XMvweEJBFWnBZ2MmniCDbv7xhn`
+- Successful durable-price code deployment (2026-09-23, `87e61b3`):
+  `dpl_4ChFyNXXkgfYSxbVBB5KmeZF292r`. Later documentation-only deployments
+  may supersede this ID; inspect the live alias before any rollback.
+- Immediate pre-price-cutover rollback deployment:
+  `dpl_AfdacpyJxn31xKQ6UPAGKCCy8dkL` (daily 09:20 publication).
+  Restoring it also restores the old historical-graph limitation.
 - Pre-scrap-restoration deployment: `dpl_BRES5LDMHVHavFC8HwLeVW98vb9N`
 - Pre-cutover production deployment: `dpl_EKrCjGtvxMBsXqV6yHzicsHUdEhy`
 - Roll back by promoting the pre-cutover deployment only if the production
@@ -138,10 +144,16 @@ Mac mini, ops account
   `/Users/chumji/.openclaw/services/chumji-news-releases/<commit>`
 - OpenClaw news runtime link:
   `/Users/chumji/.openclaw/services/chumji-news-current`
-- Price snapshot runtime: commit `00d26f1` under the OpenClaw release path.
-  Its non-publishing release smoke completed with all four expected items and
-  no errors. The 09:20 cron now invokes
-  `operations/producers/prices/run_price_snapshot.sh` through the current link.
+- Price snapshot runtime (2026-09-23): immutable OpenClaw release
+  `87e61b37459c0ff3eaa959699f9b57300a09212f`. Only price cron
+  `c2db2956-58d7-40e8-b194-a85b948e71fe` now invokes its absolute
+  `operations/producers/prices/run_price_snapshot.sh` path directly.
+  Schedule 09:20 Asia/Seoul, recipient, timeout, delivery and failure alerts
+  were read back unchanged. No manual publication was run; first scheduled
+  execution of the new path is 2026-09-24 09:20 and remains unverified.
+  The shared current link remains at `9c4ee6c12a83a4c5155280e093d39a62a7b937f2`;
+  other producers are unchanged. Rollback argv was `sh -lc` wrapping
+  `/bin/zsh -lc '/Users/chumji/.openclaw/services/chumji-news-current/operations/producers/prices/run_price_snapshot.sh'`.
 - Fresh-food shadow LaunchDaemon: disabled and unloaded after the collector
   became part of the production price pipeline. Its plist and prior
   commit-addressed release remain available for rollback.
@@ -185,8 +197,9 @@ context, or direct chat delivery. The target design is:
 The price cron is a command job rather than an agent turn. It remains in
 OpenClaw because it owns the existing Telegram publication and failure-alert
 boundary. Its repository runner performs deterministic collection and
-validation, stages the graph in a temporary clean deployment, and exits before
-any external write when validation fails. Generated HTML is runtime data and
+validation, stores the graph independently in Supabase, verifies public bytes,
+then writes the summary and sends the existing notification. It exits before
+publication when validation fails. Generated HTML is runtime data and
 must not modify the development worktree.
 
 The weekly skill-health audit follows the same boundary. Its deterministic
