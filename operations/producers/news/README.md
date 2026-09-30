@@ -48,6 +48,44 @@ an explicit `--publish` performs the idempotent Supabase/Telegram step. Runtime
 state and logs live outside the release checkout so a commit-addressed release
 can be rolled back without losing delivery receipts.
 
+## Trend collection health
+
+The trend collector records `collection_health` in both the source JSON and
+each daily audit run. Per-source `status` is `ok` (selected articles), `empty`
+(successful collection but zero articles after filtering/deduplication/limits),
+`failed` (source unavailable, including GitHub history failure), or `degraded`
+(some Hacker News official metadata requests failed). Candidate/selected counts
+and HN failed-item counts are separate from status. Detailed errors remain in
+the existing errors list and logs, not the reader-facing notice.
+
+- Some sources failed: preserve eligible articles and insert a deterministic
+  Korean collection notice immediately below the briefing title. HN partial
+  metadata failure is labeled separately from a completely unavailable source.
+  This notice is part of the web briefing; the Telegram link notification and
+  publication adapter are unchanged. No additional notification is created.
+- All sources failed: retain source JSON/audit evidence and exit nonzero before
+  prompt/model/publication. The existing scheduler failure path owns alerting;
+  this code does not add or configure alerts.
+- Zero selected articles with at least one successfully queried source: create
+  a short deterministic "no selected articles" briefing without calling a model.
+  If collection was incomplete, it includes the same collection notice.
+- Valid empty RSS/Atom feeds and an empty Lobsters JSON list count as successful
+  empty collection; malformed layouts/contracts remain failures. A GitHub page
+  without recognized repository cards still fails closed.
+
+`trend_briefing.py` validates health before model execution and adds the notice
+after the existing summary-length/failure-page checks, so notice text cannot
+pad a broken summary past those guards. Only the deterministic empty briefing
+bypasses the minimum model-output length. Morning/IT, selection criteria,
+publication receipts, and conflict/duplicate-delivery protection are unchanged.
+
+The health regression suite runs the real shell entrypoint in a temporary copy
+with fake collectors/model/publisher and dummy local credential files. It never
+uses production credentials, contacts a provider, or sends a message. A real
+`run_profile.sh --dry-run` still calls the model for nonempty input; do not use it
+as an offline test. These changes require the normal reviewed release cutover
+before they affect production; a local commit does not deploy them.
+
 ## Validation
 
 ```bash

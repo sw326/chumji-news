@@ -72,10 +72,12 @@ class PublicationHistoryTest(unittest.TestCase):
         with (patch.object(mod, 'SOURCES', sources), patch.object(
             mod, 'read_recent_published_repositories', side_effect=OSError('unreadable')),
             patch.object(mod, 'discover_rss', return_value=(rss, None))):
-            candidates, errors = mod.collect_candidates(NOW)
+            candidates, errors, health = mod.collect_candidates(NOW)
         self.assertEqual(len(candidates), 1)
         self.assertTrue(candidates[0]['selected'])
         self.assertIn('history unavailable: OSError', errors[0])
+        self.assertEqual(health['status'], 'degraded')
+        self.assertEqual(health['sources'][0]['status'], 'failed')
 
     def test_filter_before_limit_preserves_new_lower_ranked_candidates(self):
         source = next(s for s in mod.SOURCES if s['key'] == 'github_trending')
@@ -83,7 +85,7 @@ class PublicationHistoryTest(unittest.TestCase):
         with (patch.object(mod, 'SOURCES', [source]),
               patch.object(mod, 'read_recent_published_repositories', return_value={'dev/repo0', 'dev/repo1', 'dev/repo2'}),
               patch.object(mod, '_request_bytes', return_value=html)):
-            candidates, errors = mod.collect_candidates(NOW)
+            candidates, errors, health = mod.collect_candidates(NOW)
         self.assertEqual(errors, [])
         self.assertEqual([c['title'] for c in candidates if c['selected']], ['dev/repo3', 'dev/repo4', 'dev/repo5'])
         self.assertEqual(sum(c['selection_reason'] == 'published_within_7_kst_days' for c in candidates), 3)
@@ -95,9 +97,10 @@ class PublicationHistoryTest(unittest.TestCase):
             with (patch.object(mod, 'SOURCES', [source]),
                   patch.object(mod, 'read_recent_published_repositories', return_value={f'dev/repo{i}' for i in range(count)}),
                   patch.object(mod, 'discover_github_trending', return_value=(items, None))):
-                candidates, errors = mod.collect_candidates(NOW)
+                candidates, errors, health = mod.collect_candidates(NOW)
             self.assertEqual(sum(c['selected'] for c in candidates), 4-count)
             self.assertEqual(errors, [])
+            self.assertEqual(health['status'], 'ok' if count == 3 else 'empty')
 
 
 if __name__ == '__main__':

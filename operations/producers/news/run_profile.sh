@@ -34,15 +34,28 @@ TODAY=$(TZ=Asia/Seoul date +%Y-%m-%d)
 DATE_KOR=$(TZ=Asia/Seoul date '+%Y.%m.%d (%a)' | sed \
   -e 's/Mon/월/' -e 's/Tue/화/' -e 's/Wed/수/' -e 's/Thu/목/' \
   -e 's/Fri/금/' -e 's/Sat/토/' -e 's/Sun/일/')
-python3 "$ROOT/build_prompt.py" --profile "$PROFILE" --date-kor "$DATE_KOR" \
-  --input "$RUN_DIR/source.json" --output "$RUN_DIR/prompt.txt"
-"$ROOT/adapters/openclaw_gpt_summarize.sh" "$RUN_DIR/prompt.txt" "$LOG_FILE" "$TAG" >"$RUN_DIR/briefing.md"
+EMPTY_TREND=0
+if [[ "$PROFILE" == trend ]]; then
+  python3 "$ROOT/trend_briefing.py" prepare --source "$RUN_DIR/source.json" \
+    --briefing "$RUN_DIR/briefing.md" --date-kor "$DATE_KOR"
+  [[ ! -f "$RUN_DIR/briefing.md" ]] || EMPTY_TREND=1
+fi
+if (( EMPTY_TREND == 0 )); then
+  python3 "$ROOT/build_prompt.py" --profile "$PROFILE" --date-kor "$DATE_KOR" \
+    --input "$RUN_DIR/source.json" --output "$RUN_DIR/prompt.txt"
+  "$ROOT/adapters/openclaw_gpt_summarize.sh" "$RUN_DIR/prompt.txt" "$LOG_FILE" "$TAG" >"$RUN_DIR/briefing.md"
+fi
 
 BRIEFING_CHARS=$(python3 -c 'from pathlib import Path; import sys; print(len(Path(sys.argv[1]).read_text()))' "$RUN_DIR/briefing.md")
-(( BRIEFING_CHARS >= MIN_CHARS )) || { printf 'briefing too short: %s\n' "$BRIEFING_CHARS" >&2; exit 1; }
+(( EMPTY_TREND == 1 || BRIEFING_CHARS >= MIN_CHARS )) || { printf 'briefing too short: %s\n' "$BRIEFING_CHARS" >&2; exit 1; }
 if grep -Eq '데이터 품질 문제|브리핑 생성 불가|정상 생성이 불가능|공식 브리핑 출력 불가' "$RUN_DIR/briefing.md"; then
   printf 'briefing contains a failure page\n' >&2
   exit 1
+fi
+
+if [[ "$PROFILE" == trend ]]; then
+  python3 "$ROOT/trend_briefing.py" finalize --source "$RUN_DIR/source.json" \
+    --briefing "$RUN_DIR/briefing.md"
 fi
 
 if [[ "$MODE" == "--dry-run" ]]; then
