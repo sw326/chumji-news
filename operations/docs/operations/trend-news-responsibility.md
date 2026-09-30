@@ -40,6 +40,11 @@ configuration and publication receipts remain authoritative for current state.
 The following is a procedure, not an automatic cancellation implementation.
 No job was stopped to validate this document.
 
+For new explicitly managed runs, the [local pause/resume controller](news-pause-resume.md)
+implements cooperative stage-boundary pauses and artifact reuse. It is opt-in:
+the existing production cron is not controlled by it, and remote cancellation
+and schedule disablement below remain separate operations.
+
 1. **Resolve the user's scope from the request and conversation.** "Stop this
    run" concerns current work; "stop the daily trend briefing" includes future
    scheduled runs. If it remains ambiguous, stop initiating new work for the

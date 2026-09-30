@@ -1,5 +1,9 @@
 # Production news collectors
 
+Opt-in checkpoint control: [pause/resume operations guide](../../docs/operations/news-pause-resume.md).
+`task_control.py` preserves completed collection/summary stages; it does not
+automatically manage the existing cron invocation or cancel remote model work.
+
 This directory is the surviving repository copy of the collectors currently
 used by the production morning, IT, and trend briefings.
 
