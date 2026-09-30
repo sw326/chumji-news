@@ -644,7 +644,13 @@ def discover_rss(source):
             }
         )
 
-    if not discovered:
+    valid_empty_feed = (
+        (root.tag == "rss" and root.find("channel") is not None
+         and not root.findall(".//item"))
+        or (root.tag == f"{{{ATOM_NS}}}feed"
+            and not root.findall(f".//{{{ATOM_NS}}}entry"))
+    )
+    if not discovered and not valid_empty_feed:
         for entry in root.findall(f".//{{{ATOM_NS}}}entry"):
             if len(discovered) >= source["limit"]:
                 break
@@ -678,7 +684,7 @@ def discover_rss(source):
                 }
             )
 
-    if not discovered:
+    if not discovered and not valid_empty_feed:
         return [], f"{source['name']}: no candidates (feed structure may have changed)"
     return discovered, None
 
@@ -693,7 +699,7 @@ def discover_lobsters(source):
     discovered = [
         item for item in payload[: source["limit"]] if isinstance(item, dict)
     ]
-    if not discovered:
+    if payload and len(discovered) != len(payload[: source["limit"]]):
         return [], f"{source['name']}: no candidates (JSON contract may have changed)"
     return discovered, None
 
@@ -787,6 +793,7 @@ def collect_candidates(now=None, receipt_dir=None):
     now = now or utc_now()
     candidates = []
     errors = []
+    source_statuses = []
     try:
         recent_repositories = read_recent_published_repositories(now, receipt_dir)
     except Exception as exc:
@@ -794,12 +801,17 @@ def collect_candidates(now=None, receipt_dir=None):
         errors.append(f"GitHub publication history unavailable: {type(exc).__name__}; GitHub omitted")
 
     for source in SOURCES:
+        health = {"key": source["key"], "name": source["name"],
+                  "status": "ok", "failed_items": 0}
+        source_statuses.append(health)
         if source["key"] == "github_trending":
             if recent_repositories is None:
+                health["status"] = "failed"
                 continue
             discovered, error = discover_github_trending(source)
             if error:
                 errors.append(error)
+                health["status"] = "failed"
                 continue
             for item in discovered:
                 candidate = normalize_github_candidate(item)
@@ -813,6 +825,7 @@ def collect_candidates(now=None, receipt_dir=None):
             discovered, error = discover_lobsters(source)
             if error:
                 errors.append(error)
+                health["status"] = "failed"
                 continue
             candidates.extend(
                 normalize_lobsters_candidate(item, now) for item in discovered
@@ -822,6 +835,7 @@ def collect_candidates(now=None, receipt_dir=None):
         discovered, error = discover_rss(source)
         if error:
             errors.append(error)
+            health["status"] = "failed"
             continue
 
         if source["key"] == "hacker_news":
@@ -837,6 +851,11 @@ def collect_candidates(now=None, receipt_dir=None):
             ids = [item["hn_item_id"] for item in hn_discovered]
             with ThreadPoolExecutor(max_workers=8) as executor:
                 api_items = list(executor.map(_fetch_hn_api_item, ids))
+            unavailable = sum(not isinstance(item, dict) for item in api_items)
+            if unavailable:
+                health["status"] = "failed" if unavailable == len(ids) else "degraded"
+                health["failed_items"] = unavailable
+                errors.append(f"Hacker News: official metadata unavailable for {unavailable}/{len(ids)} candidates")
             candidates.extend(
                 normalize_hn_candidate(item, api_item, now)
                 for item, api_item in zip(hn_discovered, api_items)
@@ -857,7 +876,26 @@ def collect_candidates(now=None, receipt_dir=None):
 
     apply_cross_source_deduplication(candidates)
     apply_selection_limits(candidates)
-    return candidates, errors
+    for health in source_statuses:
+        items = [item for item in candidates if item["source"] == health["name"]]
+        health["candidate_count"] = len(items)
+        health["selected_count"] = sum(item["selected"] for item in items)
+        if health["status"] == "ok" and not health["selected_count"]:
+            health["status"] = "empty"
+    return candidates, errors, collection_health(source_statuses)
+
+
+def collection_health(sources):
+    """Collection completeness is independent of the selection result."""
+    if not sources or all(source["status"] == "failed" for source in sources):
+        status = "failed"
+    elif any(source["status"] in {"failed", "degraded"} for source in sources):
+        status = "degraded"
+    elif not any(source["selected_count"] for source in sources):
+        status = "empty"
+    else:
+        status = "ok"
+    return {"status": status, "sources": sources}
 
 
 def apply_cross_source_deduplication(candidates):
@@ -987,7 +1025,7 @@ def default_audit_dir():
     return Path.home() / "Library" / "Application Support" / "chumji-news" / "trend-audit"
 
 
-def write_daily_audit(audit_dir, collected_at, candidates, errors):
+def write_daily_audit(audit_dir, collected_at, candidates, errors, health=None):
     audit_dir = Path(audit_dir)
     audit_dir.mkdir(parents=True, exist_ok=True)
     audit_date = collected_at.astimezone(ZoneInfo("Asia/Seoul")).date().isoformat()
@@ -1012,6 +1050,7 @@ def write_daily_audit(audit_dir, collected_at, candidates, errors):
             "selection_policy": selection_policy(),
             "summary": selection_summary(candidates),
             "errors": errors,
+            "collection_health": health,
             "candidates": candidates,
         }
     )
@@ -1033,7 +1072,7 @@ def write_daily_audit(audit_dir, collected_at, candidates, errors):
     return audit_path
 
 
-def build_output(collected_at, candidates, errors):
+def build_output(collected_at, candidates, errors, health=None):
     selected = [item for item in candidates if item["selected"]]
     return {
         "schema_version": 2,
@@ -1041,6 +1080,7 @@ def build_output(collected_at, candidates, errors):
         "selection_policy": selection_policy(),
         "selection_summary": selection_summary(candidates),
         "errors": errors,
+        "collection_health": health,
         # This is the only candidate list passed to the LLM.
         "articles": selected,
     }
@@ -1062,21 +1102,24 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     collected_at = utc_now()
-    candidates, errors = collect_candidates(collected_at, args.receipt_dir)
+    candidates, errors, health = collect_candidates(collected_at, args.receipt_dir)
     try:
         audit_path = write_daily_audit(
-            args.audit_dir, collected_at, candidates, errors
+            args.audit_dir, collected_at, candidates, errors, health
         )
     except Exception as exc:
         print(f"audit write failed: {exc}", file=sys.stderr)
         return 1
 
-    print(json.dumps(build_output(collected_at, candidates, errors), ensure_ascii=False, indent=2))
+    print(json.dumps(build_output(collected_at, candidates, errors, health), ensure_ascii=False, indent=2))
     print(f"audit: {audit_path}", file=sys.stderr)
     if errors:
         print(f"warning: {len(errors)} source collection failure(s)", file=sys.stderr)
         for error in errors:
             print(f"  - {error}", file=sys.stderr)
+    if health["status"] == "failed":
+        print("all trend sources failed; briefing blocked", file=sys.stderr)
+        return 1
     return 0
 
 
