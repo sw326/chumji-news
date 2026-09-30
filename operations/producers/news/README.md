@@ -1,5 +1,9 @@
 # Production news collectors
 
+Checkpoint control: [pause/resume operations guide](../../docs/operations/news-pause-resume.md).
+`task_control.py` preserves completed collection/summary stages; the approved
+trend cutover uses `scheduled_trend.py`. Neither cancels remote model work.
+
 This directory is the surviving repository copy of the collectors currently
 used by the production morning, IT, and trend briefings.
 
@@ -17,9 +21,10 @@ The files preserve the active collection contracts:
   levels, deterministic selection reasons, and an audit artifact. GitHub is
   capped at three records and a layout failure is isolated from other sources.
 
-The production OpenClaw cron runs `run_profile.sh` through the commit-addressed
-`~/.openclaw/services/chumji-news-current` link. The old `chumji-ops/jobs/news`
-shadow collector is not this production entrypoint.
+Morning/IT OpenClaw cron runs `run_profile.sh` through the commit-addressed
+`~/.openclaw/services/chumji-news-current` link. The approved trend-only cutover
+uses `scheduled_trend.py` via the separate `chumji-news-trend-current` link.
+The old `chumji-ops/jobs/news` shadow collector is not either entrypoint.
 
 `adapters/openclaw_gpt_summarize.sh` preserves the active text-only OpenClaw
 call. It tries `OPENCLAW_MODEL` (default `openai/gpt-5.6-luna`) and then each
@@ -49,6 +54,10 @@ state and logs live outside the release checkout so a commit-addressed release
 can be rolled back without losing delivery receipts.
 
 ## Trend collection health
+
+The operational [responsibility and stop procedure](../../docs/operations/trend-news-responsibility.md)
+defines scope, completion evidence, cancellation boundaries and the dated
+collection-health release/rollback record.
 
 The trend collector records `collection_health` in both the source JSON and
 each daily audit run. Per-source `status` is `ok` (selected articles), `empty`
