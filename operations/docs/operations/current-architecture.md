@@ -1,6 +1,6 @@
 # Current Operations Architecture
 
-Status date: 2026-09-23 (price artifact cutover; other component observations retain their dates)
+Status date: 2026-09-30 (trend collection-health cutover; other component observations retain their dates)
 
 This document describes the observed live state. It supersedes older planning
 language that described the whole repository as non-production.
@@ -144,6 +144,14 @@ Mac mini, ops account
   `/Users/chumji/.openclaw/services/chumji-news-releases/<commit>`
 - OpenClaw news runtime link:
   `/Users/chumji/.openclaw/services/chumji-news-current`
+- News collection-health cutover (2026-09-30): that link now points to
+  `1ca8cc4aa5bcb6e348d04d773da71c593f5adef4`, containing only six news-file
+  changes on top of the previous `9c4ee6c` runtime. Offline tests (55), staged
+  byte verification (190 files), and a collector-only smoke check passed.
+  News schedule/argv/delivery/failure settings were read back unchanged; no
+  manual publication occurred. The next 13:00 scheduled publication remains
+  unverified at cutover. The previous release remains available for rollback.
+  See [trend responsibility, stop procedure and release evidence](trend-news-responsibility.md).
 - Price snapshot runtime (2026-09-23): immutable OpenClaw release
   `87e61b37459c0ff3eaa959699f9b57300a09212f`. Only price cron
   `c2db2956-58d7-40e8-b194-a85b948e71fe` now invokes its absolute
@@ -151,8 +159,9 @@ Mac mini, ops account
   Schedule 09:20 Asia/Seoul, recipient, timeout, delivery and failure alerts
   were read back unchanged. No manual publication was run; first scheduled
   execution of the new path is 2026-09-24 09:20 and remains unverified.
-  The shared current link remains at `9c4ee6c12a83a4c5155280e093d39a62a7b937f2`;
-  other producers are unchanged. Rollback argv was `sh -lc` wrapping
+  At that 2026-09-23 cutover, the shared current link remained at
+  `9c4ee6c12a83a4c5155280e093d39a62a7b937f2`; the dated news cutover above
+  supersedes that link observation. Rollback argv was `sh -lc` wrapping
   `/bin/zsh -lc '/Users/chumji/.openclaw/services/chumji-news-current/operations/producers/prices/run_price_snapshot.sh'`.
 - Fresh-food shadow LaunchDaemon: disabled and unloaded after the collector
   became part of the production price pipeline. Its plist and prior

@@ -50,6 +50,10 @@ can be rolled back without losing delivery receipts.
 
 ## Trend collection health
 
+The operational [responsibility and stop procedure](../../docs/operations/trend-news-responsibility.md)
+defines scope, completion evidence, cancellation boundaries and the dated
+collection-health release/rollback record.
+
 The trend collector records `collection_health` in both the source JSON and
 each daily audit run. Per-source `status` is `ok` (selected articles), `empty`
 (successful collection but zero articles after filtering/deduplication/limits),
