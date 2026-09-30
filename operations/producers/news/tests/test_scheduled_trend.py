@@ -53,5 +53,22 @@ class ScheduledTrendTests(unittest.TestCase):
         self.assertEqual(self.fixture.events(), ["collect", "summarize"])
 
 
+class ScheduledMorningTests(ScheduledTrendTests):
+    profile = "morning"
+
+    def setUp(self):
+        super().setUp()
+        self.fixture.profile = self.profile
+        self.fixture.run = self.fixture.root / "checkpoints" / self.profile / task_control.today()
+
+    def invoke(self):
+        return subprocess.run([sys.executable, str(self.fixture.news / "scheduled_profile.py"), self.profile],
+                              env=self.fixture.env, capture_output=True, text=True, timeout=20)
+
+
+class ScheduledITTests(ScheduledMorningTests):
+    profile = "it"
+
+
 if __name__ == "__main__":
     unittest.main()

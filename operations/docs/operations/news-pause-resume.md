@@ -11,7 +11,26 @@ No existing scheduled run was stopped or replayed to test this controller.
 The trend job retains its schedule, failure route, timeout and publication
 adapter. Its command invokes `python3` on
 `~/.openclaw/services/chumji-news-trend-current/operations/producers/news/scheduled_trend.py`.
-This separate release link leaves the morning/IT `chumji-news-current` unchanged.
+This separate release link allows independent rollout from morning/IT.
+
+`scheduled_profile.py {morning|it|trend}` now provides the same admission and
+no-auto-resume contract for every profile. `scheduled_trend.py` remains the
+backward-compatible trend command. Morning/IT **scheduler adoption is staged**:
+the News owner approved expansion on 2026-09-30, conditional on successful
+2026-10-01 trend verification. Do not switch before that evidence exists.
+The model compatibility fix can deploy independently: the Luna summary route
+uses `low`; Haiku and other existing model overrides retain `off`.
+
+After the gate passes, re-read the two existing job definitions, ensure no
+active pipeline/uncertain publication, preserve their original argv for rollback,
+and change only argv to invoke this release's `scheduled_profile.py morning`
+or `scheduled_profile.py it`. Retain 08:00/09:00 KST, destinations, timeouts and
+failure routes. Use the supported automation tool, never raw scheduler files.
+If a scheduled verification session cannot update other jobs in its caller
+scope, report the successful gate and pending cutover to the owner conversation;
+do not bypass that limit or claim rollout. No further user approval is needed
+for the same approved cutover, but an authorized runtime surface is required.
+Never force-run a job as a rollout test. Verify its next natural occurrence.
 
 The default checkpoint is
 `~/.local/state/chumji-news/checkpoints/trend/YYYY-MM-DD` (KST), overridable by
