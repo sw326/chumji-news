@@ -13,11 +13,17 @@ ADAPTER = ROOT / "adapters" / "openclaw_gpt_summarize.sh"
 # Stub CLI: fails for models listed in STUB_FAIL_MODELS, otherwise answers with the model name.
 STUB = """#!/bin/bash
 model=""
+thinking=""
 while (( $# )); do
+  if [[ "$1" == "--thinking" ]]; then thinking="$2"; shift; shift; continue; fi
   if [[ "$1" == "--model" ]]; then model="$2"; shift; fi
   shift
 done
 printf '%s\\n' "$model" >>"$STUB_CALLS"
+printf '%s %s\\n' "$model" "$thinking" >>"$STUB_THINKING_CALLS"
+if [[ "$model" == "openai/gpt-5.6-luna" && "$thinking" == "off" ]]; then
+  printf 'Thinking level off is not supported for Luna\\n' >&2; exit 1
+fi
 case " $STUB_FAIL_MODELS " in
   *" $model "*) printf 'stub auth failure for %s\\n' "$model" >&2; exit 1 ;;
 esac
@@ -47,6 +53,7 @@ class SummarizeAdapterTests(unittest.TestCase):
             "OPENCLAW_BIN": str(self.stub),
             "JQ_BIN": shutil.which("jq"),
             "STUB_CALLS": str(self.calls),
+            "STUB_THINKING_CALLS": str(self.tmp / "thinking.txt"),
             "STUB_FAIL_MODELS": "",
             "STUB_EMPTY_MODELS": "",
             **env,
@@ -68,12 +75,15 @@ class SummarizeAdapterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout.strip(), "summary by openai/gpt-5.6-luna")
         self.assertEqual(self.called_models(), ["openai/gpt-5.6-luna"])
+        self.assertEqual((self.tmp / "thinking.txt").read_text(), "openai/gpt-5.6-luna low\n")
 
     def test_primary_failure_uses_fallback_and_logs_it(self):
         result = self.run_adapter(STUB_FAIL_MODELS="openai/gpt-5.6-luna")
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout.strip(), "summary by anthropic/claude-haiku-4-5")
         self.assertEqual(self.called_models(), ["openai/gpt-5.6-luna", "anthropic/claude-haiku-4-5"])
+        self.assertEqual((self.tmp / "thinking.txt").read_text().splitlines(),
+                         ["openai/gpt-5.6-luna low", "anthropic/claude-haiku-4-5 off"])
         log = self.log.read_text()
         self.assertIn("summarize failed with model: openai/gpt-5.6-luna", log)
         self.assertIn("summarized with fallback model: anthropic/claude-haiku-4-5", log)

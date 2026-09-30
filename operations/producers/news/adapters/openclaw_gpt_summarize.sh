@@ -20,10 +20,16 @@ trap 'rm -f "$RESULT_FILE" "$OUTPUT_FILE"' EXIT
 
 summarize_with() {
   local model="$1" attempt="$2"
+  local thinking="off"
+  # The installed Luna route rejects off before inference. Preserve other
+  # models' existing behavior, including Haiku fallback.
+  case "$model" in
+    openai/gpt-5.6-luna) thinking="low" ;;
+  esac
   local session_key="agent:main:cron-${SAFE_TAG}-$(date +%Y%m%dT%H%M%S)-$$-${attempt}"
   : >"$RESULT_FILE"
   "$OPENCLAW_BIN" agent --agent main --session-key "$session_key" --model "$model" \
-    --message-file "$PROMPT_FILE" --thinking off --timeout 900 --json \
+    --message-file "$PROMPT_FILE" --thinking "$thinking" --timeout 900 --json \
     >"$RESULT_FILE" 2>>"$LOG_FILE" || return 1
   "$JQ_BIN" -er '
     if .status != "ok" then error("OpenClaw agent status: " + (.status // "unknown"))
